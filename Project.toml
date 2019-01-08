@@ -5,3 +5,10 @@ version = "0.1.0"
 
 [deps]
 Indexing = "313cdc1a-70c2-5d6a-ae34-0150d3930a38"
+SplitApplyCombine = "03a91e81-4c3e-53e1-a0a4-9c0c8f19dd66"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

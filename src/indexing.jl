@@ -1,23 +1,36 @@
+# Scalar indexing (and related) conversion helpers
 
 @propagate_inbounds function Base.getindex(m::AbstractMap{I}, i) where {I}
 	return m[convert(I, i)]
 end
 
-# IdentityIndex
-#struct IdentityIndex{I} <: AbstractIndex{I}
-#end
+@propagate_inbounds function Base.setindex!(m::AbstractMap{I}, v, i) where {I}
+    return setindex!(m, v, convert(I, i))
+end
 
-#@inline getindex(::IdentityIndex{I}, i::I) where {I} = i
-#@inline getindex(::IdentityIndex{I}, i) where {I} = convert(I, i)
-
-#checkindex(::IdentitiyIndex{I}, i::I) where {I} = nothing
-#checkindex(::IdentitiyIndex{I}, i) where {I} = (convert(I, i); nothing)
-
-
-#getindices(m::AbstractMap{I}, ::Colon) where {I} = getindices(m, IdentityIndex{I})
-
-#@inline getindices(m::AbstractMap{I}, ::IdentityIndex{I}) where {I} = copy(m)
-#@inline getindices(i::IdentityIndex{I}, ::IdentityIndex{I}) where {I} = i
-#@inline getindices(m::IdentityIndex{I}, m::AbstractMap{<:Any, I}) where {I} = m
+@propagate_inbounds function Base.setindex!(m::AbstractMap{I, T}, v, i::I) where {I, T}
+    return setindex!(m, convert(v, T), i)
+end
 
 # Non-scalar indexing
+
+# Basically, one maps the indices over the indexee
+@inline function Indexing.getindices(m, inds::AbstractMap)
+    @boundscheck checkindices(keys(m), inds)
+    map(i -> @inbounds(m[i]), inds)
+end
+
+@inline function Indexing.setindices!(m, value, inds::AbstractMap)
+    @boundscheck checkindices(keys(m), inds)
+    map(i -> @inbounds(m[i] = value), inds)
+end
+
+#@inline function Base.view()
+
+#function Base.checkindices(target_inds, inds::AbstractMap)
+#    for i in inds
+#        if !(i ∈ target_inds)
+#            throw(IndexError("Index not found: $i"))
+#        end
+#    end
+#end
