@@ -6,7 +6,7 @@ end
 
 function Base.keys(m::Map{I}) where {I}
     inds = m.indices
-    return inds isa AbstractIndex{I} ? inds : Indices{I}(inds)
+    return inds isa AbstractIndices{I} ? inds : Indices{I}(inds)
 end
 
 @propagate_inbounds function Base.getindex(m::Map{I, T}, i::I) where {I, T}

@@ -5,7 +5,7 @@ using SplitApplyCombine
 
 using Base: @propagate_inbounds
 
-export AbstractMap, AbstractIndices, IndexError, Indices, HashIndices, HashMap, Map, IdentityIndices, MappedMap
+export AbstractMap, AbstractIndices, IndexError, Indices, HashIndices, HashMap, Map, MappedMap
 
 export isinsertable, set!, unset!
 

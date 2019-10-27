@@ -41,7 +41,7 @@ hashtoken(key, sz::Int) = (((hash(key)%Int) & (sz-1)) + 1)::Int
 @propagate_inbounds isslotfilled(h::HashIndices, i::Int) = h.slots[i] == 0x1
 @propagate_inbounds isslotmissing(h::HashIndices, i::Int) = h.slots[i] == 0x2
 
-Base.rehash!(h::HashIndices, newsz::Int = length(h.inds)) = _rehash(h, nothing, newsz)
+Base.rehash!(h::HashIndices, newsz::Int = length(h.inds)) = _rehash!(h, nothing, newsz)
 
 function _rehash!(h::HashIndices{T}, values::Union{Nothing, Vector}, newsz::Int) where {T}
     olds = h.slots
@@ -105,12 +105,12 @@ function _sizehint!(h::HashIndices{T}, values::Union{Nothing, Vector}, newsz::In
         # todo: shrink
         # be careful: rehash!() assumes everything fits. it was only designed
         # for growing.
-        return d
+        return hash
     end
     # grow at least 25%
     newsz = min(max(newsz, (oldsz*5)>>2),
                 Base.max_values(T))
-    _rehash!(d, values, newsz)
+    _rehash!(h, values, newsz)
 end
 
 # get the token where a key is stored, or -1 if not present

@@ -27,5 +27,5 @@ end
 
 @inline function Base.getindex(m::MappedMap{I, T}, i::I) where {I, T}
     @boundscheck checkindex(m.maps[1], i)
-    return f(map(x -> @inbounds(x[i]), m.maps)...)::T
+    return m.f(map(x -> @inbounds(x[i]), m.maps)...)::T
 end

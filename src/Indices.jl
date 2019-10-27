@@ -7,7 +7,7 @@ struct Indices{I, Inds} <: AbstractIndices{I}
 	inds::Inds
 end
 
-Indices(iter) = Indices{eltype(iter), typeof{iter}}(inds)
+Indices(iter) = Indices{eltype(iter), typeof{iter}}(iter)
 
 @propagate_inbounds function Base.iterate(i::Indices{I}, state...) where {I}
     iterate(i.inds, state...)::Union{Nothing, Tuple{I, Any}}

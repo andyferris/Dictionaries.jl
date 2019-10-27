@@ -86,7 +86,7 @@ function Base.sizehint!(m::HashMap, sz::Int)
     return m
 end
 
-function Base.rehash!(m::HashMap, newsz::Int = length(h.inds))
-    _rehash(m.indices, m.values, newsz)
+function Base.rehash!(m::HashMap, newsz::Int = length(m.inds))
+    _rehash!(m.indices, m.values, newsz)
     return m
 end

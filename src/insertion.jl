@@ -41,7 +41,7 @@ isinsertable(::AbstractIndices) = false
 Insert the new index `i` into `indices`. An error is thrown if `i` already exists.
 """
 @propagate_inbounds function Base.insert!(indices::AbstractIndices{I}, i) where {I}
-    i2 = convert(T, i)
+    i2 = convert(I, i)
     if !isequal(i, i2)
         throw(ArgumentError("$i is not a valid key for type $I"))
     end
@@ -66,7 +66,7 @@ Hint: Use `setindex!` to update an existing value, and `set!` to perform an "ups
 (update-or-insert) operation.
 """
 @propagate_inbounds function Base.insert!(map::AbstractMap{I}, value, i) where {I}
-    i2 = convert(T, i)
+    i2 = convert(I, i)
     if !isequal(i, i2)
         throw(ArgumentError("$i is not a valid key for type $I"))
     end
@@ -95,7 +95,7 @@ Hint: Use `setindex!` to exclusively update an existing value, and `insert!` to 
 insert a new value. See also `get!`.
 """
 @propagate_inbounds function set!(map::AbstractMap{I}, value, i) where {I}
-    i2 = convert(T, i)
+    i2 = convert(I, i)
     if !isequal(i, i2)
         throw(ArgumentError("$i is not a valid key for type $I"))
     end
@@ -121,7 +121,7 @@ end
 Insert a new value `i` into `indices` if it doesn't exist, or do nothing otherwise.
 """
 @propagate_inbounds function set!(indices::AbstractIndices{I}, i) where {I}
-    i2 = convert(T, i)
+    i2 = convert(I, i)
     if !isequal(i, i2)
         throw(ArgumentError("$i is not a valid key for type $I"))
     end
@@ -144,7 +144,7 @@ set to `default`, which is returned.
 See also `get`, `set!`.
 """
 @propagate_inbounds function Base.get!(map::AbstractMap{I}, i, default) where {I}
-    i2 = convert(T, i)
+    i2 = convert(I, i)
     if !isequal(i, i2)
         throw(ArgumentError("$i is not a valid key for type $I"))
     end
@@ -212,7 +212,7 @@ Delete the index `i` from `map`. An error is thrown if `i` does not exist.
 end
 
 function Base.delete!(map::AbstractMap{I}, ::I) where {I}
-    if isinsertable(indices)
+    if isinsertable(map)
         error("delete! needs to be defined for insertable map: $(typeof(map))")
     else
         error("map is not insertable: $(typeof(map))")
