@@ -1,15 +1,15 @@
-module Maps
+module Dictionaries
 
 using Indexing
 using SplitApplyCombine
 
 using Base: @propagate_inbounds
 
-export AbstractMap, AbstractIndices, IndexError, Indices, HashIndices, HashMap, Map, MappedMap
+export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary
 
 export isinsertable, set!, unset!
 
-include("AbstractMap.jl")
+include("AbstractDictionary.jl")
 
 include("tokens.jl")
 include("iteration.jl")
@@ -17,9 +17,9 @@ include("indexing.jl")
 include("insertion.jl")
 
 include("Indices.jl")
-include("Map.jl")
+include("Dictionary.jl")
 include("HashIndices.jl")
-include("HashMap.jl")
-include("MappedMap.jl")
+include("HashDictionary.jl")
+include("MappedDictionary.jl")
 
 end # module

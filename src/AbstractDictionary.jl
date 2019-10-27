@@ -1,46 +1,46 @@
 """
-    AbstractMap{I, T}
+    AbstractDictionary{I, T}
 
-Abstract type for a mapping between unique indices of type `I` to elements of type `T`.
+Abstract type for a dictionary between unique indices of type `I` to elements of type `T`.
 
-At minimum, an `AbstractMap` should implement:
+At minimum, an `AbstractDictionary` should implement:
 
- * `getindex(::AbstractMap{I, T}, ::I) --> I`
- * `keys(::AbstractMap{I, T}) --> AbstractIndices{I}`
+ * `getindex(::AbstractDictionary{I, T}, ::I) --> I`
+ * `keys(::AbstractDictionary{I, T}) --> AbstractIndices{I}`
 
-If arbitrary indices can be added to or removed from the map, implement:
+If arbitrary indices can be added to or removed from the dictionary, implement:
 
  * `insert!`
  * `delete!`
  * `isinsertable`
 
-If the map can operate as a list (with keys forming a unit range), implement:
+If the dictionary can operate as a list (with keys forming a unit range), implement:
 
  * `push!`
  * `pop!`
  * `islist`
 """
-abstract type AbstractMap{I, T}; end
+abstract type AbstractDictionary{I, T}; end
 
-Base.eltype(m::AbstractMap) = eltype(typeof(m))
-Base.eltype(::Type{<:AbstractMap{I, T}}) where {I, T} = T
-Base.keytype(m::AbstractMap) = keytype(typeof(m))
-Base.keytype(::Type{<:AbstractMap{I, T}}) where {I, T} = I
+Base.eltype(d::AbstractDictionary) = eltype(typeof(d))
+Base.eltype(::Type{<:AbstractDictionary{I, T}}) where {I, T} = T
+Base.keytype(d::AbstractDictionary) = keytype(typeof(d))
+Base.keytype(::Type{<:AbstractDictionary{I, T}}) where {I, T} = I
 
-function Base.keys(m::AbstractMap)
-    error("All AbstractMaps must define `keys`: $(typeof(m))")
+function Base.keys(d::AbstractDictionary)
+    error("Every AbstractDictionary type must define a method for `keys`: $(typeof(d))")
 end
 
-function Base.getindex(m::AbstractMap{I}, i::I) where {I}
-    error("All AbstractMaps must define `getindex`: $(typeof(m))")
+function Base.getindex(d::AbstractDictionary{I}, i::I) where {I}
+    error("Every AbstractDictionary type must define a method for `getindex`: $(typeof(d))")
 end
 
-Base.length(m::AbstractMap) = length(keys(m))
+Base.length(d::AbstractDictionary) = length(keys(d))
 
 """
-    AbstractIndices{I} <: AbstractMap{I, I}
+    AbstractIndices{I} <: AbstractDictionary{I, I}
 
-Abstract type for the unique keys of an `AbstractMap`. It is itself an `AbstractMap` for
+Abstract type for the unique keys of an `AbstractDictionary`. It is itself an `AbstractDictionary` for
 which `getindex` is idempotent, such that `indices[i] = i`. This is a generalization of
 `Base.Slice`.
 
@@ -54,7 +54,7 @@ If arbitrary indices can be added or removed from the set, implement:
  * `delete!`
  * `isinsertable`
 """
-abstract type AbstractIndices{I} <: AbstractMap{I, I}; end
+abstract type AbstractIndices{I} <: AbstractDictionary{I, I}; end
 
 @inline function Base.getindex(indices::AbstractIndices{I}, i::I) where {I}
     @boundscheck checkindex(indices, i)
@@ -63,8 +63,8 @@ end
 
 Base.keys(i::AbstractIndices) = i
 
-function Base.iterate(m::AbstractIndices, s...)
-    error("All AbstractIndices must define `iterate`: $(typeof(m))")
+function Base.iterate(d::AbstractIndices, s...)
+    error("All AbstractIndices must define `iterate`: $(typeof(d))")
 end
 
 Base.unique(i::AbstractIndices) = i
@@ -87,9 +87,9 @@ function checkindices(indices::AbstractIndices, inds)
     end
 end
 
-function Base.show(io::IO, m::AbstractMap)
-    print(io, "$(length(m))-element $(typeof(m))")
-    for (k, v) in pairs(m)
+function Base.show(io::IO, d::AbstractDictionary)
+    print(io, "$(length(d))-element $(typeof(d))")
+    for (k, v) in pairs(d)
     	print(io, "\n  ", k, " => ", v)
     	# TODO * aligment of keys and values
     	#      * fit on single terminal screen
@@ -114,10 +114,10 @@ Base.isequal(i1::AbstractIndices, i2::AbstractIndices) = all(x -> isequal(x[1], 
 # Traits
 # ------
 #
-# It would be nice to know some things about the interface supported by a given AbstractMap
+# It would be nice to know some things about the interface supported by a given AbstractDictionary
 #
 #  * Can you mutate the values using `setindex!`?
-#  * Can you mutate the keys? How? Is it like a dictionary (`delete`, and `setindex!` doing update/insert), or a list (push, pop, insertat / deleteat)?
+#  * Can you mutate the keys? How? Is it like a dictionary (`delete!`, and `setindex!` doing update/insert), or a list (push, pop, insertat / deleteat)?
 #
 # For Indices, you are mutating both keys and values in-sync, but you can't use `setindex!`
 
@@ -135,20 +135,20 @@ Base.isequal(i1::AbstractIndices, i2::AbstractIndices) = all(x -> isequal(x[1], 
 # a couple of patterns
 #  * The `ntuple` / comprehension pattern - a closure is called with the key to get the
 #    value, and it is constructed all-at-once (in "parallel", each element independently).
-#  * The mutate + publish pattern. Let the user construct a mutable Map, then "publish" it
+#  * The mutate + publish pattern. Let the user construct a mutable dictionary, then "publish" it
 #    to become immutable. More flexible for user (they can fill the container in a loop,
 #    so that the element calculations don't have to be independent).
 #
 # Some considerations
-#  * Array's benefit from small, immutable indices. Being able to reuse the index of e.g. a
-#    hash map would be an enormous saving! To do that safely, we'd want to know that the
+#  * Arrays benefit from small, immutable indices. Being able to reuse the index of e.g. a
+#    hash dictionary would be an enormous saving! To do that safely, we'd want to know that the
 #    keys won't change. (Possibly a copy-on-write technique could work well here).
 
-Base.similar(m::AbstractMap) = similar(m, eltype(m), keys(m))
-Base.similar(m::AbstractMap, ::Type{T}) where {T} = similar(m, T, keys(m))
-Base.similar(m::AbstractMap, i::AbstractIndices) = similar(m, eltype(m), i)
+Base.similar(d::AbstractDictionary) = similar(d, eltype(d), keys(d))
+Base.similar(d::AbstractDictionary, ::Type{T}) where {T} = similar(d, T, keys(d))
+Base.similar(d::AbstractDictionary, i::AbstractIndices) = similar(d, eltype(d), i)
 
-Base.empty(m::AbstractIndices) = empty(m, eltype(m))
+Base.empty(d::AbstractIndices) = empty(d, eltype(d))
 
-Base.empty(m::AbstractMap) = empty(m, keytype(m), eltype(m))
-Base.empty(m::AbstractMap, ::Type{T}) where {T} = empty(m, keytype(m), T)
+Base.empty(d::AbstractDictionary) = empty(d, keytype(d), eltype(d))
+Base.empty(d::AbstractDictionary, ::Type{T}) where {T} = empty(d, keytype(d), T)

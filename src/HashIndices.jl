@@ -265,9 +265,9 @@ Base.isempty(h::HashIndices) = (h.count == 0)
 Base.length(h::HashIndices) = h.count
 
 # ------------------------------------------------------------------------
-# The tokens of a hash index is an AbstractMap from keys to integer token
+# The tokens of a hash index is an AbstractDictionary from keys to integer token
 
-struct HashTokens{I} <: AbstractMap{I, Int}
+struct HashTokens{I} <: AbstractDictionary{I, Int}
     indices::HashIndices{I}
 end
 

@@ -1,4 +1,4 @@
-The Maps.jl package is licensed under the MIT "Expat" License:
+The Dictionaries.jl package is licensed under the MIT "Expat" License:
 
 > Copyright (c) 2018-2019: Andy Ferris.
 >

@@ -1,4 +1,4 @@
 using Test
-using Maps
+using Dictionaries
 
 include("HashIndices.jl")

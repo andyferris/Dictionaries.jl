@@ -22,6 +22,6 @@ end
 
 isinsertable(i::Indices) = _isinsertable(i.inds)
 
-_isinsertable(i::AbstractMap) = isinsertable(i)
+_isinsertable(i::AbstractDictionary) = isinsertable(i)
 _isinsertable(::Any) = false
 _isinsertable(::Dict) = true

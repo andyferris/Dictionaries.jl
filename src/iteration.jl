@@ -1,46 +1,46 @@
 
-function Base.iterate(m::AbstractMap{I, T}, s...) where {I, T}
-    inds = keys(m)
+function Base.iterate(d::AbstractDictionary{I, T}, s...) where {I, T}
+    inds = keys(d)
     tmp = iterate(inds, s...)
     tmp === nothing && return nothing
     (i::I, s2) = tmp
-    return (@inbounds(m[i]::T), s2)
+    return (@inbounds(d[i]::T), s2)
 end
 
 # We use a "token" system to optimize iteration-based algorithms (map, reduce, ...)
 
 # map
 
-@noinline function _map!(f, tokens, out_tokenized, m_tokenized)
+@noinline function _map!(f, tokens, out_tokenized, d_tokenized)
     @inbounds for t in tokens
-        out_tokenized[t] = f(m_tokenized[t])
+        out_tokenized[t] = f(d_tokenized[t])
     end
 end
 
-@noinline function _map!(f, tokens, out_tokenized, m_tokenized, ms_tokenized...)
+@noinline function _map!(f, tokens, out_tokenized, d_tokenized, ds_tokenized...)
     @inbounds for t in tokens
-        out_tokenized[t] = f(map(mt -> mt[t], m_tokenized, ms_tokenized)...)
+        out_tokenized[t] = f(map(mt -> mt[t], d_tokenized, ds_tokenized...)...)
     end
 end
 
-function Base.map!(f, out::AbstractMap, m::AbstractMap)
-    _map!(f, tokenize(out, m)...)
+function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary)
+    _map!(f, tokenize(out, d)...)
     return out
 end
 
-function Base.map!(f, out::AbstractMap, m::AbstractMap, ms::AbstractMap...)
-    _map!(f, tokenize(out, m, ms...)...)
+function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary, ds::AbstractDictionary...)
+    _map!(f, tokenize(out, d, ds...)...)
     return out
 end
 
-function Base.map(f, m::AbstractMap)
-    out = similar(m, Core.Compiler.return_type(f, Tuple{eltype(m)}))
-    map!(f, out, m)
+function Base.map(f, d::AbstractDictionary)
+    out = similar(d, Core.Compiler.return_type(f, Tuple{eltype(d)}))
+    map!(f, out, d)
     return out
 end
 
-function Base.map(f, m::AbstractMap, ms::AbstractMap...)
-    out = similar(m, Base.promote_op(f, Tuple{eltype(m), eltype.(ms)...}))
-    map!(f, out, m, ms...)
+function Base.map(f, d::AbstractDictionary, ds::AbstractDictionary...)
+    out = similar(d, Base.promote_op(f, Tuple{eltype(d), map(eltype, ds)...}))
+    map!(f, out, d, ds...)
     return out
 end
