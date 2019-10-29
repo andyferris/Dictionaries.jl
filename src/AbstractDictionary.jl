@@ -47,6 +47,9 @@ which `getindex` is idempotent, such that `indices[i] = i`. This is a generaliza
 At minimum, an `AbstractIndices` should implement:
 
  * The `iterate` protocol, returning unique values of type `I`.
+ * 
+It is highly recommended to create an optimized version of `in`, such that `in(i, indices)`
+implies there is an element of `indices` which `isequal` to `i`.
 
 If arbitrary indices can be added or removed from the set, implement:
 
@@ -63,8 +66,18 @@ end
 
 Base.keys(i::AbstractIndices) = i
 
-function Base.iterate(d::AbstractIndices, s...)
-    error("All AbstractIndices must define `iterate`: $(typeof(d))")
+function Base.iterate(i::AbstractIndices, s...)
+    error("All AbstractIndices must define `iterate`: $(typeof(i))")
+end
+
+# Fallback definition would be rediculously slow. There shouldn't be many
+# AbstractIndex types that rely on iteration for this.
+function Base.in(i::I, indices::AbstractIndices{I}) where I
+    error("All AbstractIndices must define `in`: $(typeof(i))")
+end
+
+function Base.in(i, indices::AbstractIndices{I}) where I
+    return convert(I, i) in indices
 end
 
 Base.unique(i::AbstractIndices) = i
@@ -105,10 +118,45 @@ function Base.show(io::IO, i::AbstractIndices)
     end
 end
 
-# Indices are isequal if they iterate in the same order (TODO optimize?)
-Base.isequal(i1::AbstractIndices, i2::AbstractIndices) = all(x -> isequal(x[1], x[2]), zip(i1, i2))
+# Indices are isequal if they iterate in the same order
+function Base.isequal(i1::AbstractIndices, i2::AbstractIndices)
+    if i1 === i2
+        return true
+    end
 
-# TODO decide if indices are == if they are isequal or issetequal
+    if length(i1) != length(i2)
+        return false
+    end
+
+    for (j1, j2) in zip(i1, i2)
+        if !isequal(j1, j2)
+            return false
+        end
+    end
+
+    return true
+end
+
+# For now, indices are == if they are isequal or issetequal
+function Base.:(==)(i1::AbstractIndices, i2::AbstractIndices)
+    if i1 === i2
+        return true
+    end
+
+    if length(i1) != length(i2)
+        return false
+    end
+
+    for i in i1
+        if !(i in i2)
+            return false
+        end
+    end
+
+    return true
+end
+
+# TODO hash and isless for indices
 
 
 # Traits

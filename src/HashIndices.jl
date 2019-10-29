@@ -254,7 +254,7 @@ function skip_deleted_floor!(h::HashIndices)
     idx
 end
 
-@propagate_inbounds _iterate(t::HashIndices{T}, i::Int) where {T} = i > length(t.inds) ? nothing : (t.inds[i], i + 1)
+@propagate_inbounds _iterate(h::HashIndices{T}, i::Int) where {T} = i > length(h.inds) ? nothing : (h.inds[i], i + 1)
 
 function Base.iterate(h::HashIndices)
     _iterate(h, skip_deleted_floor!(h))

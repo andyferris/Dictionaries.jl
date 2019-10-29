@@ -52,13 +52,13 @@ end
 @propagate_inbounds Base.iterate(d::HashDictionary, i::Int) = _iterate(d, skip_deleted(d.indices, i))
 
 function Base.insert!(d::HashDictionary{I, T}, value::T, i::I) where {I, T}
-    token = -indextoken!(d, i)
+    token = -indextoken!(d.indices, d.values, i)
 
     if token < 0
         throw(IndexError("HashDictionary already contains index: $i"))
     else
-        @inbounds _insert!(d.indices, d.values, i, -token)
-        @inbounds d.values[-token] = value
+        @inbounds _insert!(d.indices, d.values, i, token)
+        @inbounds d.values[token] = value
     end
 
     return d
