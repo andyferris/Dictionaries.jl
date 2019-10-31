@@ -17,7 +17,7 @@ end
 
 HashIndices() = HashIndices{Any}()
 
-insertable(::HashIndices) = true
+isinsertable(::HashIndices) = true
 Base.empty(::HashIndices, ::Type{T}) where {T} = HashIndices{T}()
 
 function Base.empty!(h::HashIndices{T}) where {T}

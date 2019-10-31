@@ -8,13 +8,13 @@
 #    - something for empty / similar insertable indices ?
 
 """
-    isinsertable(d::AbstractDictionary)
+    isinsertable(dict::AbstractDictionary)
 
-Return `true` if `d` supports the insertable interface, or `false` otherwise. The primary
-functions `d` needs to implement for the insertable interface are:
+Return `true` if `dict` supports the insertable interface, or `false` otherwise. The primary
+functions `dict` needs to implement for the insertable interface are:
  
- * `insert!(map, i, value)` - add a new `value` at index `i` (will error if index exists)
- * `delete!(map, i)` - remove element at index `i` (will error if index does not exist)
+ * `insert!(dict, i, value)` - add a new `value` at index `i` (will error if index exists)
+ * `delete!(dict, i)` - remove element at index `i` (will error if index does not exist)
 
 Functions `get!`, `set!` and `unset!` are also provided for common operations where you are
 not sure if an index exists or not.
@@ -34,6 +34,8 @@ Functions `set!` and `unset!` are also provided for common operations where you 
 if an index exists or not.
 """
 isinsertable(::AbstractIndices) = false
+
+### Scalar insertion/deletion
 
 """
     insert!(indices::AbstractIndices, i)
@@ -57,9 +59,9 @@ function Base.insert!(indices::AbstractIndices{I}, ::I) where {I}
 end
 
 """
-    insert!(d::AbstractDictionary, value, i)
+    insert!(dict::AbstractDictionary, value, i)
 
-Insert the `value` at new index `i` into `d`. An error is thrown if index `i` already
+Insert the `value` at new index `i` into `dict`. An error is thrown if index `i` already
 exists. 
 
 Hint: Use `setindex!` to update an existing value, and `set!` to perform an "upsert"
@@ -86,9 +88,9 @@ function Base.insert!(d::AbstractDictionary{I, T}, ::T, ::I) where {I, T}
 end
 
 """
-    set!(d::AbstractDictionary, value, i)
+    set!(dict::AbstractDictionary, value, i)
 
-Update or insert the `value` at index `i` into `d`. Sometimes referred to as an "upsert"
+Update or insert the `value` at index `i` into `dict`. Sometimes referred to as an "upsert"
 operation.
 
 Hint: Use `setindex!` to exclusively update an existing value, and `insert!` to exclusively
@@ -136,9 +138,9 @@ function set!(indices::AbstractIndices{I}, i::I) where {I}
 end
 
 """
-    get!(d::AbstractDictionary, i, default)
+    get!(dict::AbstractDictionary, i, default)
 
-Return the value `d[i]` if index `i` exists. Otherwise, a new index `i` is inserted and
+Return the value `dict[i]` if index `i` exists. Otherwise, a new index `i` is inserted and
 set to `default`, which is returned.
 
 See also `get`, `set!`.
@@ -163,6 +165,62 @@ function Base.get!(d::AbstractDictionary{I, T}, i::I, default::T) where {I, T}
         return default
     end
 end
+
+"""
+    delete!(indices::AbstractIndices, i)
+
+Delete the index `i` from `indices`. An error is thrown if `i` does not exist.
+
+    delete!(dict::AbstractDictionary, i)
+
+Delete the index `i` from `dict`. An error is thrown if `i` does not exist.
+
+See also `unset!`, `insert!`.
+"""
+@propagate_inbounds function Base.delete!(d::AbstractDictionary{I}, i) where {I}
+    i2 = convert(I, i)
+    if !isequal(i, i2)
+        throw(ArgumentError("$i is not a valid key for type $I"))
+    end
+    return delete!(d, i2)
+end
+
+function Base.delete!(d::AbstractDictionary{I}, ::I) where {I}
+    if isinsertable(d)
+        error("delete! needs to be defined for insertable dictionary: $(typeof(d))")
+    else
+        error("dictionary is not insertable: $(typeof(d))")
+    end
+end
+
+
+"""
+    unset!(indices::AbstractIndices, i)
+
+Delete the index `i` from `indices` if it exists, or do nothing otherwise.
+
+    unset!(dict::AbstractDictionary, i)
+
+Delete the index `i` from `dict` if it exists, or do nothing otherwise.
+
+See also `delete!`, `set!`.
+"""
+@propagate_inbounds function unset!(indices::AbstractDictionary{I}, i) where {I}
+    i2 = convert(I, i)
+    if !isequal(i, i2)
+        throw(ArgumentError("$i is not a valid key for type $I"))
+    end
+    return unset!(indices, i2)
+end
+
+function unset!(d::AbstractDictionary{I}, i::I) where {I}
+    if i ∈ keys(d)
+        delete!(d, i)
+    end
+    return d
+end
+
+### Non-scalar insertion/deletion
 
 Base.merge!(d::AbstractDictionary, ds::AbstractDictionary...) = merge!(last, d, ds...)
 
@@ -201,34 +259,9 @@ end
 
 # TODO some kind of exclusive merge (throw on key clash like `insert!`)
 
-
-"""
-    delete!(d::AbstractDictionary, i)
-
-Delete the index `i` from `d`. An error is thrown if `i` does not exist.
-"""
-@propagate_inbounds function Base.delete!(d::AbstractDictionary{I}, i) where {I}
-    return delete!(d, convert(i, I))
-end
-
-function Base.delete!(d::AbstractDictionary{I}, ::I) where {I}
-    if isinsertable(madp)
-        error("delete! needs to be defined for insertable dictionary: $(typeof(d))")
-    else
-        error("dictionary is not insertable: $(typeof(d))")
-    end
-end
-
-function unset!(d::AbstractDictionary{I}, i::I) where {I}
-    if i ∈ keys(d)
-        delete!(d, i)
-    end
-    return d
-end
-
 # TODO: deletemany!, unsetmany! (which is setdiff! on indices)
 
-### Indices (set) versions of above
+### Indices ("sets") versions of above
 
 function Base.union!(s1::AbstractIndices, s2::AbstractIndices)
     for i in s2
@@ -264,7 +297,7 @@ function Base.symdiff!(s1::AbstractIndices, s2::AbstractIndices)
     return s1
 end
 
-# filter! is a programmatic version of intersect!
+# `filter!` is basically a programmatic version of `intersect!`. 
 function Base.filter!(f, indices::AbstractIndices)
     for i in indices
         if !f(i)

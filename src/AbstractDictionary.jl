@@ -13,12 +13,6 @@ If arbitrary indices can be added to or removed from the dictionary, implement:
  * `insert!`
  * `delete!`
  * `isinsertable`
-
-If the dictionary can operate as a list (with keys forming a unit range), implement:
-
- * `push!`
- * `pop!`
- * `islist`
 """
 abstract type AbstractDictionary{I, T}; end
 
@@ -41,15 +35,13 @@ Base.length(d::AbstractDictionary) = length(keys(d))
     AbstractIndices{I} <: AbstractDictionary{I, I}
 
 Abstract type for the unique keys of an `AbstractDictionary`. It is itself an `AbstractDictionary` for
-which `getindex` is idempotent, such that `indices[i] = i`. This is a generalization of
-`Base.Slice`.
+which `getindex` is idempotent, such that `indices[i] = i`. (This is a generalization of
+`Base.Slice`).
 
 At minimum, an `AbstractIndices` should implement:
 
  * The `iterate` protocol, returning unique values of type `I`.
- * 
-It is highly recommended to create an optimized version of `in`, such that `in(i, indices)`
-implies there is an element of `indices` which `isequal` to `i`.
+ * `in`, such that `in(i, indices)` implies there is an element of `indices` which `isequal` to `i`.
 
 If arbitrary indices can be added or removed from the set, implement:
 
