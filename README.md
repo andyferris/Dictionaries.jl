@@ -46,7 +46,7 @@ The expression `dict3 = getindices(dict1, dict2)` follows the following simple r
 
 Non-scalar indexing is simplified such that it is essentially `getindices(dict1, dict2) = map(getindex, dict1, dict2)`. Note also that `getindices(dict, keys(dict))` has the same keys and values as `dict`, and is synonymous with `getindices(dict, :)`.
 
-These rules match those for `AbstractArray`, including offset arrays. The `view` function works similarly, as does the `setindices!` function from *Indexing.jl* (see mutation, below).
+These rules match those for `AbstractArray`, including offset arrays. The `view` function will work similarly (work-in-progress), and the `setindices!` function from *Indexing.jl* is already implemented (see mutation, below).
 
 ### Mutation
 
@@ -80,4 +80,22 @@ The `set!` and `unset!` functions behave as expected, as do `union!`, `intersect
 
 ### Tokens
 
-Make it fast! The concept is similar to `eachindex`, but a bit more generalized. Tokens can also optimize `set!`, `get!` and `unset!` stype operations. Work-in-progress.
+Make it fast! The concept is similar to `eachindex`, but a bit more generalized. Tokens can also be used to reduce the number of hashing and lookup operations, such as optimizing functions like `set!`, `get!` and `unset!`. Work-in-progress - there is an optimized version of `map` and `map!` that works faster than the equivalent code in `Base`.
+
+### Constructors and factories
+
+We need a generic interface to create new dictionaries. I'd like to make working with an imagined `StaticDictionary` or `DistributedDictionary` or `GPUDictionary` to be seemless, such that generic code "just works" and does the logical performant operations. This work is not complete.
+
+Constructors need some thought, and are mostly unimplemented. In general, `MyDictionary()` seems appropriate to create an empty dictionary (or indices). For `AbstractIndices`, it seems appropriate for `MyIndices(iter)` to simply iterate through the input *values*. The form `MyDictionary(undef, ::AbstractIndices)` seems appropriate to create an `ismutable` dictionary with given keys but uninitialized values. That might suggest `MyDictionary(newvalues, newindices)` as the general initialized form, where the key-value pairings are defined by the mutual iteration of the inputs (or perhaps via `broadcast` so `newvalues` could be e.g. a scalar and this is like `fill`). A single argument `MyDictionary(otherdict)` could copy the keys and values from `otherdict`, and is a bit like `convert`. I also note that sometimes working with `Pair`s is most convenient, so this clashes with the idea of having `MyDictionary(iter)` to iterate `Pair`s like `Dict` would (and `MyDictionary(pairs...)` seems ill-advised). Nevertheless, a solution for `Pair`s would be nice (even if it is a factory-style pattern).
+
+`similar` works like `AbstractArray`: it creates a container that is mutable (`ismutable`) and has the same keys as the input. The values are `undef` by default. In general we can overide the element type or keys, using the form (with default values) `newdict = similar(olddict, NewT = eltype(olddict), newkeys = keys(olddict))`. I don't see any reason for the output container to be `isinsertable`.
+
+Sometimes one wants to create an empty insertable container. The `empty` function might be a good candidate, where one can set the index and value types. On the other hand, there is no reason that we can't ask for an `empty` *immutable* or *non-insertable* container (as `empty` is useful even for `Tuple`s) so perhaps a new generic function that ensures `isinsertable` is preferable. (Note: `AbstractArray` has this same problem, where generic code exists in the wild that expects to be able to `push!` to `empty(::AbstractVector)`, for example, which fails for `StaticArray`s).
+
+`fill` seems to be a possible factory that could take an input dictionary, such as `fill(dict, x) = fill!(similar(dict, typeof(x)), x)`. We can define `zeros`, `ones`, `falses` (and `trues`?) from this. There's no reason for `rand`, `randn`, etc not to work as expected.
+
+`copy` is an interesting case - sometimes you do want to keep the same keys and values but you may want to e.g. mutate them afterwards, or add/remove elements, or even simply make a defensive copy. A generic function might be useful for each case?
+
+Sometimes one might want to enable/disable mutation and/or insertion. There has been suggestions of `freeze` and `thaw` for `Array`, for example, but you may also want to `freezekeys` or `thawkeys` (note: similarly in `Base` you may want to fix the length of `Vector` but not it's values).
+
+(As a thought - it might be possible for the above factories to do their work at the type level and then punt to the constructor, similar to *StaticArrays.jl*).
