@@ -5,7 +5,8 @@
 #    - empty_insertable(input) - no keys or values
 #    - similar_insertable(input) - same keys, undef values
 #    - copy_insertable(input) - same keys and values
-#    - something for empty / similar insertable indices ?
+#
+# Also, need same for indices (with either dictionary or indices outputs)
 
 """
     isinsertable(dict::AbstractDictionary)
@@ -166,6 +167,8 @@ function Base.get!(d::AbstractDictionary{I, T}, i::I, default::T) where {I, T}
     end
 end
 
+# TODO: the`get!(f, dict, i)` form
+
 """
     delete!(indices::AbstractIndices, i)
 
@@ -224,10 +227,10 @@ end
 
 Base.merge!(d::AbstractDictionary, ds::AbstractDictionary...) = merge!(last, d, ds...)
 
-function Base.merge!(combine::Function, d::AbstractDictionary, d2::AbstractDictionary)
+function Base.merge!(combiner::Function, d::AbstractDictionary, d2::AbstractDictionary)
     for (i, v) in pairs(d2)
         if haskey(d, i)
-            d[i] = combine((d[i], v))
+            d[i] = combiner((d[i], v))
         else
             insert!(d, v, i)
         end
@@ -249,8 +252,8 @@ function Base.merge!(::typeof(first), d::AbstractDictionary, d2::AbstractDiction
     return d
 end
 
-function Base.merge!(combine::Function, d::AbstractDictionary, d2::AbstractDictionary, ds::AbstractDictionary...)
-    merge!(combine, merge!(combine, d, d2), ds...)
+function Base.merge!(combiner::Function, d::AbstractDictionary, d2::AbstractDictionary, ds::AbstractDictionary...)
+    merge!(combiner, merge!(combiner, d, d2), ds...)
 end
 
 function Base.merge!(::typeof(last), d::AbstractIndices, d2::AbstractIndices)

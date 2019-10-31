@@ -5,14 +5,19 @@ Abstract type for a dictionary between unique indices of type `I` to elements of
 
 At minimum, an `AbstractDictionary` should implement:
 
- * `getindex(::AbstractDictionary{I, T}, ::I) --> I`
+ * `getindex(::AbstractDictionary{I, T}, ::I) --> T`
  * `keys(::AbstractDictionary{I, T}) --> AbstractIndices{I}`
+
+If values can be mutated, then an `AbstractDictionary` should implement:
+
+ * `ismutable(::AbstractDictionary)` (returning `true`)
+ * `setindex!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
 
 If arbitrary indices can be added to or removed from the dictionary, implement:
 
- * `insert!`
- * `delete!`
- * `isinsertable`
+ * `isinsertable(::AbstractDictionary)` (returning `true`)
+ * `insert!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
+ * `delete!(dict::AbstractDictionary{I, T}, ::I}` (returning `dict`)
 """
 abstract type AbstractDictionary{I, T}; end
 
@@ -27,6 +32,16 @@ end
 
 function Base.getindex(d::AbstractDictionary{I}, i::I) where {I}
     error("Every AbstractDictionary type must define a method for `getindex`: $(typeof(d))")
+end
+
+ismutable(::AbstractDictionary) = false
+
+function Base.setindex!(d::AbstractDictionary{I, T}, ::T, ::I) where {I, T}
+    if ismutable(d)
+        error("setindex! needs to be defined for mutable dictionary: $(typeof(d))")
+    else
+        error("Dictionary is not mutable: $(typeof(d))")
+    end
 end
 
 Base.length(d::AbstractDictionary) = length(keys(d))
@@ -58,10 +73,13 @@ Abstract type for the unique keys of an `AbstractDictionary`. It is itself an `A
 which `getindex` is idempotent, such that `indices[i] = i`. (This is a generalization of
 `Base.Slice`).
 
-At minimum, an `AbstractIndices` should implement:
+At minimum, an `AbstractIndices{I}` should implement:
 
  * The `iterate` protocol, returning unique values of type `I`.
  * `in`, such that `in(i, indices)` implies there is an element of `indices` which `isequal` to `i`.
+
+While an `AbstractIndices` object is a dictionary, the value corresponding to each index is
+fixed, so `ismutable(::AbstractIndices) = false` and `setindex!` is never defined.
 
 If arbitrary indices can be added or removed from the set, implement:
 
@@ -74,6 +92,10 @@ abstract type AbstractIndices{I} <: AbstractDictionary{I, I}; end
 @inline function Base.getindex(indices::AbstractIndices{I}, i::I) where {I}
     @boundscheck checkindex(indices, i)
     return i
+end
+
+function Base.setindex!(i::AbstractIndices{I}, ::I, ::I) where {I}
+    error("Indices are not mutable: $(typeof(i))")
 end
 
 Base.keys(i::AbstractIndices) = i

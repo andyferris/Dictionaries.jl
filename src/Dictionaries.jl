@@ -7,7 +7,7 @@ using Base: @propagate_inbounds
 
 export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary
 
-export isinsertable, set!, unset!
+export ismutable, isinsertable, set!, unset!
 
 include("AbstractDictionary.jl")
 

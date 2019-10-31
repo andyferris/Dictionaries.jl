@@ -44,3 +44,7 @@ function Base.map(f, d::AbstractDictionary, ds::AbstractDictionary...)
     map!(f, out, d, ds...)
     return out
 end
+
+##
+
+# like zip, but iterates through matched-up indices rather than natural iteration order
