@@ -102,11 +102,11 @@ insert a new value. See also `get!`.
     if !isequal(i, i2)
         throw(ArgumentError("$i is not a valid key for type $I"))
     end
-    return insert!(d, value, i2)
+    return set!(d, value, i2)
 end
 
 function set!(d::AbstractDictionary{I, T}, value, i::I) where {I, T}
-    return insert!(d, convert(T, value), i)
+    return set!(d, convert(T, value), i)
 end
 
 function set!(d::AbstractDictionary{I, T}, value::T, i::I) where {I, T}
