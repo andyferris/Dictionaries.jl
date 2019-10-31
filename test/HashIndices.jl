@@ -19,7 +19,7 @@
     @test keys(h) === h
     @test !isempty(h)
     @test isequal(copy(h), h)
-    @test h[10] === 10
+    @test h[10] == 10
     @test_throws IndexError insert!(h, 10)
     @test length(set!(h, 10)) == 1
     @test_throws IndexError insert!(h, 10)
