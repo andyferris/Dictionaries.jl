@@ -31,6 +31,26 @@ end
 
 Base.length(d::AbstractDictionary) = length(keys(d))
 
+# dictionaries are isequal if they iterate in the same order
+function Base.isequal(d1::AbstractDictionary, d2::AbstractDictionary)
+    if d1 === d2
+        return true
+    end
+
+    if length(d1) != length(d2)
+        return false
+    end
+
+    # TODO can we tokenize this?
+    for (i1, i2) in zip(keys(d1), keys(d2))
+        if !isequal(i1, i2) || !isequal(d1[i1], d2[i2])
+            return false
+        end
+    end
+
+    return true
+end
+
 """
     AbstractIndices{I} <: AbstractDictionary{I, I}
 
@@ -120,6 +140,7 @@ function Base.isequal(i1::AbstractIndices, i2::AbstractIndices)
         return false
     end
 
+    # TODO can we tokenize this?
     for (j1, j2) in zip(i1, i2)
         if !isequal(j1, j2)
             return false
@@ -131,7 +152,8 @@ end
 
 # For now, indices are == if they are isequal or issetequal
 function Base.:(==)(i1::AbstractIndices, i2::AbstractIndices)
-    if i1 === i2
+    error("The semantic for ``==` is not yet fixed in Dictionaries.jl (regarding dictionaries with the same elements but different orderings). If you have an opinion, please contact the package maintainers.")
+    #=if i1 === i2
         return true
     end
 
@@ -145,10 +167,10 @@ function Base.:(==)(i1::AbstractIndices, i2::AbstractIndices)
         end
     end
 
-    return true
+    return true=#
 end
 
-# TODO hash and isless for indices
+# TODO hash and isless for indices and dictionaries.
 
 
 # Traits
@@ -164,7 +186,7 @@ end
 # Factories
 # ---------
 # Base provides these factories:
-#  * `similar` - construct container with given eltype and indices, and `undef` values
+#  * `similar` - construct dictionary with given eltype and indices, and `undef` values
 #  * `empty` - construct container with given eltype and no indices.
 #
 # StaticArrays seems to indicate that you might want to work at the type level: 

@@ -41,9 +41,12 @@ hashtoken(key, sz::Int) = (((hash(key)%Int) & (sz-1)) + 1)::Int
 @propagate_inbounds isslotfilled(h::HashIndices, i::Int) = h.slots[i] == 0x1
 @propagate_inbounds isslotmissing(h::HashIndices, i::Int) = h.slots[i] == 0x2
 
-Base.rehash!(h::HashIndices, newsz::Int = length(h.inds)) = _rehash!(h, nothing, newsz)
+function Base.rehash!(h::HashIndices, newsz::Int = length(h.inds))
+    _rehash!(h, nothing, newsz)
+    return h
+end
 
-function _rehash!(h::HashIndices{T}, values::Union{Nothing, Vector}, newsz::Int) where {T}
+function _rehash!(h::HashIndices{T}, oldv::Union{Nothing, Vector}, newsz::Int) where {T}
     olds = h.slots
     oldk = h.inds
     sz = length(olds)
@@ -53,28 +56,22 @@ function _rehash!(h::HashIndices{T}, values::Union{Nothing, Vector}, newsz::Int)
         resize!(h.slots, newsz)
         fill!(h.slots, 0)
         resize!(h.inds, newsz)
-        values === nothing || resize!(values, newsz)
+        error()
+        oldv === nothing || resize!(oldv, newsz)
         h.ndel = 0
-        return h
+        return oldv
     end
 
     slots = zeros(UInt8, newsz)
     keys = Vector{T}(undef, newsz)
+    vals = oldv === nothing ? nothing : Vector{eltype(oldv)}(undef, newsz)
     count = 0
     maxprobe = h.maxprobe
-
-    # We want to mutate `values`, need to be careful...
-    oldv = values === nothing ? nothing : copy(values)
-    isbitstype(eltype(values)) || for i ∈ 1:sz
-        @inbounds if olds[i] == 0x1
-            ccall(:jl_arrayunset, Cvoid, (Any, UInt), values, i-1)
-        end
-    end
 
     for i ∈ 1:sz
         @inbounds if olds[i] == 0x1
             k = oldk[i]
-            v = values === nothing ? nothing : oldv[i]
+            v = vals === nothing ? nothing : oldv[i]
             index0 = index = hashtoken(k, newsz)
             while slots[index] != 0
                 index = (index & (newsz-1)) + 1
@@ -83,7 +80,7 @@ function _rehash!(h::HashIndices{T}, values::Union{Nothing, Vector}, newsz::Int)
             probe > maxprobe && (maxprobe = probe)
             slots[index] = 0x1
             keys[index] = k
-            (values !== nothing) || (values[index] = v)
+            vals === nothing || (vals[index] = v)
             count += 1
         end
     end
@@ -94,7 +91,7 @@ function _rehash!(h::HashIndices{T}, values::Union{Nothing, Vector}, newsz::Int)
     h.ndel = 0
     h.maxprobe = maxprobe
 
-    return h
+    return vals
 end
 
 Base.sizehint!(h::HashIndices, newsz::Int) = _sizehint!(h, nothing, newsz)
@@ -188,9 +185,10 @@ function indextoken!(h::HashIndices{T}, values::Union{Nothing, Vector}, key::T) 
     return indextoken!(h, values, key)
 end
 
-@propagate_inbounds function _insert!(h::HashIndices{T}, values::Union{Nothing, Vector}, key::T, token::Int) where {T}
+@propagate_inbounds function _insert!(h::HashIndices{T}, values::Union{Nothing, Vector}, key::T, value, token::Int) where {T}
     h.slots[token] = 0x1
     h.inds[token] = key
+    (values === nothing) || (values[token] = value)
     h.count += 1
     if token < h.idxfloor
         h.idxfloor = token
@@ -200,8 +198,10 @@ end
     # Rehash now if necessary
     if h.ndel >= ((3*sz)>>2) || h.count*3 > sz*2
         # > 3/4 deleted or > 2/3 full
-        _rehash!(h, values, h.count > 64000 ? h.count*2 : h.count*4)
+        return _rehash!(h, values, h.count > 64000 ? h.count*2 : h.count*4)
     end
+
+    return values
 end
 
 function Base.insert!(h::HashIndices{T}, i::T) where {T}
@@ -211,7 +211,7 @@ function Base.insert!(h::HashIndices{T}, i::T) where {T}
         throw(IndexError("HashIndices already contains index: $i"))
     end
 
-    @inbounds _insert!(h, nothing, i, token)
+    @inbounds _insert!(h, nothing, i, nothing, token)
 
     return h
 end

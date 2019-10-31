@@ -12,7 +12,7 @@ HashDictionary{I}(::UndefInitializer, h::HashIndices{I}) where {I} = HashDiction
 HashDictionary(::UndefInitializer, h::HashIndices{I}) where {I} = HashDictionary{I}(undef, h)
 
 Base.keys(d::HashDictionary) = d.indices
-insertable(d::HashDictionary) = true
+isinsertable(d::HashDictionary) = true
 
 @inline function Base.getindex(d::HashDictionary{I}, key::I) where {I}
     token = indextoken(d.indices, key)
@@ -31,6 +31,10 @@ end
 
     @inbounds d.values[token] = value
     return d
+end
+
+function Base.copy(d::HashDictionary{I, T}) where {I, T}
+    return HashDictionary{I, T}(copy(d.values), copy(d.indices))
 end
 
 # Default for `similar` is `HashDictionary`, since it is most flexible
@@ -57,8 +61,7 @@ function Base.insert!(d::HashDictionary{I, T}, value::T, i::I) where {I, T}
     if token < 0
         throw(IndexError("HashDictionary already contains index: $i"))
     else
-        @inbounds _insert!(d.indices, d.values, i, token)
-        @inbounds d.values[token] = value
+        d.values = @inbounds _insert!(d.indices, d.values, i, value, token)
     end
 
     return d
