@@ -10,7 +10,7 @@ end
 end
 
 @propagate_inbounds function Base.setindex!(d::AbstractDictionary{I, T}, v, i::I) where {I, T}
-    return setindex!(d, convert(v, T), i)
+    return setindex!(d, convert(T, v), i)
 end
 
 # Non-scalar indexing
