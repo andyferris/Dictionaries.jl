@@ -23,7 +23,7 @@
     @test_throws IndexError insert!(h, 10)
     @test length(set!(h, 10)) == 1
     @test_throws IndexError insert!(h, 10)
-    io = IOBuffer(); print(io, h); @test String(take!(io)) == "1-element HashIndices{Int64}\n  10"
+    io = IOBuffer(); print(io, h); @test String(take!(io)) == "1-element HashIndices{Int64}\n 10"
     @test !isequal(h, empty(h))
     @test isequal(h, copy(h))
     @test isempty(empty(h))
@@ -35,6 +35,7 @@
     for i = 2:2:1000
         insert!(h, i)
     end
+    @test issetequal(h, HashIndices(2:2:1000))
     @test all(in(i, h) == iseven(i) for i in 2:1000)
     @test isempty(empty!(h))
 

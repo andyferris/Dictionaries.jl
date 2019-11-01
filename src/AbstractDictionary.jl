@@ -7,19 +7,27 @@ At minimum, an `AbstractDictionary` should implement:
 
  * `getindex(::AbstractDictionary{I, T}, ::I) --> T`
  * `keys(::AbstractDictionary{I, T}) --> AbstractIndices{I}`
+ * A constructor `MyDictionary(values, indices)` returning a dictionary with the
+   given `indices` and values set to `values`, matched by iteration. Alternatively, `values`
+   may be a scalar in the broadcasting sense, where all elements are set to the same value.
 
 If values can be mutated, then an `AbstractDictionary` should implement:
 
  * `ismutable(::AbstractDictionary)` (returning `true`)
  * `setindex!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
+ * `isassigned(dict::AbstractDictionary{I}, ::I) --> Bool`
+ * A constructor `MyDictionary(undef, indices)` returning a dictionary with the
+   given `indices` and unitialized values.
 
 If arbitrary indices can be added to or removed from the dictionary, implement:
 
  * `isinsertable(::AbstractDictionary)` (returning `true`)
  * `insert!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
  * `delete!(dict::AbstractDictionary{I, T}, ::I}` (returning `dict`)
+ * A zero-argument constructor `MyDictionary()` returning an empty `MyDictionary`.
 """
 abstract type AbstractDictionary{I, T}; end
+abstract type AbstractIndices{I} <: AbstractDictionary{I, I}; end
 
 Base.eltype(d::AbstractDictionary) = eltype(typeof(d))
 Base.eltype(::Type{<:AbstractDictionary{I, T}}) where {I, T} = T
@@ -34,7 +42,30 @@ function Base.getindex(d::AbstractDictionary{I}, i::I) where {I}
     error("Every AbstractDictionary type must define a method for `getindex`: $(typeof(d))")
 end
 
+"""
+    ismutable(dict::AbstractDictionary)
+
+Return `true` if the dictionary `dict` obeys the mutable interface, or `false` otherwise.
+
+A mutable dictionary is one where the *values* can be modified (but not necessarily the
+indices). The mutable interface requires the dictionary to implement:
+
+* `setindex!(dict, value, index)`
+* `isassigned(dict, index)`
+* A constructor `MyDictionary(undef, indices)` returning a dictionary with the
+  given `indices` and unitialized values.
+
+See also `isinsertable`.
+"""
 ismutable(::AbstractDictionary) = false
+
+function Base.isassigned(d::AbstractDictionary{I}, ::I) where {I}
+    if ismutable(d)
+        error("isassigned! needs to be defined for mutable dictionary: $(typeof(d))")
+    else
+        return true
+    end
+end
 
 function Base.setindex!(d::AbstractDictionary{I, T}, ::T, ::I) where {I, T}
     if ismutable(d)
@@ -66,134 +97,29 @@ function Base.isequal(d1::AbstractDictionary, d2::AbstractDictionary)
     return true
 end
 
-"""
-    AbstractIndices{I} <: AbstractDictionary{I, I}
-
-Abstract type for the unique keys of an `AbstractDictionary`. It is itself an `AbstractDictionary` for
-which `getindex` is idempotent, such that `indices[i] = i`. (This is a generalization of
-`Base.Slice`).
-
-At minimum, an `AbstractIndices{I}` should implement:
-
- * The `iterate` protocol, returning unique values of type `I`.
- * `in`, such that `in(i, indices)` implies there is an element of `indices` which `isequal` to `i`.
-
-While an `AbstractIndices` object is a dictionary, the value corresponding to each index is
-fixed, so `ismutable(::AbstractIndices) = false` and `setindex!` is never defined.
-
-If arbitrary indices can be added or removed from the set, implement:
-
- * `insert!`
- * `delete!`
- * `isinsertable`
-"""
-abstract type AbstractIndices{I} <: AbstractDictionary{I, I}; end
-
-@inline function Base.getindex(indices::AbstractIndices{I}, i::I) where {I}
-    @boundscheck checkindex(indices, i)
-    return i
-end
-
-function Base.setindex!(i::AbstractIndices{I}, ::I, ::I) where {I}
-    error("Indices are not mutable: $(typeof(i))")
-end
-
-Base.keys(i::AbstractIndices) = i
-
-function Base.iterate(i::AbstractIndices, s...)
-    error("All AbstractIndices must define `iterate`: $(typeof(i))")
-end
-
-# Fallback definition would be rediculously slow. There shouldn't be many
-# AbstractIndex types that rely on iteration for this.
-function Base.in(i::I, indices::AbstractIndices{I}) where I
-    error("All AbstractIndices must define `in`: $(typeof(i))")
-end
-
-function Base.in(i, indices::AbstractIndices{I}) where I
-    return convert(I, i) in indices
-end
-
-Base.unique(i::AbstractIndices) = i
-
-struct IndexError <: Exception
-	msg::String
-end
-
-
-function checkindex(indices::AbstractIndices{I}, i::I) where {I}
-	if i ∉ indices
-		throw(IndexError("Index $i not found in indices $indices"))
-	end
-end
-checkindex(indices::AbstractIndices{I}, i) where {I} = convert(I, i)
-
-function checkindices(indices::AbstractIndices, inds)
-    if !(inds ⊆ indices)
-        throw(IndexError("Indices $inds are not a subset of $indices"))
-    end
+function Base.:(==)(i1::AbstractDictionary, i2::AbstractDictionary)
+    error("The semantic for ``==` is not yet fixed in Dictionaries.jl (regarding dictionaries with the same elements but different orderings). If you have an opinion, please contact the package maintainers.")
 end
 
 function Base.show(io::IO, d::AbstractDictionary)
     print(io, "$(length(d))-element $(typeof(d))")
-    for (k, v) in pairs(d)
-    	print(io, "\n  ", k, " => ", v)
-    	# TODO * aligment of keys and values
-    	#      * fit on single terminal screen
-    end
-end
-
-function Base.show(io::IO, i::AbstractIndices)
-    print(io, "$(length(i))-element $(typeof(i))")
-    for k in i
-        print(io, "\n  ", k)
-        # TODO * aligment of keys and values
-        #      * fit on single terminal screen
-    end
-end
-
-# Indices are isequal if they iterate in the same order
-function Base.isequal(i1::AbstractIndices, i2::AbstractIndices)
-    if i1 === i2
-        return true
-    end
-
-    if length(i1) != length(i2)
-        return false
-    end
-
-    # TODO can we tokenize this?
-    for (j1, j2) in zip(i1, i2)
-        if !isequal(j1, j2)
-            return false
+    n_lines = displaysize(io)[1] - 5
+    lines = 1
+    for k in keys(d)
+        if isassigned(d, k)
+            valstring = string(d[k])
+        else
+            valstring = "#undef"
+        end
+        #print(io, "\n ", k, " │ ", valstring)
+        print(io, "\n ", k, " => ", valstring)
+        lines += 1
+        if lines > n_lines
+            print(io, "\n ⋮ => ⋮")
+            break
         end
     end
-
-    return true
 end
-
-# For now, indices are == if they are isequal or issetequal
-function Base.:(==)(i1::AbstractIndices, i2::AbstractIndices)
-    error("The semantic for ``==` is not yet fixed in Dictionaries.jl (regarding dictionaries with the same elements but different orderings). If you have an opinion, please contact the package maintainers.")
-    #=if i1 === i2
-        return true
-    end
-
-    if length(i1) != length(i2)
-        return false
-    end
-
-    for i in i1
-        if !(i in i2)
-            return false
-        end
-    end
-
-    return true=#
-end
-
-# TODO hash and isless for indices and dictionaries.
-
 
 # Traits
 # ------
@@ -232,7 +158,5 @@ Base.similar(d::AbstractDictionary) = similar(d, eltype(d), keys(d))
 Base.similar(d::AbstractDictionary, ::Type{T}) where {T} = similar(d, T, keys(d))
 Base.similar(d::AbstractDictionary, i::AbstractIndices) = similar(d, eltype(d), i)
 
-Base.empty(d::AbstractIndices) = empty(d, eltype(d))
-
-Base.empty(d::AbstractDictionary) = empty(d, keytype(d), eltype(d))
+Base.empty(d::AbstractDictionary) = empty(d, keytype(d))
 Base.empty(d::AbstractDictionary, ::Type{T}) where {T} = empty(d, keytype(d), T)

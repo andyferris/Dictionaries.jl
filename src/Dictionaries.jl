@@ -10,6 +10,7 @@ export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, Ha
 export ismutable, isinsertable, set!, unset!
 
 include("AbstractDictionary.jl")
+include("AbstractIndices.jl")
 
 include("tokens.jl")
 include("iteration.jl")

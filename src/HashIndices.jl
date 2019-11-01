@@ -11,11 +11,47 @@ mutable struct HashIndices{T} <: AbstractIndices{T}
     maxprobe::Int
 end
 
+HashIndices() = HashIndices{Any}()
+
+"""
+    HashIndices{I}()
+
+Construct an empty `HashIndices` with indices of type `I`. This container uses hashes for
+fast lookup, and is insertable. (See `isinsertable`).
+"""
 function HashIndices{T}(; sizehint::Int = 16) where {T}
     HashIndices{T}(zeros(UInt8, sizehint), Vector{T}(undef, sizehint), 0, 0, 1, 0)
 end
 
-HashIndices() = HashIndices{Any}()
+"""
+    HashIndices(iter)
+    HashIndices{I}(iter)
+
+Construct a `HashIndices` with indices from iterable container `iter`.
+"""
+function HashIndices(iter)
+    if Base.IteratorEltype(iter) === Base.EltypeUnknown()
+        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
+        iter = collect(iter)
+    end
+
+    return HashIndices{eltype(iter)}(iter)
+end
+
+function HashIndices{T}(iter) where {T}
+    iter_size = Base.IteratorSize(iter)
+    if iter_size isa Union{Base.HasLength, Base.HasShape}
+        h = HashIndices{T}(; sizehint = length(iter))
+    else
+        h = HashIndices{T}()
+    end
+
+    for i in iter
+        insert!(h, i) # should this be `set!` or `insert!`?
+    end
+
+    return h
+end
 
 isinsertable(::HashIndices) = true
 Base.empty(::HashIndices, ::Type{T}) where {T} = HashIndices{T}()

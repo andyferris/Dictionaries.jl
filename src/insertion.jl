@@ -16,9 +16,12 @@ functions `dict` needs to implement for the insertable interface are:
  
  * `insert!(dict, i, value)` - add a new `value` at index `i` (will error if index exists)
  * `delete!(dict, i)` - remove element at index `i` (will error if index does not exist)
+ * A zero-argument constructor `MyDictionary()` returning an empty `MyDictionary`.
 
 Functions `get!`, `set!` and `unset!` are also provided for common operations where you are
 not sure if an index exists or not.
+    
+See also `ismutable`.
 """
 isinsertable(::AbstractDictionary) = false
 
@@ -30,6 +33,7 @@ primary functions a map needs to implement for the insertable interface are:
  
  * `insert!(indices, i)` - add new index `i` to `indices` (will error if index exists)
  * `delete!(indices, i)` - remove an existing index `i` from `indices` (will error if index does not exist).
+ * A zero-argument constructor `MyIndices()` returning an empty `MyIndices`.
 
 Functions `set!` and `unset!` are also provided for common operations where you are not sure
 if an index exists or not.
@@ -88,6 +92,19 @@ function Base.insert!(d::AbstractDictionary{I, T}, ::T, ::I) where {I, T}
     end
 end
 
+# Since `AbstractIndices <: AbstractDictionary` we should still obey the supertype's interface where possible...
+function Base.insert!(indices::AbstractIndices{I}, i1::I, i2::I) where {I}
+    if isinsertable(indices)
+        if isequal(i1, i2)
+            insert!(indices, i1)
+        else
+            error("Attempted to set distinct key-value pair ($i1, $i2) to indices: $(typeof(indices))")
+        end
+    else
+        error("indices not insertable: $(typeof(indices))")
+    end
+end
+
 """
     set!(dict::AbstractDictionary, value, i)
 
@@ -116,6 +133,19 @@ function set!(d::AbstractDictionary{I, T}, value::T, i::I) where {I, T}
         insert!(d, value, i)
     end
     return d
+end
+
+# Since `AbstractIndices <: AbstractDictionary` we should still obey the supertype's interface where possible...
+function set!(indices::AbstractIndices{I}, i1::I, i2::I) where {I}
+    if isinsertable(indices)
+        if isequal(i1, i2)
+            set!(indices, i1)
+        else
+            error("Attempted to set distinct key-value pair ($i1, $i2) to indices: $(typeof(indices))")
+        end
+    else
+        error("indices not insertable: $(typeof(indices))")
+    end
 end
 
 """

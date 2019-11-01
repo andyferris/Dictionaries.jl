@@ -7,6 +7,8 @@
 
 The high-level goal of this package is to define a new interface for dictionary and set structures which is convenient for functional data manipulation - including operations such as non-scalar indexing, mapping, filtering, reducing, and so-on.
 
+So far this is a work-in-progress. To get started, check out the `HashDictionary` and `HashIndices` types (similar to `Base.Dict` and `Base.Set`, respectively).
+
 ## Motivation
 
 While Julia comes with built-in `AbstractDict` and `AbstractSet` supertypes, the interfaces for these are not as well established or generic as for `AbstractArray`, and dictionaries implement less of the common data manipulation operations compared to arrays - such as broadcasting, `map`, `reduce`, and `filter` (and their mutating counterparts).
@@ -23,6 +25,7 @@ The common supertype to this package is `AbstractDictionary{I, T}`, which models
 
  * `getindex(::AbstractDictionary{I, T}, ::I) --> T`
  * `keys(::AbstractDictionary{I, T}) --> AbstractIndices{I}`
+ * A constructor `MyDictionary(values, indices)` returning a dictionary with the given `indices` and values set to `values`, matched by iteration. Alternatively, `values` may be a scalar in the broadcasting sense, where all elements are set to the same value.
 
 Built upon just these, a range of useful functionality is provided, generally consistent with `AbstractArray`. **NOTE:** When iterating an `AbstractDictionary`, keep in mind that only the values are iterated (like `AbstractArray`) and not key-value pairs (like `AbstractDict`). This provides a more consistent usage of `map`, `filter`, `reduce`, `broadcast`, and the functions in *SplitApplyCombine.jl* and *Indexing.jl*.
 
@@ -32,6 +35,7 @@ Indexable containers in Julia have `keys`, which form a "set" in the mathematic 
 
  * The `iterate` protocol, returning unique values of type `I`.
  * `in`, such that `in(i, indices)` implies there is an element of `indices` which `isequal` to `i`.
+ * A one-argument constructor `MyIndices(iter)` that builds indices by iterating `iter`.
 
 Indices themselves are also dictionaries (much like the indices of `AbstractArray`s are also `AbstractArray`s), and we have the subtyping relationship `AbstractDictionary{I} <: AbstractDictionary{I, I}`. Indexing an `AbstractIndex` is always *idempotent*, such that `index[i] === i`. The `keys` function is also idempotent: `keys(indices::AbstractIndices) === indices` (and therefore `keys(keys(dict::AbstractDictionary)) === keys(dict)`). While indexing into indices may seem unintuitive or obtuse at first, this is quite a natural mathematical formulation that supports the indexing behavior below and the entire `AbstractDictionary` interface. (Dictionaries that iterate values is key to allowing this formulation).
 
@@ -54,6 +58,7 @@ Many dictionary types support mutation of the *values* of the elements. To suppo
 
  * `ismutable(::AbstractDictionary)` (returning `true`)
  * `setindex!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
+ * A constructor `MyDictionary(undef::UndefInitializer, indices)` returning a dictionary with the given `indices` and unitialized values.
 
 The `ismutable` function is a trait-function that indicate whether an `AbstractDictionary` supports `setindex!`.
 
@@ -66,6 +71,7 @@ If arbitrary indices can be added to or removed from an `AbstractDictionary`, on
  * `isinsertable(::AbstractDictionary)` (returning `true`)
  * `insert!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
  * `delete!(dict::AbstractDictionary{I, T}, ::I}` (returning `dict`)
+ * A zero-argument constructor `MyDictionary()` returning an empty `MyDictionary`.
 
 The `insert!` and `delete!` always create or remove indices. Calling `insert!` when an index already exists will throw an error, as will attempting to `delete!` an index that does not exist. The function `set!` is provided as an "upsert" (update or insert) operation. Similarly, `unset!` function can be used to ensure a given index does not exist. The `get!` function works as in `Base`.
 
@@ -75,6 +81,7 @@ Sometimes one wishes to manipulate `AbstractIndices` directly, either to create 
 
  * `insert!(indices, i)` - add new index `i` to `indices` (will error if index exists)
  * `delete!(indices, i)` - remove an existing index `i` from `indices` (will error if index does not exist).
+ * A zero-argument constructor `MyIndices()` returning an empty `MyIndices`.
 
 The `set!` and `unset!` functions behave as expected, as do `union!`, `intersect!`, `setdiff!` and `symdiff!`. Since indices iterate values, the `filter!` function can programmatically trim back a set of indices.
 
@@ -86,7 +93,9 @@ Make it fast! The concept is similar to `eachindex`, but a bit more generalized.
 
 We need a generic interface to create new dictionaries. I'd like to make working with an imagined `StaticDictionary` or `DistributedDictionary` or `GPUDictionary` to be seemless, such that generic code "just works" and does the logical performant operations. This work is not complete.
 
-Constructors need some thought, and are mostly unimplemented. In general, `MyDictionary()` seems appropriate to create an empty dictionary (or indices). For `AbstractIndices`, it seems appropriate for `MyIndices(iter)` to simply iterate through the input *values*. The form `MyDictionary(undef, ::AbstractIndices)` seems appropriate to create an `ismutable` dictionary with given keys but uninitialized values. That might suggest `MyDictionary(newvalues, newindices)` as the general initialized form, where the key-value pairings are defined by the mutual iteration of the inputs (or perhaps via `broadcast` so `newvalues` could be e.g. a scalar and this is like `fill`). A single argument `MyDictionary(otherdict)` could copy the keys and values from `otherdict`, and is a bit like `convert`. I also note that sometimes working with `Pair`s is most convenient, so this clashes with the idea of having `MyDictionary(iter)` to iterate `Pair`s like `Dict` would (and `MyDictionary(pairs...)` seems ill-advised). Nevertheless, a solution for `Pair`s would be nice (even if it is a factory-style pattern).
+Constructors may need some more thought, and are partly implemented. In general, `MyDictionary()` seems appropriate to create an empty dictionary (or indices). For `AbstractIndices`, it seems appropriate for `MyIndices(iter)` to simply iterate through the input *values*. The form `MyDictionary(undef, ::AbstractIndices)` seems appropriate to create an `ismutable` dictionary with given keys but uninitialized values. That suggests `MyDictionary(newvalues, newindices)` as the general initialized form, where the key-value pairings are defined by the mutual iteration of the inputs (or perhaps via `broadcast` so `newvalues` could be e.g. a scalar and this is like `fill`, though this is not yet implemented).
+
+In future work, a single argument `MyDictionary(otherdict)` could copy the keys and values from `otherdict`, and is a bit like `convert`. I also note that sometimes working with `Pair`s is most convenient, so this clashes with the idea of having `MyDictionary(iter)` to iterate `Pair`s like `Dict` would (and `MyDictionary(pairs...)` seems ill-advised). Nevertheless, a solution for `Pair`s would be nice (even if it is a factory-style pattern).
 
 `similar` works like `AbstractArray`: it creates a container that is mutable (`ismutable`) and has the same keys as the input. The values are `undef` by default. In general we can overide the element type or keys, using the form (with default values) `newdict = similar(olddict, NewT = eltype(olddict), newkeys = keys(olddict))`. I don't see any reason for the output container to be `isinsertable`.
 

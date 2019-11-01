@@ -7,21 +7,19 @@ struct Indices{I, Inds} <: AbstractIndices{I}
 	inds::Inds
 end
 
-Indices(iter) = Indices{eltype(iter), typeof{iter}}(iter)
+Indices() = Indices(())
+Indices{I}() where {I} = Indices{I}(())
+Indices{I, Inds}() where {I, Inds} = Indices{I}(Inds())
+
+Indices(iter) = Indices{eltype(iter), typeof{iter}}(iter) # EltypeUnknown...
+Indices{I}(iter) where {I} = Indices{I, typeof{iter}}(iter) # There is a corner case where the elements of `iter` might not be of type `I`
 
 @propagate_inbounds function Base.iterate(i::Indices{I}, state...) where {I}
+    # We haven't enforced uniqueness anywhere...
     iterate(i.inds, state...)::Union{Nothing, Tuple{I, Any}}
 end
 
-Base.in(inds::Indices{I}, i::I) where {I} = in(inds.inds, i)
+Base.in(i::I, inds::Indices{I}) where {I} = in(i, inds.inds)
+Base.length(i::Indices) = length(i.inds)
 
-function Base.length(i::Indices)
-	return length(i.inds)
-end
-
-
-isinsertable(i::Indices) = _isinsertable(i.inds)
-
-_isinsertable(i::AbstractDictionary) = isinsertable(i)
-_isinsertable(::Any) = false
-_isinsertable(::Dict) = true
+Base.empty(d::AbstractIndices) = empty(d, eltype(d))
