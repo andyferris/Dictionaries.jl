@@ -15,7 +15,7 @@ While Julia comes with built-in `AbstractDict` and `AbstractSet` supertypes, the
 
 In this package we aim to devise a cohesive interface for abstract dictionaries (or associative maps), having the common supertype `AbstractDictionary`. A large part of this is working with indices (of arbitrary type) as well as convenient and efficient iteration of the containers. A second goal is to make dictionary manipulation more closely resemble array manipulation, to make it easier for users.
 
-There are multiple areas of the design space that we can explore for dictionary structures that might make them more convenient for various use-cases. Here we are focused on data manipulation - taking in input datasets and processing it with dictionaries as a part of a larger dataflow. A simple of example of where usablility of an interface might differ, Julia's in-built `AbstractDict` will iterate key-value pairs, whereas `AbstractDictionary` chooses to iterate values by default. An example in the data space where this convenient is starting with a dictionary mapping people's names to their age, called `ages` say, and calculating the `mean` age. With `AbstractDictionary`s (as with `AbstractArray`s) we can just use `mean(ages)`.
+There are multiple areas of the design space that we can explore for dictionary structures that might make them more convenient for various use cases. Here we are focused on data manipulation - taking in input datasets and processing it with dictionaries as a part of a larger dataflow. A simple of example of where usablility of an interface might differ, Julia's in-built `AbstractDict` will iterate key-value pairs, whereas `AbstractDictionary` chooses to iterate values by default. An example in the data space where this convenient is starting with a dictionary mapping people's names to their age, called `ages` say, and calculating the `mean` age. With `AbstractDictionary`s (as with `AbstractArray`s) we can just use `mean(ages)`.
 
 ## Types, interfaces and traits
 
@@ -37,7 +37,7 @@ Indexable containers in Julia have `keys`, which form a "set" in the mathematic 
  * `in`, such that `in(i, indices)` implies there is an element of `indices` which `isequal` to `i`.
  * A one-argument constructor `MyIndices(iter)` that builds indices by iterating `iter`.
 
-Indices themselves are also dictionaries (much like the indices of `AbstractArray`s are also `AbstractArray`s), and we have the subtyping relationship `AbstractDictionary{I} <: AbstractDictionary{I, I}`. Indexing an `AbstractIndex` is always *idempotent*, such that `index[i] === i`. The `keys` function is also idempotent: `keys(indices::AbstractIndices) === indices` (and therefore `keys(keys(dict::AbstractDictionary)) === keys(dict)`). While indexing into indices may seem unintuitive or obtuse at first, this is quite a natural mathematical formulation that supports the indexing behavior below and the entire `AbstractDictionary` interface. (Dictionaries that iterate values is key to allowing this formulation).
+Indices themselves are also dictionaries (much like the indices of `AbstractArray`s are also `AbstractArray`s), and we have the subtyping relationship `AbstractIndices{I} <: AbstractDictionary{I, I}`. Indexing an `AbstractIndex` is always *idempotent*, such that `indices[i] === i`. The `keys` function is also idempotent: `keys(indices::AbstractIndices) === indices` (and therefore `keys(keys(dict::AbstractDictionary)) === keys(dict)`). While indexing into indices may seem unintuitive or obtuse at first, this is quite a natural mathematical formulation that supports the indexing behavior below and the entire `AbstractDictionary` interface. (Dictionaries that iterate values is key to allowing this formulation).
 
 ### Non-scalar indexing
 
@@ -48,7 +48,7 @@ The expression `dict3 = getindices(dict1, dict2)` follows the following simple r
  * The output indices match the indexer, such that `issetequal(keys(dict3), keys(dict2))`.
  * The values of `dict3` come directly from `dict1`, such that `dict3[i] === dict1[dict2[i]]` for all `i in keys(dict2)`.
 
-Non-scalar indexing is simplified such that it is essentially `getindices(dict1, dict2) = map(getindex, dict1, dict2)`. Note also that `getindices(dict, keys(dict))` has the same keys and values as `dict`, and is synonymous with `getindices(dict, :)`.
+Non-scalar indexing is simplified such that it is essentially `getindices(dict1, dict2) = map(i -> dict1[i], dict2)`. Note also that `getindices(dict, keys(dict))` has the same keys and values as `dict`, and is synonymous with `getindices(dict, :)`.
 
 These rules match those for `AbstractArray`, including offset arrays. The `view` function will work similarly (work-in-progress), and the `setindices!` function from *Indexing.jl* is already implemented (see mutation, below).
 
@@ -60,7 +60,7 @@ Many dictionary types support mutation of the *values* of the elements. To suppo
  * `setindex!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
  * A constructor `MyDictionary(undef::UndefInitializer, indices)` returning a dictionary with the given `indices` and unitialized values.
 
-The `ismutable` function is a trait-function that indicate whether an `AbstractDictionary` supports `setindex!`.
+The `ismutable` function is a trait function that indicate whether an `AbstractDictionary` supports `setindex!`.
 
 Because the idempotency property of `AbstractIndices`, indices always have immutable values - but indices can be inserted or deleted (see below).
 
