@@ -22,7 +22,7 @@ If values can be mutated, then an `AbstractDictionary` should implement:
 If arbitrary indices can be added to or removed from the dictionary, implement:
 
  * `isinsertable(::AbstractDictionary)` (returning `true`)
- * `insert!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
+ * `insert!(dict::AbstractDictionary{I, T}, ::I, ::T}` (returning `dict`)
  * `delete!(dict::AbstractDictionary{I, T}, ::I}` (returning `dict`)
  * A zero-argument constructor `MyDictionary()` returning an empty `MyDictionary`.
 """

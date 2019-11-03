@@ -1,4 +1,4 @@
-# Scalar indexing (and related) conversion helpers
+## Scalar indexing (and related) conversion helpers
 
 @propagate_inbounds function Base.getindex(d::AbstractDictionary{I}, i) where {I}
 	return d[convert(I, i)]
@@ -13,7 +13,22 @@ end
     return setindex!(d, convert(T, v), i)
 end
 
-# Non-scalar indexing
+
+## get helper function
+@propagate_inbounds function Base.get(d::AbstractDictionary{I, T}, i::I, default) where {I, T}
+    get(d, i, convert(T, default))
+end
+
+@propagate_inbounds function Base.get(d::AbstractDictionary{I, T}, i::I, default::T) where {I, T}
+    if haskey(d, i)
+        return d[i]
+    else
+        return default
+    end
+end
+
+
+## Non-scalar indexing
 
 # Basically, one maps the indices over the indexee
 @inline function Indexing.getindices(d, inds::AbstractDictionary)
@@ -25,6 +40,9 @@ end
     @boundscheck checkindices(keys(d), inds)
     map(i -> @inbounds(d[i] = value), inds)
 end
+
+## Views
+# TODO
 
 #@inline function Base.view()
 

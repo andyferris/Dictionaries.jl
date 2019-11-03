@@ -123,7 +123,7 @@ function Base.iterate(d::HashDictionary)
 end
 @propagate_inbounds Base.iterate(d::HashDictionary, i::Int) = _iterate(d, skip_deleted(d.indices, i))
 
-function Base.insert!(d::HashDictionary{I, T}, value::T, i::I) where {I, T}
+function Base.insert!(d::HashDictionary{I, T}, i::I, value::T) where {I, T}
     token = -indextoken!(d.indices, d.values, i)
 
     if token < 0

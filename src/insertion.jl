@@ -64,7 +64,7 @@ function Base.insert!(indices::AbstractIndices{I}, ::I) where {I}
 end
 
 """
-    insert!(dict::AbstractDictionary, value, i)
+    insert!(dict::AbstractDictionary, i, value)
 
 Insert the `value` at new index `i` into `dict`. An error is thrown if index `i` already
 exists. 
@@ -72,7 +72,7 @@ exists.
 Hint: Use `setindex!` to update an existing value, and `set!` to perform an "upsert"
 (update-or-insert) operation.
 """
-@propagate_inbounds function Base.insert!(d::AbstractDictionary{I}, value, i) where {I}
+@propagate_inbounds function Base.insert!(d::AbstractDictionary{I}, i, value) where {I}
     i2 = convert(I, i)
     if !isequal(i, i2)
         throw(ArgumentError("$i is not a valid key for type $I"))
@@ -80,11 +80,11 @@ Hint: Use `setindex!` to update an existing value, and `set!` to perform an "ups
     return insert!(d, value, i2)
 end
 
-function Base.insert!(d::AbstractDictionary{I, T}, value, i::I) where {I, T}
+function Base.insert!(d::AbstractDictionary{I, T}, i::I, value) where {I, T}
     return insert!(d, convert(T, value), i)
 end
 
-function Base.insert!(d::AbstractDictionary{I, T}, ::T, ::I) where {I, T}
+function Base.insert!(d::AbstractDictionary{I, T}, ::I, ::T) where {I, T}
     if isinsertable(d)
         error("insert! needs to be defined for insertable dictionary: $(typeof(d))")
     else
@@ -106,7 +106,7 @@ function Base.insert!(indices::AbstractIndices{I}, i1::I, i2::I) where {I}
 end
 
 """
-    set!(dict::AbstractDictionary, value, i)
+    set!(dict::AbstractDictionary, i, value)
 
 Update or insert the `value` at index `i` into `dict`. Sometimes referred to as an "upsert"
 operation.
@@ -114,23 +114,23 @@ operation.
 Hint: Use `setindex!` to exclusively update an existing value, and `insert!` to exclusively
 insert a new value. See also `get!`.
 """
-@propagate_inbounds function set!(d::AbstractDictionary{I}, value, i) where {I}
+@propagate_inbounds function set!(d::AbstractDictionary{I}, i, value) where {I}
     i2 = convert(I, i)
     if !isequal(i, i2)
         throw(ArgumentError("$i is not a valid key for type $I"))
     end
-    return set!(d, value, i2)
+    return set!(d, i2, value)
 end
 
-function set!(d::AbstractDictionary{I, T}, value, i::I) where {I, T}
-    return set!(d, convert(T, value), i)
+function set!(d::AbstractDictionary{I, T}, i::I, value) where {I, T}
+    return set!(d, i, convert(T, value))
 end
 
-function set!(d::AbstractDictionary{I, T}, value::T, i::I) where {I, T}
+function set!(d::AbstractDictionary{I, T}, i::I, value::T) where {I, T}
     if haskey(d, i)
         @inbounds d[i] = value
     else
-        insert!(d, value, i)
+        insert!(d, i, value)
     end
     return d
 end
@@ -192,7 +192,7 @@ function Base.get!(d::AbstractDictionary{I, T}, i::I, default::T) where {I, T}
     if haskey(d, i)
         return @inbounds d[i]
     else
-        insert!(d, default, i)
+        insert!(d, i, default)
         return default
     end
 end

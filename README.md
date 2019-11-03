@@ -69,7 +69,7 @@ Because the idempotency property of `AbstractIndices`, indices always have immut
 If arbitrary indices can be added to or removed from an `AbstractDictionary`, one needs to implement:
 
  * `isinsertable(::AbstractDictionary)` (returning `true`)
- * `insert!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
+ * `insert!(dict::AbstractDictionary{I, T}, ::I, ::T}` (returning `dict`)
  * `delete!(dict::AbstractDictionary{I, T}, ::I}` (returning `dict`)
  * A zero-argument constructor `MyDictionary()` returning an empty `MyDictionary`.
 
@@ -111,10 +111,11 @@ Sometimes one might want to enable/disable mutation and/or insertion. There has 
 
 ### TODO
 
- * `set!` and `insert!` are currently written to match `setindex!`. However, user's aren't normally exposed to `setindex!`, so making `set!` and `setindex!` similar is not a priority. We should probably match `get!` instead.
- * Similarly, for constructors it is strange that the `undef` value comes before the keys. It is not too late to introduce `Array{Int}((3,5,7), undef))`, for example. Or even `Array{Int}(Base.CartesianIndices((3,5,7)), undef))`. Basically the keys should be in the first slot...
+ * Some ability to construct dictionaries from a list of pairs.
+ * For constructors it is strange that the `undef` value comes before the keys. It is not too late to introduce `Array{Int}((3,5,7), undef))`, for example. Or even `Array{Int}(Base.CartesianIndices((3,5,7)), undef))`. Basically the keys should be in the first slot...
  * `HashDictionary{Int64, Int64}([4,5,6], [1,2,3])` explodes.
  * Fix multi-input `map`
  * Constructors including copy-constructor should probably require opt-in, perhaps required if can be returned by `similar`, `empty`, but not in general (e.g. a `PairDictionary` cannot be copy-constructed, it's a dictionary wrapper instead).
  * Tokens, tokens, tokens.
  * A surface interface for updates like https://github.com/JuliaLang/julia/pull/31367
+ * `filter` and lazily-filtered dictionaries via `filterview` (when this package is stable and registered, we may flip the dependency relationship with *SplitApplyCombine.jl* and put `filterview` there).
