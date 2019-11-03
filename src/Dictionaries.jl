@@ -8,6 +8,7 @@ using Base: @propagate_inbounds
 export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary
 
 export ismutable, isinsertable, set!, unset!
+export tokens, gettoken, gettokenvalue, istokenassigned, gettoken!, settokenvalue!, deletetoken!
 
 include("AbstractDictionary.jl")
 include("AbstractIndices.jl")

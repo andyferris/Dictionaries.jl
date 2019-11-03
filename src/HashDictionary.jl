@@ -55,7 +55,7 @@ in iteration order.
 function HashDictionary{I, T}(values, indices) where {I, T}
     iter_size = Base.IteratorSize(indices)
     if iter_size isa Union{Base.HasLength, Base.HasShape}
-        d = HashDictionary{I, T}(; sizehint = length(indices))
+        d = HashDictionary{I, T}(; sizehint = length(indices)*2)
     else
         d = HashDictionary{I, T}()
     end
@@ -73,32 +73,34 @@ Base.keys(d::HashDictionary) = d.indices
 isinsertable(d::HashDictionary) = true
 ismutable(d::HashDictionary) = true
 
-@inline function Base.getindex(d::HashDictionary{I}, key::I) where {I}
-    token = indextoken(d.indices, key)
-    @boundscheck if token < 0
-        throw(IndexError("HashDictionary has no index: $key"))
-    end
+@propagate_inbounds function gettoken(d::HashDictionary{I}, i::I) where {I}
+    return gettoken(keys(d), i)
+end
 
+@inline function gettokenvalue(d::HashDictionary, token)
     return @inbounds d.values[token]
 end
 
-@inline function Base.isassigned(d::HashDictionary{I}, key::I) where {I}
-    token = indextoken(d.indices, key)
-    if token < 0
-        return false
-    end
-
+function istokenassigned(d::HashDictionary, token)
     return isassigned(d.values, token)
 end
 
-@inline function Base.setindex!(d::HashDictionary{I, T}, value::T, key::I) where {I, T}
-    token = indextoken(d.indices, key)
-    @boundscheck if token < 0
-        throw(IndexError("HashDictionary has no index: $key"))
-    end
-
+@inline function settokenvalue!(d::HashDictionary{I, T}, token, value::T) where {I, T}
     @inbounds d.values[token] = value
     return d
+end
+
+function gettoken!(d::HashDictionary{T}, key::T) where {T}
+    indices = keys(d)
+    (token, values) = _gettoken!(indices, d.values, key)
+    if token < 0
+        (token, values) = _insert!(indices, values, key, -token)
+        d.values = values
+        return (false, token)
+    else
+        d.values = values
+        return (true, token)
+    end 
 end
 
 function Base.copy(d::HashDictionary{I, T}) where {I, T}
@@ -123,6 +125,7 @@ function Base.iterate(d::HashDictionary)
 end
 @propagate_inbounds Base.iterate(d::HashDictionary, i::Int) = _iterate(d, skip_deleted(d.indices, i))
 
+#=
 function Base.insert!(d::HashDictionary{I, T}, i::I, value::T) where {I, T}
     token = -indextoken!(d.indices, d.values, i)
 
@@ -134,21 +137,18 @@ function Base.insert!(d::HashDictionary{I, T}, i::I, value::T) where {I, T}
 
     return d
 end
+=#
 
 function Base.empty!(d::HashDictionary)
-    empty!(d.values)
     empty!(d.indices)
+    empty!(d.values)
+    resize!(d.values, length(keys(d).slots))
     return d
 end
 
-function Base.delete!(d::HashDictionary{I, T}, i::I) where {I, T}
-    token = indextoken(d.indices, i)
-    if token > 0
-        _delete!(d.indices, token)
-        isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), d.values, token-1)
-    else
-        throw(IndexError("HashIndices does not contain index: $i"))
-    end
+function deletetoken!(d::HashDictionary{I, T}, token) where {I, T}
+    deletetoken!(keys(d), token)
+    isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), d.values, token-1)
     return d
 end
 
@@ -161,3 +161,5 @@ function Base.rehash!(d::HashDictionary, newsz::Int = length(d.inds))
     _rehash!(d.indices, d.values, newsz)
     return d
 end
+
+Base.filter!(pred, d::HashDictionary) = Base.unsafe_filter!(pred, d)

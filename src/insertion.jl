@@ -40,7 +40,62 @@ if an index exists or not.
 """
 isinsertable(::AbstractIndices) = false
 
-### Scalar insertion/deletion
+### Underlying token interface functions
+
+"""
+    gettoken!(dict, i)
+
+Return the tuple `(hadindex, token)`, where `hadindex` is `true` if `i` previously existed
+in `dict`, or `false` otherwise (in which case `dict` was mutated to insert a slot for the
+new index `i`). The `token` may be used to retrieve a value using the `gettokenvalue` or set
+a corresponding value via the `settokenvalue!`.
+
+See also `gettoken` and `deletetoken!`.
+"""
+@propagate_inbounds function gettoken!(d::AbstractDictionary{I}, i) where {I}
+    return gettoken!(d, convert(I, i))
+end
+
+function gettoken!(d::AbstractDictionary{I}, i::I) where {I}
+    if isinsertable(d)
+        error("gettoken! needs to be defined for insertable dictionary: $(typeof(d))")
+    else
+        error("dictionary not insertable: $(typeof(d))")
+    end
+end
+
+function gettoken!(d::AbstractIndices{I}, i::I) where {I}
+    if isinsertable(d)
+        error("gettoken! needs to be defined for insertable indices: $(typeof(d))")
+    else
+        error("indices not insertable: $(typeof(d))")
+    end
+end
+
+"""
+    deletetoken!(dict, token)
+
+Remove the slot of the dictionary at `token`.
+
+See also `gettoken` and `gettoken!`.
+"""
+function deletetoken!(d::AbstractDictionary, token)
+    if isinsertable(d)
+        error("deletetoken! needs to be defined for insertable dictionary: $(typeof(d))")
+    else
+        error("dictionary not insertable: $(typeof(d))")
+    end
+end
+
+function deletetoken!(d::AbstractIndices, token)
+    if isinsertable(d)
+        error("deletetoken! needs to be defined for insertable indices: $(typeof(d))")
+    else
+        error("indices not insertable: $(typeof(d))")
+    end
+end
+
+### User-facing scalar insertion/deletion
 
 """
     insert!(indices::AbstractIndices, i)
@@ -55,12 +110,12 @@ Insert the new index `i` into `indices`. An error is thrown if `i` already exist
     return insert!(indices, i2)
 end
 
-function Base.insert!(indices::AbstractIndices{I}, ::I) where {I}
-    if isinsertable(indices)
-        error("insert! needs to be defined for insertable indices: $(typeof(indices))")
-    else
-        error("indices not insertable: $(typeof(indices))")
+function Base.insert!(indices::AbstractIndices{I}, i::I) where {I}
+    (hadindex, token) = gettoken!(indices, i)
+    if hadindex
+        throw(IndexError("Indices already contains index: $i"))
     end
+    return indices
 end
 
 """
@@ -72,31 +127,32 @@ exists.
 Hint: Use `setindex!` to update an existing value, and `set!` to perform an "upsert"
 (update-or-insert) operation.
 """
-@propagate_inbounds function Base.insert!(d::AbstractDictionary{I}, i, value) where {I}
+function Base.insert!(d::AbstractDictionary{I}, i, value) where {I}
     i2 = convert(I, i)
     if !isequal(i, i2)
         throw(ArgumentError("$i is not a valid key for type $I"))
     end
-    return insert!(d, value, i2)
+    return insert!(d, i2, value)
 end
 
 function Base.insert!(d::AbstractDictionary{I, T}, i::I, value) where {I, T}
-    return insert!(d, convert(T, value), i)
+    return insert!(d, i, convert(T, value))
 end
 
-function Base.insert!(d::AbstractDictionary{I, T}, ::I, ::T) where {I, T}
-    if isinsertable(d)
-        error("insert! needs to be defined for insertable dictionary: $(typeof(d))")
-    else
-        error("dictionary not insertable: $(typeof(d))")
+function Base.insert!(d::AbstractDictionary{I, T}, i::I, value::T) where {I, T}
+    (hadtoken, token) = gettoken!(d, i)
+    if hadtoken
+        throw(IndexError("Dictionary already contains index: $i"))
     end
+    @inbounds settokenvalue!(d, token, value)
+    return d
 end
 
 # Since `AbstractIndices <: AbstractDictionary` we should still obey the supertype's interface where possible...
 function Base.insert!(indices::AbstractIndices{I}, i1::I, i2::I) where {I}
     if isinsertable(indices)
         if isequal(i1, i2)
-            insert!(indices, i1)
+            return insert!(indices, i1)
         else
             error("Attempted to set distinct key-value pair ($i1, $i2) to indices: $(typeof(indices))")
         end
@@ -127,11 +183,8 @@ function set!(d::AbstractDictionary{I, T}, i::I, value) where {I, T}
 end
 
 function set!(d::AbstractDictionary{I, T}, i::I, value::T) where {I, T}
-    if haskey(d, i)
-        @inbounds d[i] = value
-    else
-        insert!(d, i, value)
-    end
+    (hadtoken, token) = gettoken!(d, i)
+    @inbounds settokenvalue!(d, token, value)
     return d
 end
 
@@ -139,7 +192,7 @@ end
 function set!(indices::AbstractIndices{I}, i1::I, i2::I) where {I}
     if isinsertable(indices)
         if isequal(i1, i2)
-            set!(indices, i1)
+            return set!(indices, i1)
         else
             error("Attempted to set distinct key-value pair ($i1, $i2) to indices: $(typeof(indices))")
         end
@@ -162,9 +215,7 @@ Insert a new value `i` into `indices` if it doesn't exist, or do nothing otherwi
 end
 
 function set!(indices::AbstractIndices{I}, i::I) where {I}
-    if i ∉ indices
-        insert!(indices, i)
-    end
+    gettoken!(indices, i)
     return indices
 end
 
@@ -189,15 +240,16 @@ function Base.get!(d::AbstractDictionary{I, T}, i::I, default) where {I, T}
 end
 
 function Base.get!(d::AbstractDictionary{I, T}, i::I, default::T) where {I, T}
-    if haskey(d, i)
-        return @inbounds d[i]
+    (hadindex, token) = gettoken!(d, i)
+    if hadindex
+        return gettokenvalue(d, token)
     else
-        insert!(d, i, default)
+        settokenvalue!(d, token, default)
         return default
     end
 end
 
-# TODO: the`get!(f, dict, i)` form
+# TODO: the `get!(f, dict, i)` form. Similarly for `set!` - see 
 
 """
     delete!(indices::AbstractIndices, i)
@@ -218,12 +270,13 @@ See also `unset!`, `insert!`.
     return delete!(d, i2)
 end
 
-function Base.delete!(d::AbstractDictionary{I}, ::I) where {I}
-    if isinsertable(d)
-        error("delete! needs to be defined for insertable dictionary: $(typeof(d))")
-    else
-        error("dictionary is not insertable: $(typeof(d))")
+function Base.delete!(d::AbstractDictionary{I}, i::I) where {I}
+    (hasindex, token) = gettoken(d, i)
+    if !hasindex
+        throw(IndexError("Index doesn't exist: $i"))
     end
+    deletetoken!(d, token)
+    return d
 end
 
 
@@ -247,8 +300,9 @@ See also `delete!`, `set!`.
 end
 
 function unset!(d::AbstractDictionary{I}, i::I) where {I}
-    if i ∈ keys(d)
-        delete!(d, i)
+    (hasindex, token) = gettoken(d, i)
+    if hasindex
+        deletetoken!(d, token)
     end
     return d
 end
@@ -259,22 +313,25 @@ Base.merge!(d::AbstractDictionary, ds::AbstractDictionary...) = merge!(last, d, 
 
 function Base.merge!(combiner::Function, d::AbstractDictionary, d2::AbstractDictionary)
     for (i, v) in pairs(d2)
-        if haskey(d, i)
-            d[i] = combiner((d[i], v))
+        (hasindex, token) = gettoken!(d, i)
+        if hasindex
+            settokenvalue!(d, token, combiner(gettokenvalue(d, token), v))
         else
-            insert!(d, v, i)
+            settokenvalue!(d, token, v)
         end
     end
     return d
 end
 
+# TODO `last` is incorrect, it should be `latter(x,y) = y`
 function Base.merge!(::typeof(last), d::AbstractDictionary, d2::AbstractDictionary)
     for (i, v) in pairs(d2)
-        set!(d, v, i)
+        set!(d, i, v)
     end
     return d
 end
 
+# TODO `first` is incorrect, it should be `former(x,y) = y`
 function Base.merge!(::typeof(first), d::AbstractDictionary, d2::AbstractDictionary)
     for (i, v) in pairs(d2)
         get!(d, i, v)
@@ -286,7 +343,8 @@ function Base.merge!(combiner::Function, d::AbstractDictionary, d2::AbstractDict
     merge!(combiner, merge!(combiner, d, d2), ds...)
 end
 
-function Base.merge!(::typeof(last), d::AbstractIndices, d2::AbstractIndices)
+function Base.merge!(combiner::Function, d::AbstractIndices, d2::AbstractIndices)
+    # Hopefully no-one provides a bad combiner
     union!(d, d2)
 end
 
@@ -304,12 +362,7 @@ function Base.union!(s1::AbstractIndices, s2::AbstractIndices)
 end
 
 function Base.intersect!(s1::AbstractIndices, s2::AbstractIndices)
-    for i in s1
-        if i ∉ s2
-            delete!(s1, i)
-        end
-    end
-    return s1
+    return filter!(in(s2), s1)
 end
 
 function Base.setdiff!(s1::AbstractIndices, s2::AbstractIndices)
@@ -321,21 +374,42 @@ end
 
 function Base.symdiff!(s1::AbstractIndices, s2::AbstractIndices)
     for i in s2
-        if i in s1
-            delete!(s1, i)
-        else
-            insert!(s1, i)
+        (hastoken, token) = gettoken!(s1, i)
+        if hastoken
+            deletetoken!(s1, token)
         end
     end
     return s1
 end
 
+## Filtering
+
 # `filter!` is basically a programmatic version of `intersect!`. 
-function Base.filter!(f, indices::AbstractIndices)
+function Base.filter!(pred, indices::AbstractIndices)
     for i in indices
-        if !f(i)
+        if !pred(i)
             delete!(indices, i)
         end
     end
     return indices
+end
+
+# Dictionary version is similar
+function Base.filter!(pred, dict::AbstractDictionary)
+    for (i, v) in pairs(dict)
+        if !pred(v)
+            delete!(dict, i)
+        end
+    end
+    return dict
+end
+
+# This implementation is faster when deleting indices does not invalidate tokens/iteration,
+# and is opt-in only. Works for both dictionaries and indices
+function Base.unsafe_filter!(pred, dict::AbstractDictionary)
+    for token in tokens(dict)
+        @inbounds if !pred(gettokenvalue(dict, token))
+            deletetoken!(dict, token)
+        end
+    end
 end

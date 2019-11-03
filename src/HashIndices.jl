@@ -20,7 +20,8 @@ Construct an empty `HashIndices` with indices of type `I`. This container uses h
 fast lookup, and is insertable. (See `isinsertable`).
 """
 function HashIndices{T}(; sizehint::Int = 16) where {T}
-    HashIndices{T}(zeros(UInt8, sizehint), Vector{T}(undef, sizehint), 0, 0, 1, 0)
+    sz = Base._tablesz(sizehint)
+    HashIndices{T}(zeros(UInt8, sz), Vector{T}(undef, sz), 0, 0, 1, 0)
 end
 
 """
@@ -41,7 +42,7 @@ end
 function HashIndices{T}(iter) where {T}
     iter_size = Base.IteratorSize(iter)
     if iter_size isa Union{Base.HasLength, Base.HasShape}
-        h = HashIndices{T}(; sizehint = length(iter))
+        h = HashIndices{T}(; sizehint = length(iter)*2)
     else
         h = HashIndices{T}()
     end
@@ -57,7 +58,7 @@ isinsertable(::HashIndices) = true
 Base.empty(::HashIndices, ::Type{T}) where {T} = HashIndices{T}()
 
 function Base.empty!(h::HashIndices{T}) where {T}
-    fill!(h.slots, 0x0)
+    fill!(h.slots, 0x0) # It should be OK to reduce this back to some smaller size.
     sz = length(h.slots)
     empty!(h.inds)
     resize!(h.inds, sz)
@@ -75,7 +76,7 @@ hashtoken(key, sz::Int) = (((hash(key)%Int) & (sz-1)) + 1)::Int
 
 @propagate_inbounds isslotempty(h::HashIndices, i::Int) = h.slots[i] == 0x0
 @propagate_inbounds isslotfilled(h::HashIndices, i::Int) = h.slots[i] == 0x1
-@propagate_inbounds isslotmissing(h::HashIndices, i::Int) = h.slots[i] == 0x2
+@propagate_inbounds isslotdeleted(h::HashIndices, i::Int) = h.slots[i] == 0x2 # deletion marker/tombstone
 
 function Base.rehash!(h::HashIndices, newsz::Int = length(h.inds))
     _rehash!(h, nothing, newsz)
@@ -146,8 +147,8 @@ function _sizehint!(h::HashIndices{T}, values::Union{Nothing, Vector}, newsz::In
     _rehash!(h, values, newsz)
 end
 
-# get the token where a key is stored, or -1 if not present
-function indextoken(h::HashIndices{T}, key::T) where {T}
+# get a tuple of the presence of a key and the token where the key is stored
+function gettoken(h::HashIndices{T}, key::T) where {T}
     sz = length(h.inds)
     iter = 0
     maxprobe = h.maxprobe
@@ -158,21 +159,32 @@ function indextoken(h::HashIndices{T}, key::T) where {T}
         if isslotempty(h, token)
             break
         end
-        if !isslotmissing(h, token) && (key === keys[token] || isequal(key, keys[token]))
-            return token
+        if !isslotdeleted(h, token) && (key === keys[token] || isequal(key, keys[token]))
+            return (true, token)
         end
 
         token = (token & (sz-1)) + 1
         iter += 1
         iter > maxprobe && break
     end
-    return -1
+    return (false, 0)
 end
 
-# get the index where a key is stored, or -pos if not present
+function gettoken!(h::HashIndices{T}, key::T) where {T}
+    (token, _) = _gettoken!(h, nothing, key) # This will make sure a slot is available at `token` (or `-token` if it is new)
+
+    if token < 0
+        @inbounds (token, _) = _insert!(h, nothing, key, -token) # This will fill the slot with `key`
+        return (false, token)
+    else
+        return (true, token)
+    end
+end
+
+# get the index where a key is stored, or -pos if not present 
 # and the key would be inserted at pos
-# This version is for use by setindex! and get!
-function indextoken!(h::HashIndices{T}, values::Union{Nothing, Vector}, key::T) where {T}
+# This version is for use by insert!, set! and get!
+function _gettoken!(h::HashIndices{T}, values::Union{Nothing, Vector}, key::T) where {T}
     sz = length(h.inds)
     iter = 0
     maxprobe = h.maxprobe
@@ -180,22 +192,23 @@ function indextoken!(h::HashIndices{T}, values::Union{Nothing, Vector}, key::T) 
     avail = 0
     keys = h.inds
 
+    # Search of the key is present or if there is a deleted slot `key` could fill.
     @inbounds while true
-        if isslotempty(h,token)
+        if isslotempty(h, token)
             if avail < 0
-                return avail
+                return (avail, values)
             end
-            return -token
+            return (-token, values)
         end
 
-        if isslotmissing(h, token)
+        if isslotdeleted(h, token)
             if avail == 0
-                # found an available slot, but need to keep scanning
-                # in case "key" already exists in a later collided slot.
+                # found an available deleted slot, but we need to keep scanning
+                # in case `key` already exists in a later collided slot.
                 avail = -token
             end
         elseif key === keys[token] || isequal(key, keys[token])
-            return token
+            return (token, values)
         end
 
         token = (token & (sz-1)) + 1
@@ -203,28 +216,30 @@ function indextoken!(h::HashIndices{T}, values::Union{Nothing, Vector}, key::T) 
         iter > maxprobe && break
     end
 
-    avail < 0 && return avail
+    avail < 0 && return (avail, values)
 
+    # The key definitely isn't present, but a slot may become available if we increase
+    # `maxprobe` (up to some reasonable global limits).
     maxallowed = max(maxallowedprobe, sz>>maxprobeshift)
-    # Check if key is not present, may need to keep searching to find slot
+    
     @inbounds while iter < maxallowed
         if !isslotfilled(h,token)
             h.maxprobe = iter
-            return -token
+            return (-token, values)
         end
         token = (token & (sz-1)) + 1
         iter += 1
     end
 
-    _rehash!(h, values, h.count > 64000 ? sz*2 : sz*4)
-
-    return indextoken!(h, values, key)
+    # If we get here, then all the probable slots are filled, and the only recourse is to
+    # increase the size of the hash map and try again
+    values = _rehash!(h, values, h.count > 64000 ? sz*2 : sz*4)
+    return _gettoken!(h, values, key)
 end
 
-@propagate_inbounds function _insert!(h::HashIndices{T}, values::Union{Nothing, Vector}, key::T, value, token::Int) where {T}
+@propagate_inbounds function _insert!(h::HashIndices{T}, values::Union{Nothing, Vector}, key::T, token::Int) where {T}
     h.slots[token] = 0x1
     h.inds[token] = key
-    (values === nothing) || (values[token] = value)
     h.count += 1
     if token < h.idxfloor
         h.idxfloor = token
@@ -234,44 +249,24 @@ end
     # Rehash now if necessary
     if h.ndel >= ((3*sz)>>2) || h.count*3 > sz*2
         # > 3/4 deleted or > 2/3 full
-        return _rehash!(h, values, h.count > 64000 ? h.count*2 : h.count*4)
+        values = _rehash!(h, values, h.count > 64000 ? h.count*2 : h.count*4)
+        (_, token) = gettoken(h, key)
     end
 
-    return values
+    return (token, values)
 end
 
-function Base.insert!(h::HashIndices{T}, i::T) where {T}
-    token = -indextoken!(h, nothing, i)
-
-    if token < 0
-        throw(IndexError("HashIndices already contains index: $i"))
-    end
-
-    @inbounds _insert!(h, nothing, i, nothing, token)
-
-    return h
-end
 
 function Base.in(i::T, h::HashIndices{T}) where {T}
-    return indextoken(h, i) >= 0
+    return gettoken(h, i)[1]
 end
 
-function _delete!(h::HashIndices{T}, token::Int) where {T}
+function deletetoken!(h::HashIndices{T}, token::Int) where {T}
     h.slots[token] = 0x2
     isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), h.inds, token-1)
     
     h.ndel += 1
     h.count -= 1
-    return h
-end
-
-function Base.delete!(h::HashIndices{T}, i::T) where {T}
-    token = indextoken(h, i)
-    if token > 0
-        _delete!(h, token)
-    else
-        throw(IndexError("HashIndices does not contain index: $i"))
-    end
     return h
 end
 
@@ -300,6 +295,8 @@ end
 Base.isempty(h::HashIndices) = (h.count == 0)
 Base.length(h::HashIndices) = h.count
 
+Base.filter!(pred, h::HashIndices) = Base.unsafe_filter!(pred, h)
+
 # ------------------------------------------------------------------------
 # The tokens of a hash index is an AbstractDictionary from keys to integer token
 
@@ -311,7 +308,7 @@ tokens(h::HashIndices{I}) where {I} = HashTokens{I}(h)
 
 Base.keys(t::HashTokens) = t.indices
 @inline function Base.getindex(t::HashTokens{I}, i::I) where {I}
-    token = indextoken(t.indices, i)
+    token = gettoken(t.indices, i)
 
     @boundscheck if token < 0
         throw(IndexError("HashTokens has no index: $i"))

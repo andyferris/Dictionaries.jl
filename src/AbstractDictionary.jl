@@ -38,8 +38,12 @@ function Base.keys(d::AbstractDictionary)
     error("Every AbstractDictionary type must define a method for `keys`: $(typeof(d))")
 end
 
-function Base.getindex(d::AbstractDictionary{I}, i::I) where {I}
-    error("Every AbstractDictionary type must define a method for `getindex`: $(typeof(d))")
+@propagate_inbounds function Base.getindex(d::AbstractDictionary{I}, i::I) where {I}
+    (hastoken, token) = gettoken(d, i)
+    @boundscheck if !hastoken
+        throw(IndexError("Dictionary does not contain index: $i"))
+    end
+    return gettokenvalue(d, token)
 end
 
 """
@@ -59,20 +63,22 @@ See also `isinsertable`.
 """
 ismutable(::AbstractDictionary) = false
 
-function Base.isassigned(d::AbstractDictionary{I}, ::I) where {I}
-    if ismutable(d)
-        error("isassigned! needs to be defined for mutable dictionary: $(typeof(d))")
-    else
-        return true
-    end
+function Base.isassigned(indices::AbstractIndices{I}, i::I) where {I}
+    return i in indices
 end
 
-function Base.setindex!(d::AbstractDictionary{I, T}, ::T, ::I) where {I, T}
-    if ismutable(d)
-        error("setindex! needs to be defined for mutable dictionary: $(typeof(d))")
-    else
-        error("Dictionary is not mutable: $(typeof(d))")
+function Base.isassigned(dict::AbstractDictionary{I}, i::I) where {I}
+    (hasindex, token) = gettoken(dict, i)
+    return istokenassigned(dict, token)
+end
+
+function Base.setindex!(d::AbstractDictionary{I, T}, value::T, i::I) where {I, T}
+    (hastoken, token) = gettoken(d, i)
+    @boundscheck if !hastoken
+        throw(IndexError("Dictionary does not contain index: $i"))
     end
+    settokenvalue!(d, token, value)
+    return d
 end
 
 Base.length(d::AbstractDictionary) = length(keys(d))

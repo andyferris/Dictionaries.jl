@@ -1,3 +1,49 @@
+## A simple token-based interface
+
+"""
+    gettoken(dict, i)
+
+Return the tuple `(hasindex, token)`, where `hasindex` is `true` if `i` exists in `dict`.
+The `token` can be used to retrieve a value using the `gettokenvalue` function.
+
+Mutable dictionaries allow you to set a corresponding value via the `settokenvalue!`
+function (see `ismutable`).
+
+Insertable dictionaries provide the `gettoken!` function (see `isinsertable`).
+"""
+@propagate_inbounds function gettoken(d::AbstractDictionary{I}, i::I) where I
+    @boundscheck if !haskey(keys(d), i)
+        return (false, i)
+    end
+    return (true, i)
+end
+
+@propagate_inbounds function gettokenvalue(d::AbstractDictionary, i)
+    return d[i]
+end
+
+# This default method will generally work but maybe should be overloaded to be less crappy
+@propagate_inbounds function istokenassigned(d::AbstractDictionary, token)
+    try
+        gettokenvalue(d, token)
+        return true
+    catch e
+        if isa(e, BoundsError) || isa(e, IndexError) || isa(e, UndefRefError)
+            return false
+        else
+            rethrow()
+        end
+    end
+end
+
+@propagate_inbounds function settokenvalue!(d::AbstractDictionary, i, value)
+    return d[i] = value
+end
+
+# TODO: possibly istokenassigned(d::AbstractDictionary, token) --> Bool
+
+## `tokenize` - for fast mutual iteration over multiple containers
+
 tokens(d::AbstractDictionary) = keys(d)
 tokens(i::AbstractIndices) = i
 
