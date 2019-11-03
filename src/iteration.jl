@@ -11,6 +11,7 @@ end
 
 # map
 
+# TODO do I need @noinline?
 @noinline function _map!(f, tokens, out_tokenized, d_tokenized)
     @inbounds for t in tokens
         out_tokenized[t] = f(d_tokenized[t])

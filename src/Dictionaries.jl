@@ -17,6 +17,7 @@ include("iteration.jl")
 include("indexing.jl")
 include("insertion.jl")
 
+include("PairDictionary.jl")
 include("Indices.jl")
 include("Dictionary.jl")
 include("HashIndices.jl")

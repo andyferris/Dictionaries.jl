@@ -108,3 +108,13 @@ Sometimes one wants to create an empty insertable container. The `empty` functio
 Sometimes one might want to enable/disable mutation and/or insertion. There has been suggestions of `freeze` and `thaw` for `Array`, for example, but you may also want to `freezekeys` or `thawkeys` (note: similarly in `Base` you may want to fix the length of `Vector` but not it's values).
 
 (As a thought - it might be possible for the above factories to do their work at the type level and then punt to the constructor, similar to *StaticArrays.jl*).
+
+### TODO
+
+ * `set!` and `insert!` are currently written to match `setindex!`. However, user's aren't normally exposed to `setindex!`, so making `set!` and `setindex!` similar is not a priority. We should probably match `get!` instead.
+ * Similarly, for constructors it is strange that the `undef` value comes before the keys. It is not too late to introduce `Array{Int}((3,5,7), undef))`, for example. Or even `Array{Int}(Base.CartesianIndices((3,5,7)), undef))`. Basically the keys should be in the first slot...
+ * `HashDictionary{Int64, Int64}([4,5,6], [1,2,3])` explodes.
+ * Fix multi-input `map`
+ * Constructors including copy-constructor should probably require opt-in, perhaps required if can be returned by `similar`, `empty`, but not in general (e.g. a `PairDictionary` cannot be copy-constructed, it's a dictionary wrapper instead).
+ * Tokens, tokens, tokens.
+ * A surface interface for updates like https://github.com/JuliaLang/julia/pull/31367
