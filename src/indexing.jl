@@ -18,7 +18,7 @@ end
 
 ## get helper function
 @propagate_inbounds function Base.get(d::AbstractDictionary{I, T}, i, default) where {I, T}
-    get(d, convert(T, default), i)
+    get(d, convert(I, i), default)
 end
 
 @propagate_inbounds function Base.get(d::AbstractDictionary{I, T}, i::I, default) where {I, T}
