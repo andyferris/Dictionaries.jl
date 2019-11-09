@@ -163,3 +163,20 @@ function Base.rehash!(d::HashDictionary, newsz::Int = length(d.inds))
 end
 
 Base.filter!(pred, d::HashDictionary) = Base.unsafe_filter!(pred, d)
+
+# The default mutable AbstractDictionary
+
+# Don't need to copy indices
+function Base.similar(d::AbstractDictionary, ::Type{T}, indices::HashIndices{I}) where {I, T}
+    return HashDictionary{I, T}(Vector{T}(undef, length(indices.slots)), indices, nothing)
+end
+
+# Create a HashIndices copy of the indices
+function Base.similar(d::AbstractDictionary, ::Type{T}, indices::AbstractIndices{I}) where {I, T}
+    return similar(d, T, HashIndices{I}(indices))
+end
+
+# The default insertable AbstractDictionary
+function Base.empty(d::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T}
+    return HashDictionary{I, T}()
+end

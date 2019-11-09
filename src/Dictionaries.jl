@@ -10,6 +10,8 @@ export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, Ha
 export ismutable, isinsertable, set!, unset!
 export tokens, gettoken, gettokenvalue, istokenassigned, gettoken!, settokenvalue!, deletetoken!
 
+export filterview # TODO move to SplitApplyCombine.jl
+
 include("AbstractDictionary.jl")
 include("AbstractIndices.jl")
 
@@ -17,6 +19,7 @@ include("tokens.jl")
 include("iteration.jl")
 include("indexing.jl")
 include("insertion.jl")
+include("filter.jl")
 
 include("PairDictionary.jl")
 include("Indices.jl")

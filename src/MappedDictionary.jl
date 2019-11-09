@@ -29,3 +29,6 @@ end
     @boundscheck checkindex(d.maps[1], i)
     return d.f(map(x -> @inbounds(x[i]), d.maps)...)::T
 end
+
+Base.similar(dict::PairDictionary, ::Type{T}, indices) where {T} = similar(parent(dict), T, indices)
+Base.empty(dict::PairDictionary, ::Type{I}, ::Type{T}) where {I, T} = similar(parent(dict), I, T)

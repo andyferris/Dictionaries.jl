@@ -164,5 +164,5 @@ Base.similar(d::AbstractDictionary) = similar(d, eltype(d), keys(d))
 Base.similar(d::AbstractDictionary, ::Type{T}) where {T} = similar(d, T, keys(d))
 Base.similar(d::AbstractDictionary, i::AbstractIndices) = similar(d, eltype(d), i)
 
-Base.empty(d::AbstractDictionary) = empty(d, keytype(d))
+Base.empty(d::AbstractDictionary) = empty(d, eltype(d))
 Base.empty(d::AbstractDictionary, ::Type{T}) where {T} = empty(d, keytype(d), T)

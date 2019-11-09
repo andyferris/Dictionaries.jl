@@ -297,6 +297,9 @@ Base.length(h::HashIndices) = h.count
 
 Base.filter!(pred, h::HashIndices) = Base.unsafe_filter!(pred, h)
 
+# The default insertable indices
+Base.empty(d::AbstractIndices, ::Type{T}) where {T} = HashIndices{T}()
+
 # ------------------------------------------------------------------------
 # The tokens of a hash index is an AbstractDictionary from keys to integer token
 
