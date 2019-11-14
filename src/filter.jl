@@ -45,7 +45,6 @@ function filterview(pred, inds::AbstractIndices{I}) where {I}
     return FilteredIndices{I, typeof(inds), typeof(pred)}(inds, pred)
 end
 
-Base.empty(inds::AbstractIndices, ::Type{T}) where {T} = similar(inds.parent, T)
 
 ## Dictionaries
 

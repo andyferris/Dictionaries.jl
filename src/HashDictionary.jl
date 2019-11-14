@@ -10,7 +10,7 @@ end
 
 Construct an empty `HashDictionary` with index type `I` and element type `T`. This type of
 dictionary uses hashes for fast lookup and insertion, and is both mutable and insertable.
-(See `ismutable` and `isinsertable`).
+(See `issettable` and `isinsertable`).
 """
 function HashDictionary{I, T}(; sizehint::Int = 16) where {I, T}
     indices = HashIndices{I}(; sizehint=sizehint)
@@ -71,7 +71,7 @@ HashDictionary(values, indices) = HashDictionary{eltype(indices)}(values, indice
 
 Base.keys(d::HashDictionary) = d.indices
 isinsertable(d::HashDictionary) = true
-ismutable(d::HashDictionary) = true
+issettable(d::HashDictionary) = true
 
 @propagate_inbounds function gettoken(d::HashDictionary{I}, i::I) where {I}
     return gettoken(keys(d), i)
@@ -107,23 +107,15 @@ function Base.copy(d::HashDictionary{I, T}) where {I, T}
     return HashDictionary{I, T}(copy(d.values), copy(d.indices), nothing)
 end
 
-# Default for `similar` is `HashDictionary`, since it is most flexible
-function Base.similar(::AbstractDictionary, ::Type{T}, h::HashIndices{I}) where {I, T}
-    return HashDictionary{I, T}(undef, h)
-end
+tokenized(d::HashDictionary) = d.values
 
-function Base.empty(::HashDictionary, ::Type{I}, ::Type{T}) where {I, T}
-    return HashDictionary{I, T}()
-end
-
-tokens(d::HashDictionary{I}) where {I} = HashTokens{I}(d.indices)
-tokenized(::HashTokens, d::HashDictionary) = d.values
-
+#=
 @propagate_inbounds _iterate(d::HashDictionary{T}, i::Int) where {T} = i > length(d.indices.inds) ? nothing : (d.values[i], i + 1)
 function Base.iterate(d::HashDictionary)
     _iterate(d, skip_deleted_floor!(d.indices))
 end
 @propagate_inbounds Base.iterate(d::HashDictionary, i::Int) = _iterate(d, skip_deleted(d.indices, i))
+=#
 
 #=
 function Base.insert!(d::HashDictionary{I, T}, i::I, value::T) where {I, T}

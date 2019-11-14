@@ -7,8 +7,8 @@ using Base: @propagate_inbounds
 
 export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary
 
-export ismutable, isinsertable, set!, unset!
-export tokens, gettoken, gettokenvalue, istokenassigned, gettoken!, settokenvalue!, deletetoken!
+export issettable, isinsertable, set!, unset!
+export tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, gettoken!, settokenvalue!, deletetoken!, sharetokens
 
 export filterview # TODO move to SplitApplyCombine.jl
 
@@ -16,10 +16,10 @@ include("AbstractDictionary.jl")
 include("AbstractIndices.jl")
 
 include("tokens.jl")
-include("iteration.jl")
 include("indexing.jl")
 include("insertion.jl")
 include("filter.jl")
+include("map.jl")
 
 include("PairDictionary.jl")
 include("Indices.jl")

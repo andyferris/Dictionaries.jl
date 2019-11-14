@@ -1,92 +1,201 @@
 ## A simple token-based interface
 
 """
+    istokenizable(indices::AbstractIndices)
+
+Return `true` if the indices `indices` obeys the token interface, or `false` otherwise.
+
+A token is a more efficient way of refering to an element of `indices`. Using tokens may
+help avoid multiple index lookups for a single operation.
+
+A tokenizable indices must implement:
+
+ * `tokentype(indices) --> T::Type`
+ * `iteratetoken(indices, s...)` iterates the tokens of `indices`, like `iterate`
+ * `gettoken(indices, i) --> (hasindex::Bool, token)`
+
+An `isinsertable` tokenizable indices must implement
+
+ * `gettoken!(indices, i) --> (hadtoken::Bool, token)`
+ * `deletetoken!(indices, token) --> indices`
+
+    istokenizable(dict::AbstractDictionary)
+
+Return `true` if the dictionary `dict` obeys the token interface, or `false` otherwise.
+
+A token is a more efficient way of refering to an element of `dict`. Using tokens may
+help avoid multiple index lookups for a single operation.
+
+An tokenizable dictionary must implement:
+
+ * `keys(dict)` must be `istokenizable` and share tokens with `dict`
+ * `gettokenvalue(dict, token)` returning the dictionary value at `token`
+ * `istokenassigned(dict, token) --> Bool` 
+
+An `issettable` tokenizable dictionary must implement:
+
+ * `settokenvalue!(dict, token)`
+
+An `isinsertable` tokenizable dictionary must implement:
+
+ * `gettoken!(dict, i) --> (hadtoken::Bool, token)`
+ * `deletetoken!(dict, token) --> dict`
+"""
+istokenizable(d::AbstractIndices) = false
+istokenizable(d::AbstractDictionary) = istokenizable(keys(d))
+
+"""
+    IndicesTokens(indices)
+
+Return a dictionary mapping from `i ∈ indices` to a valid token.
+""" 
+struct IndicesTokens{I, T, Parent <: AbstractIndices{I}} <: AbstractDictionary{I, T}
+    parent::Parent
+end
+
+IndicesTokens(indices::AbstractIndices{I}) where {I} = IndicesTokens{I}(indices)
+IndicesTokens{I}(indices::AbstractIndices{I}) where {I} = IndicesTokens{I, tokentype(indices)}(indices)
+
+Base.parent(ts::IndicesTokens) = ts.parent
+
+Base.keys(ts::IndicesTokens) = parent(ts)
+
+# These containers are obviously tokenizable (but never settable or insertable)
+istokenizable(::IndicesTokens) = true
+tokentype(::IndicesTokens{<:Any, T}) where {T} = T
+tokens(ts::IndicesTokens) = ts
+istokenassigned(ts::IndicesTokens, t) = istokenassigned(parent(ts), t)
+@propagate_inbounds iteratetoken(ts::IndicesTokens, s...) = iteratetoken(parent(ts), s...)
+@propagate_inbounds gettoken(ts::IndicesTokens{I}, i::I) where {I} = gettoken(parent(ts), i)
+gettokenvalue(ts::IndicesTokens, t) = t
+
+Base.IteratorSize(ts::IndicesTokens) = Base.IteratorSize(parent(ts))
+Base.length(ts::IndicesTokens) = Base.length(parent(ts))
+
+"""
+    tokens(dict::AbstractDictionary)
+
+Return a new dictionary mapping from the `keys` of `dict` to a "token". The token can be
+used to fetch a value with `gettokenvalue`. For mutable containers, the token can be used to
+overwrite a value with `settokenvalue!`.
+"""
+@inline tokens(d::AbstractDictionary) = tokens(keys(d))
+@inline function tokens(i::AbstractIndices{I}) where {I}
+    if istokenizable(i)
+        return IndicesTokens{I, tokentype(i), typeof(i)}(i)
+    else
+        return i
+    end
+end
+
+
+"""
+    Tokenized(dict)
+
+Return an indexable container mapping from the `token ∈ tokens(dict)` to the values of
+`dict`. 
+"""
+struct Tokenized{Parent <: AbstractDictionary}
+    parent::Parent
+end
+
+Base.parent(dict::Tokenized) = dict.parent
+
+@propagate_inbounds function Base.getindex(d::Tokenized, t)
+    return gettoken(parent(d), t)
+end
+
+function Base.isassigned(d::Tokenized, t)
+    return istokenassigned(parent(d), t)
+end
+
+@propagate_inbounds function Base.setindex!(d::Tokenized, value, t)
+    return settokenvalue!(parent(d), t, value)
+end
+
+
+"""
+    tokenized(dict::AbstractDictionary)
+
+For `istokenizable` dictionary `dict`, return a container that supports
+`getindex(dict, token)` and `isassigned(dict, token)`, where `token ∈ tokens(dict)`.
+
+If `issettable(dict)` then the result should also support `setindex!(dict, value, token)`.
+
+Note: the output is not necessarily an `AbstractDictionary`.
+"""
+function tokenized(d::AbstractDictionary)
+    if istokenizable(d)
+        return Tokenized{tokentype(d), eltype(d), typeof(d)}(d)
+    else
+        return d
+    end
+end
+
+
+"""
     gettoken(dict, i)
 
 Return the tuple `(hasindex, token)`, where `hasindex` is `true` if `i` exists in `dict`.
-The `token` can be used to retrieve a value using the `gettokenvalue` function.
+The `token` can be used to retrieve a value using the `gettokenvalue` function. You can
+check if a token is assigned to a valid Julia object (i.e. not `#undef`) via
+`istokenassigned`.
 
-Mutable dictionaries allow you to set a corresponding value via the `settokenvalue!`
-function (see `ismutable`).
+Settable (i.e. mutable) dictionaries allow you to set a corresponding value via the
+`settokenvalue!` function (see the `issettable` trait).
 
-Insertable dictionaries provide the `gettoken!` function (see `isinsertable`).
+Insertable dictionaries provide the `gettoken!` function (see the `isinsertable` trait).
 """
 @propagate_inbounds function gettoken(d::AbstractDictionary{I}, i::I) where I
+    if istokenizable(d)
+        error("gettoken needs to be defined for tokenizable dictionary: $(typeof(d))")
+    end
+
     @boundscheck if !haskey(keys(d), i)
         return (false, i)
     end
     return (true, i)
 end
 
-@propagate_inbounds function gettokenvalue(d::AbstractDictionary, i)
-    return d[i]
+@propagate_inbounds function gettokenvalue(d::AbstractDictionary, token)
+    if istokenizable(d)
+        error("gettokenvalue needs to be defined for tokenizable dictionary: $(typeof(d))")
+    end
+
+    return d[token]
 end
 
-# This default method will generally work but maybe should be overloaded to be less crappy
 @propagate_inbounds function istokenassigned(d::AbstractDictionary, token)
-    try
-        gettokenvalue(d, token)
-        return true
-    catch e
-        if isa(e, BoundsError) || isa(e, IndexError) || isa(e, UndefRefError)
-            return false
-        else
-            rethrow()
-        end
+    if istokenizable(d)
+        error("istokenassigned needs to be defined for tokenizable dictionary: $(typeof(d))")
     end
+
+    return isassigned(d, token)
 end
 
 @propagate_inbounds function settokenvalue!(d::AbstractDictionary, i, value)
+    if !issettable(d)
+        error("Cannot mutate values of dictionary: $(typeof(d))")
+    end
+    if istokenizable(d)
+        error("settoken! needs to be defined for tokenizable dictionary: $(typeof(d))")
+    end
+
     return d[i] = value
 end
 
-# TODO: possibly istokenassigned(d::AbstractDictionary, token) --> Bool
+## Check if we can do fast mutual iteration over multiple containers
 
-## `tokenize` - for fast mutual iteration over multiple containers
+# I guess someone could overload this method if they can check this faster than O(N),
+# but more precise than ===
 
-tokens(d::AbstractDictionary) = keys(d)
-tokens(i::AbstractIndices) = i
+"""
+    sharetokens(dict1, dict2)
 
-function _tokens(i1::AbstractIndices, i2::AbstractIndices)
-    if issetequal(i1, i2)
-        return i1
-    else
-        throw(IndexError("Indices do not match"))
-    end
-end
+Return `true` if `dict1` and `dict2` obviously share tokens, using a test which can be
+performed quickly (e.g. O(1) rather than O(N)). Return `false` otherwise.
 
-_tokens(t1::AbstractDictionary, i2::AbstractIndices) = tokens(keys(t1), i2)
-_tokens(i1::AbstractIndices, t2::AbstractDictionary) = tokens(i1, keys(t2))
-function _tokens(t1::AbstractDictionary, t2::AbstractDictionary)
-    if t1 === t2 # Could possibly do a bit less strict than ===
-        return t1
-    else
-        return _tokens(keys(t1), keys(t2))
-    end
-end
-
-tokens(d1::AbstractDictionary, d2::AbstractDictionary, ds::AbstractDictionary...) = _tokens(tokens(d1), tokens(d2, ds...))
-
-function tokenize(d::AbstractDictionary, ds::AbstractDictionary...)
-    t = tokens(d, ds...)
-    return (t, _tokenize(t, d, ds...)...)
-end
-
-_tokenize(t::AbstractDictionary, d::AbstractDictionary) = (tokenized(t, d),)
-_tokenize(t::AbstractDictionary, d::AbstractDictionary, ds::AbstractDictionary...) = (tokenized(t, d), _tokenize(t, ds...)...)
-
-tokenized(t::AbstractDictionary, d::AbstractDictionary) = d
-
-# iteration
-#=
-function iterate(d::AbstractDictionary, s...)
-    (tokens, d2) = tokenize(d)
-    it = iterate(tokens(AbstractDictionary), s...)
-    if it === nothing
-        return nothing
-    else
-        (i, s2) = it
-        return (@inbounds(d2[i]), s2)
-    end
-end
-=#
+Note: the test may not be precise, this defaults to `tokens(dict1) === tokens(dict2)`.
+"""
+sharetokens(d1, d2) = tokens(d1) === tokens(d2)
+sharetokens(d1, d2, ds...) = sharetokens_fast(d1, d2) && sharetokens_fast(d1, ds...)

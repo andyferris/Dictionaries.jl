@@ -24,6 +24,9 @@ function HashIndices{T}(; sizehint::Int = 16) where {T}
     HashIndices{T}(zeros(UInt8, sz), Vector{T}(undef, sz), 0, 0, 1, 0)
 end
 
+
+## Constructors
+
 """
     HashIndices(iter)
     HashIndices{I}(iter)
@@ -54,8 +57,95 @@ function HashIndices{T}(iter) where {T}
     return h
 end
 
-isinsertable(::HashIndices) = true
+function Base.copy(h::HashIndices{T}) where {T}
+    return HashIndices{T}(copy(h.slots), copy(h.inds), h.ndel, h.count, h.idxfloor, h.maxprobe)
+end
+
 Base.empty(::HashIndices, ::Type{T}) where {T} = HashIndices{T}()
+
+
+## Length
+Base.length(h::HashIndices) = h.count
+
+
+## Token interface
+
+istokenizable(::HashIndices) = true
+tokentype(::HashIndices) = Int
+
+@propagate_inbounds isslotempty(h::HashIndices, i::Int) = h.slots[i] == 0x0
+@propagate_inbounds isslotfilled(h::HashIndices, i::Int) = h.slots[i] == 0x1
+@propagate_inbounds isslotdeleted(h::HashIndices, i::Int) = h.slots[i] == 0x2 # deletion marker/tombstone
+
+istokenassigned(h::HashIndices, i::Int) = isslotfilled(h, i)
+
+# iteratetoken
+
+function skip_deleted(h::HashIndices, i)
+    L = length(h.slots)
+    @inbounds while i <= L && !isslotfilled(h, i)
+        i += 1
+    end
+    return i
+end
+
+@propagate_inbounds function iteratetoken(h::HashIndices{T}) where {T}
+    idx = skip_deleted(h, h.idxfloor)
+    h.idxfloor = idx # An optimization to skip unnecessary elements when iterating multiple times
+    
+    if idx > length(h.inds)
+        return nothing
+    else
+        return (idx, idx + 1)
+    end
+end
+
+@propagate_inbounds function iteratetoken(h::HashIndices{T}, idx::Int) where {T}
+    idx = skip_deleted(h, idx)
+    
+    if idx > length(h.inds)
+        return nothing
+    else
+        return (idx, idx + 1)
+    end
+end
+
+# gettoken
+function hashtoken(key, sz::Int)
+    # Given key what is the hash slot? sz is a power of two
+    (((hash(key)%Int) & (sz-1)) + 1)::Int
+end
+
+function gettoken(h::HashIndices{T}, key::T) where {T}
+    sz = length(h.inds)
+    iter = 0
+    maxprobe = h.maxprobe
+    token = hashtoken(key, sz)
+    keys = h.inds
+
+    @inbounds while true
+        if isslotempty(h, token)
+            break
+        end
+        if !isslotdeleted(h, token) && (key === keys[token] || isequal(key, keys[token]))
+            return (true, token)
+        end
+
+        token = (token & (sz-1)) + 1
+        iter += 1
+        iter > maxprobe && break
+    end
+    return (false, 0)
+end
+
+# gettokenvalue
+@propagate_inbounds function gettokenvalue(h::HashIndices, token::Int)
+    return h.inds[token]
+end
+
+
+# insertable interface
+isinsertable(::HashIndices) = true
 
 function Base.empty!(h::HashIndices{T}) where {T}
     fill!(h.slots, 0x0) # It should be OK to reduce this back to some smaller size.
@@ -67,16 +157,6 @@ function Base.empty!(h::HashIndices{T}) where {T}
     h.idxfloor = 1
     return h
 end
-
-function Base.copy(h::HashIndices{T}) where {T}
-    return HashIndices{T}(copy(h.slots), copy(h.inds), h.ndel, h.count, h.idxfloor, h.maxprobe)
-end
-
-hashtoken(key, sz::Int) = (((hash(key)%Int) & (sz-1)) + 1)::Int
-
-@propagate_inbounds isslotempty(h::HashIndices, i::Int) = h.slots[i] == 0x0
-@propagate_inbounds isslotfilled(h::HashIndices, i::Int) = h.slots[i] == 0x1
-@propagate_inbounds isslotdeleted(h::HashIndices, i::Int) = h.slots[i] == 0x2 # deletion marker/tombstone
 
 function Base.rehash!(h::HashIndices, newsz::Int = length(h.inds))
     _rehash!(h, nothing, newsz)
@@ -147,28 +227,7 @@ function _sizehint!(h::HashIndices{T}, values::Union{Nothing, Vector}, newsz::In
     _rehash!(h, values, newsz)
 end
 
-# get a tuple of the presence of a key and the token where the key is stored
-function gettoken(h::HashIndices{T}, key::T) where {T}
-    sz = length(h.inds)
-    iter = 0
-    maxprobe = h.maxprobe
-    token = hashtoken(key, sz)
-    keys = h.inds
 
-    @inbounds while true
-        if isslotempty(h, token)
-            break
-        end
-        if !isslotdeleted(h, token) && (key === keys[token] || isequal(key, keys[token]))
-            return (true, token)
-        end
-
-        token = (token & (sz-1)) + 1
-        iter += 1
-        iter > maxprobe && break
-    end
-    return (false, 0)
-end
 
 function gettoken!(h::HashIndices{T}, key::T) where {T}
     (token, _) = _gettoken!(h, nothing, key) # This will make sure a slot is available at `token` (or `-token` if it is new)
@@ -257,10 +316,6 @@ end
 end
 
 
-function Base.in(i::T, h::HashIndices{T}) where {T}
-    return gettoken(h, i)[1]
-end
-
 function deletetoken!(h::HashIndices{T}, token::Int) where {T}
     h.slots[token] = 0x2
     isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), h.inds, token-1)
@@ -270,31 +325,7 @@ function deletetoken!(h::HashIndices{T}, token::Int) where {T}
     return h
 end
 
-# Iteration
-function skip_deleted(h::HashIndices, i)
-    L = length(h.slots)
-    @inbounds while i <= L && !isslotfilled(h, i)
-        i += 1
-    end
-    return i
-end
-
-function skip_deleted_floor!(h::HashIndices)
-    idx = skip_deleted(h, h.idxfloor)
-    h.idxfloor = idx
-    idx
-end
-
-@propagate_inbounds _iterate(h::HashIndices{T}, i::Int) where {T} = i > length(h.inds) ? nothing : (h.inds[i], i + 1)
-
-function Base.iterate(h::HashIndices)
-    _iterate(h, skip_deleted_floor!(h))
-end
-@propagate_inbounds Base.iterate(h::HashIndices, i::Int) = _iterate(h, skip_deleted(h, i))
-
-Base.isempty(h::HashIndices) = (h.count == 0)
-Base.length(h::HashIndices) = h.count
-
+# Since deleting elements doesn't mess with iteration, we can use `unsafe_filter!``
 Base.filter!(pred, h::HashIndices) = Base.unsafe_filter!(pred, h)
 
 # The default insertable indices
@@ -302,7 +333,7 @@ Base.empty(d::AbstractIndices, ::Type{T}) where {T} = HashIndices{T}()
 
 # ------------------------------------------------------------------------
 # The tokens of a hash index is an AbstractDictionary from keys to integer token
-
+#=
 struct HashTokens{I} <: AbstractDictionary{I, Int}
     indices::HashIndices{I}
 end
@@ -327,3 +358,4 @@ end
 @propagate_inbounds Base.iterate(t::HashTokens, i::Int) = _iterate(t, skip_deleted(t.indices, i))
 
 tokenized(t::HashTokens, h::HashIndices) = h.inds
+=#

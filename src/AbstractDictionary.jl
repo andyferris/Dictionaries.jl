@@ -3,17 +3,18 @@
 
 Abstract type for a dictionary between unique indices of type `I` to elements of type `T`.
 
-At minimum, an `AbstractDictionary` should implement:
+At minimum, an `AbstractDictionary` must implement:
 
  * `getindex(::AbstractDictionary{I, T}, ::I) --> T`
+ * `isassigned(::AbstractDictionary{I}, ::I) --> Bool`
  * `keys(::AbstractDictionary{I, T}) --> AbstractIndices{I}`
  * A constructor `MyDictionary(values, indices)` returning a dictionary with the
    given `indices` and values set to `values`, matched by iteration. Alternatively, `values`
    may be a scalar in the broadcasting sense, where all elements are set to the same value.
 
-If values can be mutated, then an `AbstractDictionary` should implement:
+If values can be set/mutated, then an `AbstractDictionary` should implement:
 
- * `ismutable(::AbstractDictionary)` (returning `true`)
+ * `issettable(::AbstractDictionary)` (returning `true`)
  * `setindex!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
  * `isassigned(dict::AbstractDictionary{I}, ::I) --> Bool`
  * A constructor `MyDictionary(undef, indices)` returning a dictionary with the
@@ -34,22 +35,41 @@ Base.eltype(::Type{<:AbstractDictionary{I, T}}) where {I, T} = T
 Base.keytype(d::AbstractDictionary) = keytype(typeof(d))
 Base.keytype(::Type{<:AbstractDictionary{I, T}}) where {I, T} = I
 
-function Base.keys(d::AbstractDictionary)
-    error("Every AbstractDictionary type must define a method for `keys`: $(typeof(d))")
+function Base.keys(dict::AbstractDictionary)
+    error("Every AbstractDictionary type must define a method for `keys`: $(typeof(dict))")
 end
 
-@propagate_inbounds function Base.getindex(d::AbstractDictionary{I}, i::I) where {I}
-    (hastoken, token) = gettoken(d, i)
+@propagate_inbounds function Base.getindex(dict::AbstractDictionary{I}, i::I) where {I}
+    if !(istokenizable(dict))
+        error("Every AbstractDictionary type must define a method for `getindex`: $(typeof(dict))")
+    end
+
+    (hastoken, token) = gettoken(dict, i)
     @boundscheck if !hastoken
         throw(IndexError("Dictionary does not contain index: $i"))
     end
-    return gettokenvalue(d, token)
+    return @inbounds gettokenvalue(dict, token)
 end
 
-"""
-    ismutable(dict::AbstractDictionary)
+@inline function Base.iterate(dict::AbstractDictionary{I, T}, s...) where {I, T}
+    if istokenizable(dict)
+        tmp = iteratetoken(keys(dict), s...)
+        tmp === nothing && return nothing
+        (t, s2) = tmp
+        return (gettokenvalue(dict, t), s2)
+    else
+        tmp = iterate(keys(dict), s...)
+        tmp === nothing && return nothing
+        (i, s2) = tmp
+        return (@inbounds dict[i], s2)
+    end
+end
 
-Return `true` if the dictionary `dict` obeys the mutable interface, or `false` otherwise.
+
+"""
+    issettable(dict::AbstractDictionary)
+
+Return `true` if the dictionary `dict` obeys the settable interface, or `false` otherwise.
 
 A mutable dictionary is one where the *values* can be modified (but not necessarily the
 indices). The mutable interface requires the dictionary to implement:
@@ -61,7 +81,7 @@ indices). The mutable interface requires the dictionary to implement:
 
 See also `isinsertable`.
 """
-ismutable(::AbstractDictionary) = false
+issettable(::AbstractDictionary) = false
 
 function Base.isassigned(indices::AbstractIndices{I}, i::I) where {I}
     return i in indices

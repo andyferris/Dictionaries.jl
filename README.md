@@ -52,15 +52,15 @@ Non-scalar indexing is simplified such that it is essentially `getindices(dict1,
 
 These rules match those for `AbstractArray`, including offset arrays. The `view` function will work similarly (work-in-progress), and the `setindices!` function from *Indexing.jl* is already implemented (see mutation, below).
 
-### Mutation
+### Setting/mutating values
 
-Many dictionary types support mutation of the *values* of the elements. To support mutation, an `AbstractDictionary` should implement:
+Many dictionary types support setting or mutating the the *values* of the elements. To support mutation, an `AbstractDictionary` should implement:
 
- * `ismutable(::AbstractDictionary)` (returning `true`)
+ * `issettable(::AbstractDictionary)` (returning `true`)
  * `setindex!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
  * A constructor `MyDictionary(undef::UndefInitializer, indices)` returning a dictionary with the given `indices` and unitialized values.
 
-The `ismutable` function is a trait function that indicate whether an `AbstractDictionary` supports `setindex!`.
+The `issettable` function is a trait function that indicate whether an `AbstractDictionary` supports `setindex!`.
 
 Because the idempotency property of `AbstractIndices`, indices always have immutable values - but indices can be inserted or deleted (see below).
 
@@ -93,11 +93,11 @@ Make it fast! The concept is similar to `eachindex`, but a bit more generalized.
 
 We need a generic interface to create new dictionaries. I'd like to make working with an imagined `StaticDictionary` or `DistributedDictionary` or `GPUDictionary` to be seemless, such that generic code "just works" and does the logical performant operations. This work is not complete.
 
-Constructors may need some more thought, and are partly implemented. In general, `MyDictionary()` seems appropriate to create an empty dictionary (or indices). For `AbstractIndices`, it seems appropriate for `MyIndices(iter)` to simply iterate through the input *values*. The form `MyDictionary(undef, ::AbstractIndices)` seems appropriate to create an `ismutable` dictionary with given keys but uninitialized values. That suggests `MyDictionary(newvalues, newindices)` as the general initialized form, where the key-value pairings are defined by the mutual iteration of the inputs (or perhaps via `broadcast` so `newvalues` could be e.g. a scalar and this is like `fill`, though this is not yet implemented).
+Constructors may need some more thought, and are partly implemented. In general, `MyDictionary()` seems appropriate to create an empty dictionary (or indices). For `AbstractIndices`, it seems appropriate for `MyIndices(iter)` to simply iterate through the input *values*. The form `MyDictionary(undef, ::AbstractIndices)` seems appropriate to create an `issettable` dictionary with given keys but uninitialized values. That suggests `MyDictionary(newvalues, newindices)` as the general initialized form, where the key-value pairings are defined by the mutual iteration of the inputs (or perhaps via `broadcast` so `newvalues` could be e.g. a scalar and this is like `fill`, though this is not yet implemented).
 
 In future work, a single argument `MyDictionary(otherdict)` could copy the keys and values from `otherdict`, and is a bit like `convert`. I also note that sometimes working with `Pair`s is most convenient, so this clashes with the idea of having `MyDictionary(iter)` to iterate `Pair`s like `Dict` would (and `MyDictionary(pairs...)` seems ill-advised). Nevertheless, a solution for `Pair`s would be nice (even if it is a factory-style pattern).
 
-`similar` works like `AbstractArray`: it creates a container that is mutable (`ismutable`) and has the same keys as the input. The values are `undef` by default. In general we can overide the element type or keys, using the form (with default values) `newdict = similar(olddict, NewT = eltype(olddict), newkeys = keys(olddict))`. I don't see any reason for the output container to be `isinsertable`.
+`similar` works like `AbstractArray`: it creates a container that is settable/mutable (`issettable`) and has the same keys as the input. The values are `undef` by default. In general we can overide the element type or keys, using the form (with default values) `newdict = similar(olddict, NewT = eltype(olddict), newkeys = keys(olddict))`. I don't see any reason for the output container to be `isinsertable`.
 
 Sometimes one wants to create an empty insertable container. The `empty` function might be a good candidate, where one can set the index and value types. On the other hand, there is no reason that we can't ask for an `empty` *immutable* or *non-insertable* container (as `empty` is useful even for `Tuple`s) so perhaps a new generic function that ensures `isinsertable` is preferable. (Note: `AbstractArray` has this same problem, where generic code exists in the wild that expects to be able to `push!` to `empty(::AbstractVector)`, for example, which fails for `StaticArray`s).
 

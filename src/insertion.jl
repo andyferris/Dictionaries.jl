@@ -21,7 +21,7 @@ functions `dict` needs to implement for the insertable interface are:
 Functions `get!`, `set!` and `unset!` are also provided for common operations where you are
 not sure if an index exists or not.
     
-See also `ismutable`.
+See also `issettable`.
 """
 isinsertable(::AbstractDictionary) = false
 

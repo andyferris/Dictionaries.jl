@@ -48,8 +48,8 @@
         insert!(d, i, i+1)
         @test d[i] == i + 1 ? true : (@show i; false)
     end
-    @test all(in(i, d) == !iseven(i) for i in 2:1000)
-    @test all(in(i, keys(d)) == iseven(i) for i in 2:1000)
+    @test all(in(i, d) == !iseven(i) for i in 2:2:1000)
+    @test all(in(i, keys(d)) == iseven(i) for i in 2:2:1000)
     @test isempty(empty!(d))
    
     # TODO token interface

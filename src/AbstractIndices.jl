@@ -5,14 +5,15 @@ Abstract type for the unique keys of an `AbstractDictionary`. It is itself an `A
 which `getindex` is idempotent, such that `indices[i] = i`. (This is a generalization of
 `Base.Slice`).
 
-At minimum, an `AbstractIndices{I}` should implement:
+At minimum, an `AbstractIndices{I}` must implement:
 
  * The `iterate` protocol, returning unique values of type `I`.
  * `in`, such that `in(i, indices)` implies there is an element of `indices` which `isequal` to `i`.
  * A one-argument constructor `MyIndices(iter)` that builds indices by iterating `iter`.
+ * Either `length`, or override `IteratorSize` to `SizeUnknown`.
 
 While an `AbstractIndices` object is a dictionary, the value corresponding to each index is
-fixed, so `ismutable(::AbstractIndices) = false` and `setindex!` is never defined.
+fixed, so `issettable(::AbstractIndices) = false` and `setindex!` is never defined.
 
 If arbitrary indices can be added or removed from the set, implement:
 
@@ -34,18 +35,41 @@ end
 
 Base.keys(i::AbstractIndices) = i
 
-function Base.iterate(i::AbstractIndices, s...)
-    error("All AbstractIndices must define `iterate`: $(typeof(i))")
+@inline function Base.iterate(inds::AbstractIndices, s...)
+    if istokenizable(inds)
+        tmp = iteratetoken(keys(inds), s...)
+        tmp === nothing && return nothing
+        (t, s2) = tmp
+        return (gettokenvalue(inds, t), s2)
+    else
+        error("All AbstractIndices must define `iterate`: $(typeof(inds))")
+    end
 end
 
-# Fallback definition would be rediculously slow. There shouldn't be many
-# AbstractIndex types that rely on iteration for this.
 function Base.in(i::I, indices::AbstractIndices{I}) where I
-    error("All AbstractIndices must define `in`: $(typeof(i))")
+    if !istokenizable(indices)
+        # A fallback definition based on iteration would be rediculously slow. There
+        # shouldn't be many `AbstractIndex` types that rely on iteration for this.
+        error("All AbstractIndices must define `in`: $(typeof(indices))")
+    end
+
+    return gettoken(indices, i)[1]
 end
 
 function Base.in(i, indices::AbstractIndices{I}) where I
     return convert(I, i) in indices
+end
+
+function Base.length(indices::AbstractIndices)
+    if Base.IteratorSize(indices) isa Base.SizeUnknown
+        out = 0
+        for _ in tokens(indices)
+            out += 1
+        end
+        return out
+    end
+
+    error("All AbstractIndices must define `length` or else have `IteratorSize` of `SizeUnknown`: $(typeof(indices))")
 end
 
 Base.unique(i::AbstractIndices) = i
