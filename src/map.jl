@@ -3,7 +3,7 @@
 # TODO consider if `map` should respect iteration order or indices??
 
 function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary, d2::AbstractDictionary, ds::AbstractDictionary...)
-    if sharetokens_fast(out, d, d2, ds...)
+    if sharetokens(out, d, d2, ds...)
         @inbounds for t in tokens(out)
             settokenvalue!(out, t, f(gettokenvalue(d, t), gettokenvalue(d2, t), map(x -> @inbounds(gettokenvalue(x, t)), ds)...))
         end
@@ -17,7 +17,7 @@ end
 
 # (avoid an _apply for the two-input case)
 function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary, d2::AbstractDictionary)
-    if sharetokens_fast(out, d, d2)
+    if sharetokens(out, d, d2)
         @inbounds for t in tokens(out)
             settokenvalue!(out, t, f(gettokenvalue(d, t), gettokenvalue(d2, t)))
         end
@@ -30,7 +30,7 @@ function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary, d2::Abstra
 end
 
 function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary)
-    if sharetokens_fast(out, d)
+    if sharetokens(out, d)
         @inbounds for t in tokens(out)
             settokenvalue!(out, t, f(gettokenvalue(d, t)))
         end

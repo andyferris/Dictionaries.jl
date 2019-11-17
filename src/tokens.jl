@@ -198,4 +198,4 @@ performed quickly (e.g. O(1) rather than O(N)). Return `false` otherwise.
 Note: the test may not be precise, this defaults to `tokens(dict1) === tokens(dict2)`.
 """
 sharetokens(d1, d2) = tokens(d1) === tokens(d2)
-sharetokens(d1, d2, ds...) = sharetokens_fast(d1, d2) && sharetokens_fast(d1, ds...)
+sharetokens(d1, d2, ds...) = sharetokens(d1, d2) && sharetokens(d1, ds...)

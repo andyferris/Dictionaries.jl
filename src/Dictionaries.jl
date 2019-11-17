@@ -5,7 +5,7 @@ using SplitApplyCombine
 
 using Base: @propagate_inbounds
 
-export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary
+export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary, DictionaryView, FilteredDictionary, FilteredIndices
 
 export issettable, isinsertable, set!, unset!
 export tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, gettoken!, settokenvalue!, deletetoken!, sharetokens
@@ -20,6 +20,7 @@ include("indexing.jl")
 include("insertion.jl")
 include("filter.jl")
 include("map.jl")
+include("foreach.jl")
 
 include("PairDictionary.jl")
 include("Indices.jl")

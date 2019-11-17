@@ -60,6 +60,9 @@ function Base.in(i, indices::AbstractIndices{I}) where I
     return convert(I, i) in indices
 end
 
+# Match the default setting from Base - the majority of containers will know their size
+Base.IteratorSize(indices::AbstractIndices) = Base.HasLength() 
+
 function Base.length(indices::AbstractIndices)
     if Base.IteratorSize(indices) isa Base.SizeUnknown
         out = 0
@@ -78,12 +81,12 @@ struct IndexError <: Exception
 	msg::String
 end
 
-function checkindex(indices::AbstractIndices{I}, i::I) where {I}
+function Base.checkindex(indices::AbstractIndices{I}, i::I) where {I}
 	if i ∉ indices
 		throw(IndexError("Index $i not found in indices $indices"))
 	end
 end
-checkindex(indices::AbstractIndices{I}, i) where {I} = convert(I, i)
+Base.checkindex(indices::AbstractIndices{I}, i) where {I} = convert(I, i)
 
 function checkindices(indices::AbstractIndices, inds)
     if !(inds ⊆ indices)

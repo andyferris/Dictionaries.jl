@@ -65,6 +65,11 @@ end
     end
 end
 
+Base.length(d::AbstractDictionary) = length(keys(d))
+Base.IteratorSize(d::AbstractDictionary) = Base.IteratorSize(keys(d))
+
+Base.checkindex(d::AbstractDictionary{I}, i) where {I} = checkindex(d, convert(I, i))
+Base.checkindex(d::AbstractDictionary{I}, i::I) where {I} = checkindex(keys(d), i)
 
 """
     issettable(dict::AbstractDictionary)
@@ -100,8 +105,6 @@ function Base.setindex!(d::AbstractDictionary{I, T}, value::T, i::I) where {I, T
     settokenvalue!(d, token, value)
     return d
 end
-
-Base.length(d::AbstractDictionary) = length(keys(d))
 
 # dictionaries are isequal if they iterate in the same order
 function Base.isequal(d1::AbstractDictionary, d2::AbstractDictionary)
@@ -186,3 +189,52 @@ Base.similar(d::AbstractDictionary, i::AbstractIndices) = similar(d, eltype(d), 
 
 Base.empty(d::AbstractDictionary) = empty(d, eltype(d))
 Base.empty(d::AbstractDictionary, ::Type{T}) where {T} = empty(d, keytype(d), T)
+
+# zeros
+Base.zeros(d::AbstractDictionary) = zeros(d, Float64, keys(d))
+Base.zeros(::Type{T}, i::AbstractIndices) where {T} = zeros(i, T, i)
+Base.zeros(d::AbstractDictionary, ::Type{T}) where {T} = zeros(d, T, keys(d))
+Base.zeros(d::AbstractDictionary, i::AbstractIndices) = zeros(d, i, Float64)
+function Base.zeros(d::AbstractDictionary, ::Type{T}, i::AbstractIndices) where {T}
+    out = similar(d, T, i)
+    fill!(out, convert(T, 0))
+    return out
+end
+
+# ones
+Base.ones(d::AbstractDictionary) = ones(d, Float64, keys(d))
+Base.ones(::Type{T}, i::AbstractIndices) where {T} = ones(i, T, i)
+Base.ones(d::AbstractDictionary, ::Type{T}) where {T} = ones(d, T, keys(d))
+Base.ones(d::AbstractDictionary, i::AbstractIndices) = ones(d, i, Float64)
+function Base.ones(d::AbstractDictionary, ::Type{T}, i::AbstractIndices) where {T}
+    out = similar(d, T, i)
+    fill!(out, convert(T, 1))
+    return out
+end
+
+# falses
+Base.falses(d::AbstractDictionary) = falses(d, keys(d))
+function Base.falses(d::AbstractDictionary, i::AbstractIndices)
+    out = similar(d, Bool, i)
+    fill!(out, false)
+    return out
+end
+
+# trues?
+
+# fill! and fill
+
+function Base.fill!(d::AbstractDictionary, value)
+    for t in tokens(d)
+        settokenvalue!(d, t, value)
+    end
+    return d
+end
+
+Base.fill(value, indices::AbstractIndices) = fill(value, typeof(value), indices)
+
+function Base.fill(value, ::Type{T}, indices::AbstractIndices) where {T}
+    out = similar(indices, T, indices)
+    fill!(out, value)
+    return out    
+end

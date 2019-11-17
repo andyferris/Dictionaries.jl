@@ -40,23 +40,74 @@ end
 # Basically, getindices maps the indices over the indexee
 @inline function Indexing.getindices(d, inds::AbstractDictionary)
     @boundscheck checkindices(keys(d), inds)
-    map(i -> @inbounds(d[i]), inds)
+    return map(i -> @inbounds(d[i]), inds)
 end
 
 @inline function Indexing.setindices!(d, value, inds::AbstractDictionary)
     @boundscheck checkindices(keys(d), inds)
-    map(i -> @inbounds(d[i] = value), inds)
+    foreach(i -> @inbounds(d[i] = value), inds)
+    return d
+end
+
+@inline function Indexing.getindices(inds1::AbstractIndices, inds2::AbstractIndices)
+    @boundscheck checkindices(inds1, inds2)
+    return inds2 # TODO should this be a `copy`, perhaps?
 end
 
 ## Views
-# TODO
 
-#@inline function Base.view()
+struct DictionaryView{I, V, Inds <: AbstractDictionary{I}, Vals <: AbstractDictionary{<:Any, V}} <: AbstractDictionary{I, V}
+    inds::Inds
+    vals::Vals
+end
 
-#function Base.checkindices(target_inds, inds::AbstractDictionary)
-#    for i in inds
-#        if !(i ∈ target_inds)
-#            throw(IndexError("Index not found: $i"))
-#        end
-#    end
-#end
+Base.parent(d::DictionaryView) = d.vals
+
+Base.keys(d::DictionaryView) = keys(d.inds)
+
+function Base.isassigned(d::DictionaryView{I}, i::I) where {I}
+    i2 = @inbounds d.inds[i]
+    return isassigned(d.vals, i2)
+end
+
+@propagate_inbounds function Base.getindex(d::DictionaryView{I}, i::I) where {I}
+    i2 = @inbounds d.inds[i]
+    return d.vals[i2]
+end
+
+@propagate_inbounds function Base.setindex!(d::DictionaryView{I, T}, value::T, i::I) where {I, T}
+    i2 = @inbounds d.inds[i]
+    return d.vals[i2] = value
+end
+
+# `DictionaryView` shares tokens with it's `keys` (and can co-iterate quickly with other dictionaries with those keys)
+@propagate_inbounds function gettoken(d::DictionaryView{I}, i::I) where {I}
+    return gettoken(d.inds, i)
+end
+
+@propagate_inbounds function istokenassigned(d::DictionaryView, t)
+    i2 = gettokenvalue(d.inds, t)
+    return isassigned(d.vals, i2)
+end
+
+@propagate_inbounds function gettokenvalue(d::DictionaryView, t)
+    i2 = gettokenvalue(d.inds, t)
+    return d.vals[i2]
+end
+
+@propagate_inbounds function settokenvalue!(d::DictionaryView{<:Any, T}, t, value::T) where {T}
+    i2 = gettokenvalue(d.inds, t)
+    return d.vals[i2] = value
+end
+
+
+@inline function Base.view(vals::AbstractDictionary, inds::AbstractDictionary)
+    @boundscheck checkindices(keys(vals), inds)
+
+    return DictionaryView{keytype(inds), eltype(vals), typeof(inds), typeof(vals)}(inds, vals)
+end
+
+@inline function Base.view(inds1::AbstractIndices, inds2::AbstractIndices)
+    @boundscheck checkindices(inds1, inds2)
+    return inds2
+end

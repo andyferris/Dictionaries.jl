@@ -113,9 +113,7 @@ Sometimes one might want to enable/disable mutation and/or insertion. There has 
 
  * Some ability to construct dictionaries from a list of pairs.
  * For constructors it is strange that the `undef` value comes before the keys. It is not too late to introduce `Array{Int}((3,5,7), undef))`, for example. Or even `Array{Int}(Base.CartesianIndices((3,5,7)), undef))`. Basically the keys should be in the first slot...
- * `HashDictionary{Int64, Int64}([4,5,6], [1,2,3])` explodes.
- * Fix multi-input `map`
  * Constructors including copy-constructor should probably require opt-in, perhaps required if can be returned by `similar`, `empty`, but not in general (e.g. a `PairDictionary` cannot be copy-constructed, it's a dictionary wrapper instead).
- * Tokens, tokens, tokens.
  * A surface interface for updates like https://github.com/JuliaLang/julia/pull/31367
- * `filter` and lazily-filtered dictionaries via `filterview` (when this package is stable and registered, we may flip the dependency relationship with *SplitApplyCombine.jl* and put `filterview` there).
+ * Improved printing - replace `=>` with `│` and colummar indentation, don't calculate length (beyond some cutoff) if it is `SizeUnknown`.
+ * `broadcast` (and consider whether `map` preserves iteration order?)

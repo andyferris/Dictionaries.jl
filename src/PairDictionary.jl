@@ -18,6 +18,7 @@ Base.length(d::PairDictionary) = Base.length(parent(d))
 @propagate_inbounds Base.getindex(d::PairDictionary{I}, i::I) where {I} = i => parent(d)[i]
 Base.isassigned(d::PairDictionary{I}, i::I) where {I} = isassigned(parent(d), i)
 
+
 # Token interface
 @propagate_inbounds gettoken(d::PairDictionary{I}, i::I) where {I} = gettoken(parent(d), i)
 
