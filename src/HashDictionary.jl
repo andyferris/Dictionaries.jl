@@ -61,7 +61,7 @@ function HashDictionary{I, T}(values, indices) where {I, T}
     end
 
     for (v, i) in zip(values, indices)
-        insert!(d, v, i)
+        insert!(d, i, v)
     end
 
     return d

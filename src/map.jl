@@ -8,6 +8,7 @@ function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary, d2::Abstra
             settokenvalue!(out, t, f(gettokenvalue(d, t), gettokenvalue(d2, t), map(x -> @inbounds(gettokenvalue(x, t)), ds)...))
         end
     else
+        @boundscheck nothing # TODO check that indices match
         @inbounds for i in keys(out)
             out[i] = f(d[i], d2[i], map(x -> @inbounds(x[i]), ds)...)
         end
@@ -22,6 +23,7 @@ function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary, d2::Abstra
             settokenvalue!(out, t, f(gettokenvalue(d, t), gettokenvalue(d2, t)))
         end
     else
+        @boundscheck nothing # TODO check that indices match
         @inbounds for i in keys(out)
             out[i] = f(d[i], d2[i])
         end
@@ -35,6 +37,7 @@ function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary)
             settokenvalue!(out, t, f(gettokenvalue(d, t)))
         end
     else
+        @boundscheck nothing # TODO check that indices match
         @inbounds for i in keys(out)
             out[i] = f(d[i])
         end

@@ -21,11 +21,11 @@
 
     d2 = HashDictionary([2,3,4], [3,4,2])
 
-    @test issetequal(pairs(getindices(i, d2)::HashDictionary), [2=>3, 3=>4, 4=>2])
-    @test issetequal(pairs(view(i, d2)::DictionaryView), [2=>3, 3=>4, 4=>2])
+    @test issetequal(pairs(getindices(i, d2)::HashDictionary), [4=>3, 2=>4, 3=>2])
+    @test issetequal(pairs(view(i, d2)::DictionaryView), [4=>3, 2=>4, 3=>2])
 
-    @test issetequal(pairs(getindices(d, d2)::HashDictionary), [2=>1, 3=>0, 4=>1])
-    @test issetequal(pairs(view(d, d2)::DictionaryView), [2=>1, 3=>0, 4=>1])
+    @test issetequal(pairs(getindices(d, d2)::HashDictionary), [2=>0, 3=>1, 4=>1])
+    @test issetequal(pairs(view(d, d2)::DictionaryView), [2=>0, 3=>1, 4=>1])
 
     setindices!(d, 2, d2)
     

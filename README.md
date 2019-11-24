@@ -116,4 +116,4 @@ Sometimes one might want to enable/disable mutation and/or insertion. There has 
  * Constructors including copy-constructor should probably require opt-in, perhaps required if can be returned by `similar`, `empty`, but not in general (e.g. a `PairDictionary` cannot be copy-constructed, it's a dictionary wrapper instead).
  * A surface interface for updates like https://github.com/JuliaLang/julia/pull/31367
  * Improved printing - replace `=>` with `│` and colummar indentation, don't calculate length (beyond some cutoff) if it is `SizeUnknown`.
- * `broadcast` (and consider whether `map` preserves iteration order?)
+ * Soon we will have the concept of "ordered" indices/sets (sort-based dictionaries and B-trees). We can probably formalize an interface around a trait here. Certain operations like slicing out an interval or performing a sort-merge co-iteration for `merge` become feasible.

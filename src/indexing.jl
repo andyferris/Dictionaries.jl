@@ -34,7 +34,6 @@ end
     end
 end
 
-
 ## Non-scalar indexing
 
 # Basically, getindices maps the indices over the indexee

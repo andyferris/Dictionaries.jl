@@ -238,3 +238,23 @@ function Base.fill(value, ::Type{T}, indices::AbstractIndices) where {T}
     fill!(out, value)
     return out    
 end
+
+# Conversion to-and-from AbstractDicts
+function (::Type{T})(d::AbstractDict) where {T <: AbstractDictionary}
+    return T(values(d), keys(d))
+end
+
+#function (::Type{T})(d::AbstractDictionary) where {T <: Dict}
+#    return T(pairs(d))
+#end
+
+# Copying
+function Base.copy(d::AbstractDictionary)
+    out = similar(d)
+    copyto!(out, d)
+    return out
+end
+
+function Base.copyto!(out::AbstractDictionary, d::AbstractDictionary)
+    map!(identity, out, d)
+end

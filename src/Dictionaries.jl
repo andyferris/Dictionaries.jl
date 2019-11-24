@@ -5,10 +5,10 @@ using SplitApplyCombine
 
 using Base: @propagate_inbounds
 
-export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary, DictionaryView, FilteredDictionary, FilteredIndices
+export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary, DictionaryView, FilteredDictionary, FilteredIndices, BroadcastedDictionary
 
 export issettable, isinsertable, set!, unset!
-export tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, gettoken!, settokenvalue!, deletetoken!, sharetokens
+export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, settokenvalue!, gettoken!, deletetoken!, sharetokens
 
 export filterview # TODO move to SplitApplyCombine.jl
 
@@ -19,8 +19,10 @@ include("tokens.jl")
 include("indexing.jl")
 include("insertion.jl")
 include("filter.jl")
-include("map.jl")
 include("foreach.jl")
+include("map.jl")
+include("broadcast.jl")
+include("find.jl")
 
 include("PairDictionary.jl")
 include("Indices.jl")

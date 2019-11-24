@@ -1,0 +1,107 @@
+
+# Lazy broadcasted dictionary
+
+struct BroadcastedDictionary{I, T, F, Data <: Tuple} <: AbstractDictionary{I, T}
+    f::F
+    data::Data
+    sharetokens::Bool
+end
+
+function BroadcastedDictionary(f, data)
+    dicts = _dicts(data...)
+    sharetokens = _sharetokens(dicts...)
+    I = keytype(dicts[1])
+    Ts = Base.Broadcast.eltypes(data)
+    T = Core.Compiler.return_type(f, Ts)
+
+    return BroadcastedDictionary{I, T, typeof(f), typeof(data)}(f, data, sharetokens)
+end
+
+@inline Base.keys(d::BroadcastedDictionary) = _keys(d.data...)
+
+@propagate_inbounds function Base.getindex(d::BroadcastedDictionary{I}, i::I) where {I}
+    return d.f(_getindex(i, d.data...)...)
+end
+
+function Base.isassigned(d::BroadcastedDictionary{I}, i::I) where {I}
+    return _isassigned(i, d.data...)
+end
+
+istokenizable(d::BroadcastedDictionary) = d.sharetokens
+tokens(d::BroadcastedDictionary) = _tokens(d.data...)
+
+@propagate_inbounds function gettoken(d::BroadcastedDictionary{I}, i::I) where {I}
+    return gettoken(_tokens(d.data...), i)
+end
+
+function istokenassigned(d::BroadcastedDictionary, t)
+    return _istokenassigned(t, d.data...)
+end
+
+@propagate_inbounds function gettokenvalue(d::BroadcastedDictionary, t)
+    return d.f(_gettokenvalue(t, d.data...)...)
+end
+
+@inline _dicts(d::AbstractDictionary, ds...) = (d, _dicts(ds...)...)
+@inline _dicts(d, ds...) = (_dicts(ds...)...,)
+_dicts() = ()
+
+@inline _tokens(d::AbstractDictionary, ds...) = tokens(d)
+@inline _tokens(d, ds...) = _tokens(ds...)
+
+@inline _keys(d::AbstractDictionary, ds...) = keys(d)
+@inline _keys(d, ds...) = _keys(ds...)
+
+_sharetokens(d) = true
+@inline function _sharetokens(d, d2, ds...)
+    if sharetokens(d, d2)
+        return _sharetokens(d, ds...)
+    else
+        return false
+    end
+end
+
+_getindex(i) = ()
+@propagate_inbounds _getindex(i, d::AbstractDictionary, ds...) = (d[i], _getindex(i, ds...)...)
+@propagate_inbounds _getindex(i, d, ds...) = (d[CartesianIndex()], _getindex(i, ds...)...)
+
+_gettokenvalue(t) = ()
+@propagate_inbounds _gettokenvalue(t, d::AbstractDictionary, ds...) = (gettokenvalue(d, t), _gettokenvalue(t, ds...)...)
+@propagate_inbounds _gettokenvalue(t, d, ds...) = (d[CartesianIndex()], _gettokenvalue(t, ds...)...)
+
+_isassigned(i) = true
+_isassigned(i, d, ds...) = _istokenassigned(i, ds...)
+function _isassigned(i, d::AbstractDictionary, ds...)
+    if isassigned(d, i)
+        return _isassigned(i, ds...)
+    else
+        return false
+    end
+end
+
+_istokenassigned(t) = true
+_istokenassigned(t, d, ds...) = _istokenassigned(t, ds...)
+function _istokenassigned(t, d::AbstractDictionary, ds...)
+    if istokenassigned(d, t)
+        return _istokenassigned(t, ds...)
+    else
+        return false
+    end
+end
+
+## Hook into `Base.Broadcast` machinery
+
+Base.Broadcast.broadcastable(d::AbstractDictionary) = d
+
+struct DictionaryStyle <: Base.Broadcast.BroadcastStyle
+end
+
+Base.Broadcast.BroadcastStyle(::Type{<:AbstractDictionary}) = DictionaryStyle()
+Base.Broadcast.BroadcastStyle(::DictionaryStyle, ::Base.Broadcast.AbstractArrayStyle{0}) = DictionaryStyle()
+
+# Now we overload `broadcasted` directly
+function Base.Broadcast.broadcasted(::DictionaryStyle, f, args...)
+    return BroadcastedDictionary(f, args)
+end
+
+Base.Broadcast.materialize(d::BroadcastedDictionary) = copy(d)
