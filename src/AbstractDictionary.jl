@@ -97,26 +97,6 @@ function Base.:(==)(i1::AbstractDictionary, i2::AbstractDictionary)
     error("The semantic for ``==` is not yet fixed in Dictionaries.jl (regarding dictionaries with the same elements but different orderings). If you have an opinion, please contact the package maintainers.")
 end
 
-function Base.show(io::IO, d::AbstractDictionary)
-    print(io, "$(length(d))-element $(typeof(d))")
-    n_lines = displaysize(io)[1] - 5
-    lines = 1
-    for k in keys(d)
-        if isassigned(d, k)
-            valstring = string(d[k])
-        else
-            valstring = "#undef"
-        end
-        #print(io, "\n ", k, " │ ", valstring)
-        print(io, "\n ", k, " => ", valstring)
-        lines += 1
-        if lines > n_lines
-            print(io, "\n ⋮ => ⋮")
-            break
-        end
-    end
-end
-
 
 ### Settable interface
 

@@ -98,20 +98,6 @@ function checkindices(indices::AbstractIndices, inds)
     end
 end
 
-function Base.show(io::IO, i::AbstractIndices)
-    print(io, "$(length(i))-element $(typeof(i))")
-    n_lines = displaysize(io)[1] - 5
-    lines = 1
-    for k in i
-        print(io, "\n ", k)
-        lines += 1
-        if lines > n_lines
-            print(io, "\n ⋮")
-            break
-        end
-    end
-end
-
 # Indices are isequal if they iterate in the same order
 function Base.isequal(i1::AbstractIndices, i2::AbstractIndices)
     if i1 === i2

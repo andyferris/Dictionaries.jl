@@ -21,7 +21,8 @@ end
     @test_throws IndexError d[10]
     @test get(d, 10, 15) == 15
     @test length(unset!(d, 10)) == 0
-    io = IOBuffer(); print(io, d); @test String(take!(io)) == "0-element Dictionary{Int64,Int64,Array{Int64,1},Array{Int64,1}}"
+    io = IOBuffer(); print(io, d); @test String(take!(io)) == "{}"
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element Dictionary{Int64,Int64,Array{Int64,1},Array{Int64,1}}"
     @test_throws IndexError d[10] = 11
     @test_throws IndexError delete!(d, 10)
 
@@ -42,7 +43,8 @@ end
     d[10] = 13
     @test length(d) == 1
     @test d[10] == 13
-    io = IOBuffer(); print(io, d); @test String(take!(io)) == "1-element Dictionary{Int64,Int64,Array{Int64,1},Array{Int64,1}}\n 10 => 13"
+    io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 ⇒ 13}"
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64,Int64,Array{Int64,1},Array{Int64,1}}\n 10 ⇒ 13"
     @test !isequal(d, empty(d))
     @test isequal(d, copy(d))
     @test isempty(empty(d))

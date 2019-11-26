@@ -10,7 +10,7 @@ export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, Ha
 export issettable, isinsertable, set!, unset!
 export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, settokenvalue!, gettoken!, deletetoken!, sharetokens
 
-export filterview # TODO move to SplitApplyCombine.jl
+export filterview # TODO move to SplitApplyCombine.jl (and re-order project dependencies?)
 
 include("AbstractDictionary.jl")
 include("AbstractIndices.jl")
@@ -23,6 +23,7 @@ include("foreach.jl")
 include("map.jl")
 include("broadcast.jl")
 include("find.jl")
+include("show.jl")
 
 include("PairDictionary.jl")
 include("Indices.jl")
