@@ -3,6 +3,8 @@ using Dictionaries
 using SplitApplyCombine
 using Indexing
 
+include("Indices.jl")
+include("Dictionary.jl")
 include("HashIndices.jl")
 include("HashDictionary.jl")
 include("PairDictionary.jl")

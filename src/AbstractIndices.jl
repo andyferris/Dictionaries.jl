@@ -30,7 +30,11 @@ abstract type AbstractIndices{I} <: AbstractDictionary{I, I}; end
 end
 
 function Base.setindex!(i::AbstractIndices{I}, ::I, ::I) where {I}
-    error("Indices are not mutable: $(typeof(i))")
+    error("Indices are not settable: $(typeof(i))")
+end
+
+function Base.isassigned(indices::AbstractIndices{I}, i::I) where {I}
+    return i in indices
 end
 
 Base.keys(i::AbstractIndices) = i
@@ -86,7 +90,7 @@ function Base.checkindex(indices::AbstractIndices{I}, i::I) where {I}
 		throw(IndexError("Index $i not found in indices $indices"))
 	end
 end
-Base.checkindex(indices::AbstractIndices{I}, i) where {I} = convert(I, i)
+Base.checkindex(indices::AbstractIndices{I}, i) where {I} = checkindex(indices, convert(I, i))
 
 function checkindices(indices::AbstractIndices, inds)
     if !(inds ⊆ indices)

@@ -413,3 +413,29 @@ function Base.unsafe_filter!(pred, dict::AbstractDictionary)
         end
     end
 end
+
+# Factories for insertable Dictionaries/Indices
+
+# empty(d::AbstractDictionary, ::Type{I}, ::Type{T}) seems good for new dictionary
+# empty(d::AbstractIndices, ::Type{I}) seems good for new indices
+#
+# but... can we have both, or should we have one for empty sets and one for empty dicts?
+#
+# Indices to indices:
+# -------------------
+# empty(inds)
+# empty(inds, I)
+#
+# Indices to dictionary:
+# empty(inds, I, T)
+#
+# Dictionary to indices
+# empty(keys(dict))
+# empty(keys(dict), I)
+#
+# Dictionary to dictionary
+# empty(dict)
+# empty(dict, T) # Or I?? Or does this return an `AbstractIndices`?
+# empty(dict, I, T)
+#
+

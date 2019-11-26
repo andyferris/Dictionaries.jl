@@ -146,20 +146,24 @@ Settable (i.e. mutable) dictionaries allow you to set a corresponding value via 
 
 Insertable dictionaries provide the `gettoken!` function (see the `isinsertable` trait).
 """
-@propagate_inbounds function gettoken(d::AbstractDictionary{I}, i::I) where I
-    if istokenizable(d)
-        error("gettoken needs to be defined for tokenizable dictionary: $(typeof(d))")
+@propagate_inbounds function gettoken(inds::AbstractIndices{I}, i::I) where I
+    if istokenizable(inds)
+        error("gettoken needs to be defined for tokenizable indices: $(typeof(inds))")
     end
 
-    @boundscheck if !haskey(keys(d), i)
+    @boundscheck if i ∉ inds
         return (false, i)
     end
     return (true, i)
 end
 
+@propagate_inbounds function gettoken(d::AbstractDictionary{I}, i::I) where I
+    return gettoken(keys(d), i)
+end
+
 @propagate_inbounds function gettokenvalue(d::AbstractDictionary, token)
     if istokenizable(d)
-        error("gettokenvalue needs to be defined for tokenizable dictionary: $(typeof(d))")
+        error("gettokenvalue needs to be defined for tokenizable $(d isa AbstractIndices ? "indices" : "dictionary"): $(typeof(d))")
     end
 
     return d[token]
@@ -167,7 +171,7 @@ end
 
 @propagate_inbounds function istokenassigned(d::AbstractDictionary, token)
     if istokenizable(d)
-        error("istokenassigned needs to be defined for tokenizable dictionary: $(typeof(d))")
+        error("istokenassigned needs to be defined for tokenizable $(d isa AbstractIndices ? "indices" : "dictionary"): $(typeof(d))")
     end
 
     return isassigned(d, token)
@@ -178,7 +182,7 @@ end
         error("Cannot mutate values of dictionary: $(typeof(d))")
     end
     if istokenizable(d)
-        error("settoken! needs to be defined for tokenizable dictionary: $(typeof(d))")
+        error("settoken! needs to be defined for settable, tokenizable dictionary: $(typeof(d))")
     end
 
     return d[i] = value

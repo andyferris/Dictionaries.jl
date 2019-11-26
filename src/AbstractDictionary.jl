@@ -71,40 +71,7 @@ Base.IteratorSize(d::AbstractDictionary) = Base.IteratorSize(keys(d))
 Base.checkindex(d::AbstractDictionary{I}, i) where {I} = checkindex(d, convert(I, i))
 Base.checkindex(d::AbstractDictionary{I}, i::I) where {I} = checkindex(keys(d), i)
 
-"""
-    issettable(dict::AbstractDictionary)
-
-Return `true` if the dictionary `dict` obeys the settable interface, or `false` otherwise.
-
-A mutable dictionary is one where the *values* can be modified (but not necessarily the
-indices). The mutable interface requires the dictionary to implement:
-
-* `setindex!(dict, value, index)`
-* `isassigned(dict, index)`
-* A constructor `MyDictionary(undef, indices)` returning a dictionary with the
-  given `indices` and unitialized values.
-
-See also `isinsertable`.
-"""
-issettable(::AbstractDictionary) = false
-
-function Base.isassigned(indices::AbstractIndices{I}, i::I) where {I}
-    return i in indices
-end
-
-function Base.isassigned(dict::AbstractDictionary{I}, i::I) where {I}
-    (hasindex, token) = gettoken(dict, i)
-    return istokenassigned(dict, token)
-end
-
-function Base.setindex!(d::AbstractDictionary{I, T}, value::T, i::I) where {I, T}
-    (hastoken, token) = gettoken(d, i)
-    @boundscheck if !hastoken
-        throw(IndexError("Dictionary does not contain index: $i"))
-    end
-    settokenvalue!(d, token, value)
-    return d
-end
+## Comparisons
 
 # dictionaries are isequal if they iterate in the same order
 function Base.isequal(d1::AbstractDictionary, d2::AbstractDictionary)
@@ -150,77 +117,63 @@ function Base.show(io::IO, d::AbstractDictionary)
     end
 end
 
-# Traits
-# ------
-#
-# It would be nice to know some things about the interface supported by a given AbstractDictionary
-#
-#  * Can you mutate the values using `setindex!`?
-#  * Can you mutate the keys? How? Is it like a dictionary (`delete!`, and `setindex!` doing update/insert), or a list (push, pop, insertat / deleteat)?
-#
-# For Indices, you are mutating both keys and values in-sync, but you can't use `setindex!`
 
-# Factories
-# ---------
-# Base provides these factories:
-#  * `similar` - construct dictionary with given eltype and indices, and `undef` values
-#  * `empty` - construct container with given eltype and no indices.
-#
-# StaticArrays seems to indicate that you might want to work at the type level: 
-#  * `similar_type`,
-#  * `empty_type`, etc..
-#
-# In reality, for immutable containers you need a way of constructing containers. There are
-# a couple of patterns
-#  * The `ntuple` / comprehension pattern - a closure is called with the key to get the
-#    value, and it is constructed all-at-once (in "parallel", each element independently).
-#  * The mutate + publish pattern. Let the user construct a mutable dictionary, then "publish" it
-#    to become immutable. More flexible for user (they can fill the container in a loop,
-#    so that the element calculations don't have to be independent).
-#
-# Some considerations
-#  * Arrays benefit from small, immutable indices. Being able to reuse the index of e.g. a
-#    hash dictionary would be an enormous saving! To do that safely, we'd want to know that the
-#    keys won't change. (Possibly a copy-on-write technique could work well here).
+### Settable interface
 
-Base.similar(d::AbstractDictionary) = similar(d, eltype(d), keys(d))
-Base.similar(d::AbstractDictionary, ::Type{T}) where {T} = similar(d, T, keys(d))
-Base.similar(d::AbstractDictionary, i::AbstractIndices) = similar(d, eltype(d), i)
+"""
+    issettable(dict::AbstractDictionary)
 
-Base.empty(d::AbstractDictionary) = empty(d, eltype(d))
-Base.empty(d::AbstractDictionary, ::Type{T}) where {T} = empty(d, keytype(d), T)
+Return `true` if the dictionary `dict` obeys the settable interface, or `false` otherwise.
 
-# zeros
-Base.zeros(d::AbstractDictionary) = zeros(d, Float64, keys(d))
-Base.zeros(::Type{T}, i::AbstractIndices) where {T} = zeros(i, T, i)
-Base.zeros(d::AbstractDictionary, ::Type{T}) where {T} = zeros(d, T, keys(d))
-Base.zeros(d::AbstractDictionary, i::AbstractIndices) = zeros(d, i, Float64)
-function Base.zeros(d::AbstractDictionary, ::Type{T}, i::AbstractIndices) where {T}
-    out = similar(d, T, i)
-    fill!(out, convert(T, 0))
-    return out
+A mutable dictionary is one where the *values* can be modified (but not necessarily the
+indices). The mutable interface requires the dictionary to implement:
+
+* `setindex!(dict, value, index)`
+* `isassigned(dict, index)`
+* A constructor `MyDictionary(undef, indices)` returning a dictionary with the
+  given `indices` and unitialized values.
+
+See also `isinsertable`.
+"""
+issettable(::AbstractDictionary) = false
+
+function Base.isassigned(dict::AbstractDictionary{I}, i::I) where {I}
+    if !(istokenizable(dict))
+        error("Every settable AbstractDictionary type must define a method for `isassigned`: $(typeof(dict))")
+    end
+
+    (hasindex, token) = gettoken(dict, i)
+    if hasindex
+        return istokenassigned(dict, token)
+    else
+        return false
+    end
 end
 
-# ones
-Base.ones(d::AbstractDictionary) = ones(d, Float64, keys(d))
-Base.ones(::Type{T}, i::AbstractIndices) where {T} = ones(i, T, i)
-Base.ones(d::AbstractDictionary, ::Type{T}) where {T} = ones(d, T, keys(d))
-Base.ones(d::AbstractDictionary, i::AbstractIndices) = ones(d, i, Float64)
-function Base.ones(d::AbstractDictionary, ::Type{T}, i::AbstractIndices) where {T}
-    out = similar(d, T, i)
-    fill!(out, convert(T, 1))
-    return out
+function Base.setindex!(dict::AbstractDictionary{I, T}, value::T, i::I) where {I, T}
+    if !(istokenizable(dict))
+        error("Every settable AbstractDictionary type must define a method for `setindex!`: $(typeof(dict))")
+    end
+
+    (hastoken, token) = gettoken(dict, i)
+    @boundscheck if !hastoken
+        throw(IndexError("Dictionary does not contain index: $i"))
+    end
+    settokenvalue!(dict, token, value)
+    return dict
 end
 
-# falses
-Base.falses(d::AbstractDictionary) = falses(d, keys(d))
-function Base.falses(d::AbstractDictionary, i::AbstractIndices)
-    out = similar(d, Bool, i)
-    fill!(out, false)
-    return out
-end
+# similar is the primary way to construct an `issettable` dictionary, and allows us to write
+# generic "factories" like `fill`, `copy`, `zeros`...
 
-# trues?
+"""
+    similar(d::AbstractDictionary, [T=eltype(d)])
+
+Construct a new `issettable` dictionary with identical `keys` as `d` and an element type of
+`T`. The initial values are unitialized/undefined.
+"""
+Base.similar(d::AbstractDictionary) = similar(keys(d), eltype(d))
+Base.similar(d::AbstractDictionary, ::Type{T}) where {T} = similar(keys(d), T)
 
 # fill! and fill
 
@@ -231,22 +184,35 @@ function Base.fill!(d::AbstractDictionary, value)
     return d
 end
 
-Base.fill(value, indices::AbstractIndices) = fill(value, typeof(value), indices)
+"""
+    fill(value, d::AbstractDictionary, [T = typeof(value)])
 
-function Base.fill(value, ::Type{T}, indices::AbstractIndices) where {T}
-    out = similar(indices, T, indices)
+Construct a new `issettable` dictionary with identical `keys` as `d` and all elements
+initialized to `value`.
+
+An element type can optionally be provided, which can be useful for constructing containers
+that accept different types of values, for example `fill(d, missing, Union{Missing, Bool})`.
+"""
+Base.fill(value, d::AbstractDictionary) = fill(value, d, typeof(value))
+function Base.fill(value, indices::AbstractDictionary, ::Type{T}) where {T}
+    out = similar(keys(indices), T)
     fill!(out, value)
-    return out    
+    return out
 end
 
-# Conversion to-and-from AbstractDicts
-function (::Type{T})(d::AbstractDict) where {T <: AbstractDictionary}
-    return T(values(d), keys(d))
-end
+# zeros, ones, falses, trues
+Base.zeros(d::AbstractDictionary) = zeros(Float64, d)
+Base.zeros(::Type{T}, d::AbstractDictionary) where {T} = fill(zero(T), d, T)
 
-#function (::Type{T})(d::AbstractDictionary) where {T <: Dict}
-#    return T(pairs(d))
-#end
+Base.ones(d::AbstractDictionary) = ones(Float64, d)
+Base.ones(::Type{T}, d::AbstractDictionary) where {T} = fill(one(T), d, T)
+
+Base.falses(d::AbstractDictionary) = falses(Bool, d)
+Base.falses(::Type{T}, d::AbstractDictionary) where {T} = fill(false, d, T) # T could be `Union{Missing, Bool}`, for example
+
+Base.trues(d::AbstractDictionary) = trues(Bool, d)
+Base.trues(::Type{T}, d::AbstractDictionary) where {T} = fill(true, d, T) # T could be `Union{Missing, Bool}`, for example
+
 
 # Copying
 function Base.copy(d::AbstractDictionary)
@@ -258,3 +224,19 @@ end
 function Base.copyto!(out::AbstractDictionary, d::AbstractDictionary)
     map!(identity, out, d)
 end
+
+
+# Conversion to-and-from AbstractDicts
+# TODO rethink this
+
+function (::Type{T})(d::AbstractDict) where {T <: AbstractDictionary}
+    return T(values(d), keys(d))
+end
+
+#function (::Type{T})(d::AbstractDictionary) where {T <: Dict}
+#    return T(pairs(d))
+#end
+
+# This should be considered part of the insertable interface...
+Base.empty(d::AbstractDictionary) = empty(d, eltype(d))
+Base.empty(d::AbstractDictionary, ::Type{T}) where {T} = empty(d, keytype(d), T)

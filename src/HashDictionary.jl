@@ -156,19 +156,18 @@ end
 
 Base.filter!(pred, d::HashDictionary) = Base.unsafe_filter!(pred, d)
 
-# The default mutable AbstractDictionary
+# `HashDictionary` is the default mutable AbstractDictionary
+# If given some other index type, create a new `HashIndices` copy of the indices
+function Base.similar(indices::AbstractIndices{I}, ::Type{T}) where {I, T}
+    return similar(HashIndices{I}(indices), T)
+end
 
-# Don't need to copy indices
-function Base.similar(d::AbstractDictionary, ::Type{T}, indices::HashIndices{I}) where {I, T}
+# For `HashIndices` we don't copy the indices, we allow the `keys` to remain identical (`===`)
+function Base.similar(indices::HashIndices{I}, ::Type{T}) where {I, T}
     return HashDictionary{I, T}(Vector{T}(undef, length(indices.slots)), indices, nothing)
 end
 
-# Create a HashIndices copy of the indices
-function Base.similar(d::AbstractDictionary, ::Type{T}, indices::AbstractIndices{I}) where {I, T}
-    return similar(d, T, HashIndices{I}(indices))
-end
-
-# The default insertable AbstractDictionary
+# `HashDictionary` is the default insertable AbstractDictionary
 function Base.empty(d::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T}
     return HashDictionary{I, T}()
 end
