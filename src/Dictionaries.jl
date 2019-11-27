@@ -7,7 +7,7 @@ using Base: @propagate_inbounds
 
 export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary, DictionaryView, FilteredDictionary, FilteredIndices, BroadcastedDictionary
 
-export issettable, isinsertable, set!, unset!
+export issettable, isinsertable, set!, unset!, dictionary
 export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, settokenvalue!, gettoken!, deletetoken!, sharetokens
 
 export filterview # TODO move to SplitApplyCombine.jl (and re-order project dependencies?)
@@ -23,6 +23,7 @@ include("foreach.jl")
 include("map.jl")
 include("broadcast.jl")
 include("find.jl")
+include("group.jl")
 include("show.jl")
 
 include("PairDictionary.jl")

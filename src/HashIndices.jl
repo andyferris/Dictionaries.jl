@@ -303,7 +303,8 @@ end
     if token < h.idxfloor
         h.idxfloor = token
     end
-
+    
+    #=
     sz = length(h.inds)
     # Rehash now if necessary
     if h.ndel >= ((3*sz)>>2) || h.count*3 > sz*2
@@ -311,6 +312,7 @@ end
         values = _rehash!(h, values, h.count > 64000 ? h.count*2 : h.count*4)
         (_, token) = gettoken(h, key)
     end
+    =#
 
     return (token, values)
 end

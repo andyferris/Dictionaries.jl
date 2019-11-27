@@ -28,6 +28,25 @@ Dictionary(inds, vals) = Dictionary{eltype(inds), eltype(vals), typeof(inds), ty
 Dictionary{I}(inds, vals) where {I} = Dictionary{I, eltype(vals), typeof(inds), typeof(vals)}(inds, vals)
 Dictionary{I, T}(inds, vals) where {I, T} = Dictionary{I, T, typeof(inds), typeof(vals)}(inds, vals)
 
+
+"""
+    Dictionary(indices, undef::UndefInitializer)
+
+Construct a `Dictionary` from an iterable of `indices`, where the values are
+undefined/unitialized.
+"""
+Dictionary{I, T}(inds, ::UndefInitializer) where {I, T} = Dictionary{I, T}(inds, Vector{T}(undef, length(inds)))
+
+"""
+    Dictionary(dict::AbstractDictionary)
+
+Construct a `Dictionary` copy of `dict` with the same keys and values.
+"""
+Dictionary(dict::AbstractDictionary) = Dictionary(keys(dict), dict)
+Dictionary{I}(dict::AbstractDictionary) where {I} = Dictionary{I}(keys(dict), dict)
+Dictionary{I, T}(dict::AbstractDictionary) where {I, T} = Dictionary{I, T}(keys(dict), dict)
+
+
 function Base.keys(d::Dictionary{I}) where {I}
     return Indices{I}(d.indices)
 end
@@ -89,4 +108,8 @@ end
 
 function Base.empty(::VectorDictionary, ::Type{I}, ::Type{T}) where {I, T}
     return Dictionary(Vector{I}(), Vector{T}())
+end
+
+function Base.empty(::VectorDictionary, ::Type{I}) where {I}
+    return Indices(Vector{I}())
 end

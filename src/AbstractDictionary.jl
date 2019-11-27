@@ -8,24 +8,17 @@ At minimum, an `AbstractDictionary` must implement:
  * `getindex(::AbstractDictionary{I, T}, ::I) --> T`
  * `isassigned(::AbstractDictionary{I}, ::I) --> Bool`
  * `keys(::AbstractDictionary{I, T}) --> AbstractIndices{I}`
- * A constructor `MyDictionary(values, indices)` returning a dictionary with the
-   given `indices` and values set to `values`, matched by iteration. Alternatively, `values`
-   may be a scalar in the broadcasting sense, where all elements are set to the same value.
 
 If values can be set/mutated, then an `AbstractDictionary` should implement:
 
  * `issettable(::AbstractDictionary)` (returning `true`)
  * `setindex!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
- * `isassigned(dict::AbstractDictionary{I}, ::I) --> Bool`
- * A constructor `MyDictionary(undef, indices)` returning a dictionary with the
-   given `indices` and unitialized values.
 
 If arbitrary indices can be added to or removed from the dictionary, implement:
 
  * `isinsertable(::AbstractDictionary)` (returning `true`)
  * `insert!(dict::AbstractDictionary{I, T}, ::I, ::T}` (returning `dict`)
  * `delete!(dict::AbstractDictionary{I, T}, ::I}` (returning `dict`)
- * A zero-argument constructor `MyDictionary()` returning an empty `MyDictionary`.
 """
 abstract type AbstractDictionary{I, T}; end
 abstract type AbstractIndices{I} <: AbstractDictionary{I, I}; end
@@ -108,10 +101,11 @@ Return `true` if the dictionary `dict` obeys the settable interface, or `false` 
 A mutable dictionary is one where the *values* can be modified (but not necessarily the
 indices). The mutable interface requires the dictionary to implement:
 
-* `setindex!(dict, value, index)`
-* `isassigned(dict, index)`
-* A constructor `MyDictionary(undef, indices)` returning a dictionary with the
-  given `indices` and unitialized values.
+ * `setindex!(dict::AbstractDictionary{I, T}, value::I, index::T)`
+
+New settable dictionaries are primarily created through the `similar` function (for
+unitialized values), as well as `fill`, `zeros`, `ones`, `trues` and `falses` (for
+initialized values).
 
 See also `isinsertable`.
 """
@@ -216,7 +210,3 @@ end
 #function (::Type{T})(d::AbstractDictionary) where {T <: Dict}
 #    return T(pairs(d))
 #end
-
-# This should be considered part of the insertable interface...
-Base.empty(d::AbstractDictionary) = empty(d, eltype(d))
-Base.empty(d::AbstractDictionary, ::Type{T}) where {T} = empty(d, keytype(d), T)

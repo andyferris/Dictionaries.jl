@@ -1,8 +1,8 @@
 mutable struct HashDictionary{I,T} <: AbstractDictionary{I, T}
-    values::Vector{T}
     indices::HashIndices{I}
+    values::Vector{T}
 
-    HashDictionary{I, T}(values::Vector{T}, indices::HashIndices{I}, ::Nothing) where {I, T} = new(values, indices)
+    HashDictionary{I, T}(indices::HashIndices{I}, values::Vector{T}, ::Nothing) where {I, T} = new(indices, values)
 end
 
 """
@@ -14,30 +14,33 @@ dictionary uses hashes for fast lookup and insertion, and is both mutable and in
 """
 function HashDictionary{I, T}(; sizehint::Int = 16) where {I, T}
     indices = HashIndices{I}(; sizehint=sizehint)
-    HashDictionary{I, T}(Vector{T}(undef, length(indices.slots)), indices, nothing)
+    HashDictionary{I, T}(indices, Vector{T}(undef, length(indices.slots)), nothing)
 end
 HashDictionary{I}() where {I} = HashDictionary{I, Any}()
 HashDictionary() = HashDictionary{Any}()
 
+HashDictionary{I}() where {I} = HashDictionary{I, Any}()
+HashDictionary() = HashDictionary{Any}()
+
 """
-    HashDictionary{I, T}(undef::UndefInitializer, indices)
+    HashDictionary{I, T}(indices, undef::UndefInitializer)
 
 Construct a `HashDictionary` with index type `I` and element type `T`. The container is
 initialized with `keys` that match the values of `indices`, but the values are unintialized.
 """
-function HashDictionary{I, T}(::UndefInitializer, indices) where {I, T} 
-    return HashDictionary{I, T}(undef, HashIndices{I}(indices))
+function HashDictionary{I, T}(indices, ::UndefInitializer) where {I, T} 
+    return HashDictionary{I, T}(HashIndices{I}(indices), undef)
 end
 
-function HashDictionary{I, T}(::UndefInitializer, h::HashIndices{I}) where {I, T}
-    return HashDictionary{I, T}(Vector{T}(undef, length(h.slots)), h, nothing)
+function HashDictionary{I, T}(h::HashIndices{I}, ::UndefInitializer) where {I, T}
+    return HashDictionary{I, T}(h, Vector{T}(undef, length(h.slots)), nothing)
 end
 
-function HashDictionary{I, T}(values, indices::HashIndices{I}) where {I, T}
+function HashDictionary{I, T}(indices::HashIndices{I}, values) where {I, T}
     vals = Vector{T}(undef, length(indices.slots))
     d = HashDictionary{I, T}(vals, indices, nothing)
 
-    @inbounds for (v, i) in zip(values, tokens(indices))
+    @inbounds for (i, v) in zip(tokens(indices), values)
         vals[i] = v
     end
 
@@ -45,14 +48,14 @@ function HashDictionary{I, T}(values, indices::HashIndices{I}) where {I, T}
 end
 
 """
-    HashDictionary(values, indices)
-    HashDictionary{I}(values, indices)
-    HashDictionary{I, T}(values, indices)
+    HashDictionary(indices, values)
+    HashDictionary{I}(indices, values)
+    HashDictionary{I, T}(indices, values)
 
 Construct a `HashDictionary` with indices from `indices` and values from `values`, matched
 in iteration order.
 """
-function HashDictionary{I, T}(values, indices) where {I, T}
+function HashDictionary{I, T}(indices, values) where {I, T}
     iter_size = Base.IteratorSize(indices)
     if iter_size isa Union{Base.HasLength, Base.HasShape}
         d = HashDictionary{I, T}(; sizehint = length(indices)*2)
@@ -60,14 +63,55 @@ function HashDictionary{I, T}(values, indices) where {I, T}
         d = HashDictionary{I, T}()
     end
 
-    for (v, i) in zip(values, indices)
+    for (i, v) in zip(indices, values)
         insert!(d, i, v)
     end
 
     return d
 end
-HashDictionary{I}(values, indices) where {I} = HashDictionary{I, eltype(values)}(values, indices)
-HashDictionary(values, indices) = HashDictionary{eltype(indices)}(values, indices)
+HashDictionary{I}(indices, values) where {I} = HashDictionary{I, eltype(values)}(indices, values)
+HashDictionary(indices, values) = HashDictionary{eltype(indices)}(indices, values)
+
+"""
+    HashDictionary(dict::AbstractDictionary)
+    HashDictionary{I}(dict::AbstractDictionary)
+    HashDictionary{I, T}(dict::AbstractDictionary)
+
+Construct a copy of `dict` with the same keys and values.
+
+(For copying an `AbstractDict` or other iterable of `Pair`s, see `dictionary`).
+"""
+HashDictionary(dict::AbstractDictionary) = HashDictionary(keys(dict), dict)
+HashDictionary{I}(dict::AbstractDictionary) where {I} = HashDictionary{I}(keys(dict), dict)
+HashDictionary{I, T}(dict::AbstractDictionary) where {I, T} = HashDictionary{I, T}(keys(dict), dict)
+
+"""
+    dictionary(iter)
+
+Construct a new `AbstractDictionary` from an iterable `iter` of key-value `Pair`s. The
+default container type is `HashDictionary`.
+"""
+function dictionary(iter)
+    # TODO eltype unknown
+    _dictionary(eltype(iter), iter)
+end
+
+function _dictionary(::Type{Pair{I, T}}, iter) where {I, T}
+    iter_size = Base.IteratorSize(iter)
+    if iter_size isa Union{Base.HasLength, Base.HasShape}
+        d = HashDictionary{I, T}(; sizehint = length(iter)*2)
+    else
+        d = HashDictionary{I, T}()
+    end
+
+    for (i, v) in iter
+        insert!(d, i, v)
+    end
+
+    return d
+end
+
+## Implementation
 
 Base.keys(d::HashDictionary) = d.indices
 isinsertable(d::HashDictionary) = true
@@ -104,32 +148,10 @@ function gettoken!(d::HashDictionary{T}, key::T) where {T}
 end
 
 function Base.copy(d::HashDictionary{I, T}) where {I, T}
-    return HashDictionary{I, T}(copy(d.values), copy(d.indices), nothing)
+    return HashDictionary{I, T}(copy(d.indices), copy(d.values), nothing)
 end
 
 tokenized(d::HashDictionary) = d.values
-
-#=
-@propagate_inbounds _iterate(d::HashDictionary{T}, i::Int) where {T} = i > length(d.indices.inds) ? nothing : (d.values[i], i + 1)
-function Base.iterate(d::HashDictionary)
-    _iterate(d, skip_deleted_floor!(d.indices))
-end
-@propagate_inbounds Base.iterate(d::HashDictionary, i::Int) = _iterate(d, skip_deleted(d.indices, i))
-=#
-
-#=
-function Base.insert!(d::HashDictionary{I, T}, i::I, value::T) where {I, T}
-    token = -indextoken!(d.indices, d.values, i)
-
-    if token < 0
-        throw(IndexError("HashDictionary already contains index: $i"))
-    else
-        d.values = @inbounds _insert!(d.indices, d.values, i, value, token)
-    end
-
-    return d
-end
-=#
 
 function Base.empty!(d::HashDictionary)
     empty!(d.indices)
@@ -164,10 +186,10 @@ end
 
 # For `HashIndices` we don't copy the indices, we allow the `keys` to remain identical (`===`)
 function Base.similar(indices::HashIndices{I}, ::Type{T}) where {I, T}
-    return HashDictionary{I, T}(Vector{T}(undef, length(indices.slots)), indices, nothing)
+    return HashDictionary{I, T}(indices, undef)
 end
 
 # `HashDictionary` is the default insertable AbstractDictionary
-function Base.empty(d::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T}
+function Base.empty(::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T}
     return HashDictionary{I, T}()
 end

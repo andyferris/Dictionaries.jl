@@ -9,7 +9,6 @@ At minimum, an `AbstractIndices{I}` must implement:
 
  * The `iterate` protocol, returning unique values of type `I`.
  * `in`, such that `in(i, indices)` implies there is an element of `indices` which `isequal` to `i`.
- * A one-argument constructor `MyIndices(iter)` that builds indices by iterating `iter`.
  * Either `length`, or override `IteratorSize` to `SizeUnknown`.
 
 While an `AbstractIndices` object is a dictionary, the value corresponding to each index is
@@ -20,7 +19,6 @@ If arbitrary indices can be added or removed from the set, implement:
 * `isinsertable(::AbstractIndices)` (returning `true`)
 * `insert!(indices::AbstractIndices{I}, ::I}` (returning `indices`)
 * `delete!(indices::AbstractIndices{I}, ::I}` (returning `indices`)
-* A zero-argument constructor `MyIndices()` returning an empty `MyIndices`.
 """
 abstract type AbstractIndices{I} <: AbstractDictionary{I, I}; end
 

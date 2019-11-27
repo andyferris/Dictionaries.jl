@@ -16,12 +16,12 @@ functions `dict` needs to implement for the insertable interface are:
  
  * `insert!(dict, i, value)` - add a new `value` at index `i` (will error if index exists)
  * `delete!(dict, i)` - remove element at index `i` (will error if index does not exist)
- * A zero-argument constructor `MyDictionary()` returning an empty `MyDictionary`.
 
 Functions `get!`, `set!` and `unset!` are also provided for common operations where you are
-not sure if an index exists or not.
+not sure if an index exists or not. New insertable dictionaries are primarily generated via
+the `empty` function.
     
-See also `issettable`.
+See also `issettable` and `istokenizable`.
 """
 isinsertable(::AbstractDictionary) = false
 
@@ -33,10 +33,10 @@ primary functions a map needs to implement for the insertable interface are:
  
  * `insert!(indices, i)` - add new index `i` to `indices` (will error if index exists)
  * `delete!(indices, i)` - remove an existing index `i` from `indices` (will error if index does not exist).
- * A zero-argument constructor `MyIndices()` returning an empty `MyIndices`.
 
 Functions `set!` and `unset!` are also provided for common operations where you are not sure
-if an index exists or not.
+if an index exists or not. New insertable indices are primarily generated via the `empty`
+function.
 """
 isinsertable(::AbstractIndices) = false
 
@@ -416,26 +416,31 @@ end
 
 # Factories for insertable Dictionaries/Indices
 
-# empty(d::AbstractDictionary, ::Type{I}, ::Type{T}) seems good for new dictionary
-# empty(d::AbstractIndices, ::Type{I}) seems good for new indices
-#
-# but... can we have both, or should we have one for empty sets and one for empty dicts?
-#
-# Indices to indices:
-# -------------------
-# empty(inds)
-# empty(inds, I)
-#
-# Indices to dictionary:
-# empty(inds, I, T)
-#
-# Dictionary to indices
-# empty(keys(dict))
-# empty(keys(dict), I)
-#
-# Dictionary to dictionary
-# empty(dict)
-# empty(dict, T) # Or I?? Or does this return an `AbstractIndices`?
-# empty(dict, I, T)
-#
+"""
+    empty(inds::AbstractIndices, I::Type)
+    empty(dict::AbstractDictionary, I::Type)
 
+Return an empty, insertable `AbstractIndices` of element type `I` (even when the first
+argument is a dictionary). The default container is `HashIndices{I}`, but the output may
+depend on the first argument.
+
+    empty(inds::AbstractIndices)
+
+Return an empty, insertable `AbstractIndices` of element type `eltype(inds)`.
+"""
+Base.empty(inds::AbstractIndices) = empty(inds, eltype(inds))
+
+"""
+    empty(inds::AbstractIndices, I::Type, T::Type)
+    empty(dict::AbstractDictionary, I::Type, T::Type)
+
+Return an empty, insertable `AbstractDictionary` of with indices of type `I` and elements
+of type `T` (even when the first argument is are indices). The default container is
+`HashDictionary{I}`, but the output may depend on the first argument.
+
+    empty(dict::AbstractDictionary)
+
+Return an empty, insertable `AbstractDictionary` with indices of type `keytype(dict)` and
+elements of type `eltype(inds)`.
+"""
+Base.empty(d::AbstractDictionary) = empty(d, keytype(d), eltype(d))

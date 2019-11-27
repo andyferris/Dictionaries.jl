@@ -5,9 +5,72 @@
 [![Build Status](https://travis-ci.org/andyferris/Dictionaries.jl.svg?branch=master)](https://travis-ci.org/andyferris/Dictionaries.jl)
 [![Codecov](https://codecov.io/gh/andyferris/Dictionaries.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/andyferris/Dictionaries.jl)
 
-The high-level goal of this package is to define a new interface for dictionary and set structures which is convenient for functional data manipulation - including operations such as non-scalar indexing, mapping, filtering, reducing, and so-on.
+The high-level goal of this package is to define a new interface for dictionary and set structures which is convenient for functional data manipulation - including operations such as non-scalar indexing, broadcasting, mapping, filtering, reducing, grouping, and so-on.
 
-So far this is a work-in-progress. To get started, check out the `HashDictionary` and `HashIndices` types (similar to `Base.Dict` and `Base.Set`, respectively).
+This package is still under development - new features are being added and some interfaces may be tweaked in the future, but things should be stable enough for non-production usage.
+
+## Getting started
+
+The go-to container in this package is `HashDictionary`, which shares the same hash-based implementation as Julia's inbuilt `Dict` type (using `hash` and `isequal` for key lookup and comparison). You can construct one from a list of indices (or keys) and a list of values.
+
+```julia
+julia> dict = HashDictionary(["a", "b", "c"], [1, 2, 3])
+3-element HashDictionary{String,Int64}
+ c ⇒ 3
+ b ⇒ 2
+ a ⇒ 1
+
+julia> dict["a"]
+1
+```
+If you prefer, you can use the `dictionary` function to create a dictionary from something that iterates key-value pairs (note: this includes `Dict`s).
+
+```julia
+julia> dictionary(["a" => 1, "b" => 2, "c" => 3])
+3-element HashDictionary{String,Int64}
+ c ⇒ 3
+ b ⇒ 2
+ a ⇒ 1
+```
+
+The values of `HashDictionary` are mutable, or "settable", and can be modified via `setindex!`.
+However, just like for `Array`s, new indices (keys) are *never* created this way.
+
+```julia
+julia> dict["a"] = 10
+10
+
+julia> dict
+3-element HashDictionary{String,Int64}
+ c ⇒ 3
+ b ⇒ 2
+ a ⇒ 10
+
+julia> dict["d"] = 42
+ERROR: IndexError("Dictionary does not contain index: d")
+Stacktrace:
+ [1] setindex!(::HashDictionary{String,Int64}, ::Int64, ::String) at /home/ferris/.julia/dev/Dictionaries/src/AbstractDictionary.jl:134
+ [2] top-level scope at REPL[15]:1
+```
+
+The indices of `HashDictionary` are said to be "insertable" - indices can be added or removed with the `insert!` and `delete!` functions.
+
+```
+julia> insert!(dict, "d", 42)
+4-element HashDictionary{String,Int64}
+ c ⇒ 3
+ b ⇒ 2
+ a ⇒ 10
+ d ⇒ 42
+
+julia> delete!(dict, "d")
+3-element HashDictionary{String,Int64}
+ c ⇒ 3
+ b ⇒ 2
+ a ⇒ 10
+```
+
+Note that `insert!` and `delete!` are precise in the sense that `insert!` will error if the index already exists, and `delete!` will error if the index does not. The `set!` function provides "upsert" functionality ("update or insert") and `unset!` is useful for removing an index that may or may not exist.
 
 ## Motivation
 
@@ -112,8 +175,6 @@ Sometimes one might want to enable/disable mutation and/or insertion. There has 
 ### TODO
 
  * Some ability to construct dictionaries from a list of pairs.
- * For constructors it is strange that the `undef` value comes before the keys. It is not too late to introduce `Array{Int}((3,5,7), undef))`, for example. Or even `Array{Int}(Base.CartesianIndices((3,5,7)), undef))`. Basically the keys should be in the first slot...
- * Constructors including copy-constructor should probably require opt-in, perhaps required if can be returned by `similar`, `empty`, but not in general (e.g. a `PairDictionary` cannot be copy-constructed, it's a dictionary wrapper instead).
  * A surface interface for updates like https://github.com/JuliaLang/julia/pull/31367
  * Improved printing - replace `=>` with `│` and colummar indentation, don't calculate length (beyond some cutoff) if it is `SizeUnknown`.
  * Soon we will have the concept of "ordered" indices/sets (sort-based dictionaries and B-trees). We can probably formalize an interface around a trait here. Certain operations like slicing out an interval or performing a sort-merge co-iteration for `merge` become feasible.

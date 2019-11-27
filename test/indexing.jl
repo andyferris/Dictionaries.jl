@@ -19,7 +19,7 @@
 
     @test issetequal(pairs(d), [1=>1, 2=>1, 3=>1, 4=>0, 5=>0])
 
-    d2 = HashDictionary([2,3,4], [3,4,2])
+    d2 = HashDictionary([3,4,2], [2,3,4])
 
     @test issetequal(pairs(getindices(i, d2)::HashDictionary), [4=>3, 2=>4, 3=>2])
     @test issetequal(pairs(view(i, d2)::DictionaryView), [4=>3, 2=>4, 3=>2])
