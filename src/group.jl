@@ -104,7 +104,7 @@ function groupcount(by::Function, iter)
         if hadtoken
             settokenvalue!(out, token, gettokenvalue(out, token) + 1)
         else
-            settokenvalue!(out, token, 0)
+            settokenvalue!(out, token, 1)
         end
     end
 

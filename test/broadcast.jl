@@ -20,4 +20,8 @@
 
     @test issetequal(pairs((d .+ copy(d))::HashDictionary), [1=>4, 2=>6, 3=>8, 4=>10, 5=>12])
     @test issetequal(pairs(Base.Broadcast.broadcasted(+, d, copy(d))::BroadcastedDictionary), [1=>4, 2=>6, 3=>8, 4=>10, 5=>12])
+
+    d2 = similar(d)
+    d2 .= d .+ d
+    @test issetequal(pairs(d2), [1=>4, 2=>6, 3=>8, 4=>10, 5=>12])
 end

@@ -63,10 +63,12 @@ end
 
 _getindex(i) = ()
 @propagate_inbounds _getindex(i, d::AbstractDictionary, ds...) = (d[i], _getindex(i, ds...)...)
+@propagate_inbounds _getindex(i, d::Ref, ds...) = (d[], _getindex(i, ds...)...)
 @propagate_inbounds _getindex(i, d, ds...) = (d[CartesianIndex()], _getindex(i, ds...)...)
 
 _gettokenvalue(t) = ()
 @propagate_inbounds _gettokenvalue(t, d::AbstractDictionary, ds...) = (gettokenvalue(d, t), _gettokenvalue(t, ds...)...)
+@propagate_inbounds _gettokenvalue(t, d::Ref, ds...) = (d[], _gettokenvalue(t, ds...)...)
 @propagate_inbounds _gettokenvalue(t, d, ds...) = (d[CartesianIndex()], _gettokenvalue(t, ds...)...)
 
 _isassigned(i) = true
@@ -105,3 +107,4 @@ function Base.Broadcast.broadcasted(::DictionaryStyle, f, args...)
 end
 
 Base.Broadcast.materialize(d::BroadcastedDictionary) = copy(d)
+Base.Broadcast.materialize!(out::AbstractDictionary, d::BroadcastedDictionary) = copyto!(out, d)

@@ -11,7 +11,7 @@ function Base.show(io::IO, inds::AbstractIndices)
             print(io, "…")
             break
         end
-        print(io, i)
+        show(io, i)
         comma = true
         limit -= 1
     end
@@ -30,7 +30,9 @@ function Base.show(io::IO, d::AbstractDictionary)
             print(io, "…")
             break
         end
-        print(io, i, " ⇒ ", v)
+        show(io, i)
+        print(io, " ⇒ ")
+        show(io, v)
         comma = true
         limit -= 1
     end
@@ -43,7 +45,8 @@ function Base.show(io::IO, ::MIME"text/plain", i::AbstractIndices)
     n_lines = get(io, :limit, false) ? Int64(displaysize(io)[1] - 5) : typemax(Int64)
     lines = 1
     for k in i
-        print(IOContext(io, :compact => true), "\n ", k)
+        print(io, "\n ")
+        show(io, k)
         lines += 1
         if lines > n_lines
             print(io, "\n ⋮")
@@ -57,16 +60,13 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
     n_lines = get(io, :limit, false) ? Int64(displaysize(io)[1] - 5) : typemax(Int64)
     lines = 1
     for k in keys(d)
+        print(io, "\n ")
+        show(io, k)
+        print(io, " ⇒ ")
         if isassigned(d, k)
-            valstring = string(d[k])
+            show(io, d[k])
         else
-            valstring = "#undef"
-        end
-        print(io, "\n ", k, " ⇒ ", valstring)
-        lines += 1
-        if lines > n_lines
-            print(io, "\n ⋮ ⇒ ⋮")
-            break
+            print(io, "#undef")
         end
     end
 end

@@ -5,20 +5,24 @@
 [![Build Status](https://travis-ci.org/andyferris/Dictionaries.jl.svg?branch=master)](https://travis-ci.org/andyferris/Dictionaries.jl)
 [![Codecov](https://codecov.io/gh/andyferris/Dictionaries.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/andyferris/Dictionaries.jl)
 
-The high-level goal of this package is to define a new interface for dictionary and set structures which is convenient for functional data manipulation - including operations such as non-scalar indexing, broadcasting, mapping, filtering, reducing, grouping, and so-on.
+This package is still under development - new features are being added and some (low-level) interfaces may be tweaked in the future, but things should be stable enough for general usage. Contributions welcome - please submit an issue or PR!
 
-This package is still under development - new features are being added and some interfaces may be tweaked in the future, but things should be stable enough for non-production usage.
+## Motivation
+
+The high-level goal of this package is to define a new interface for dictionary and set structures which is convenient for functional data manipulation - including operations such as non-scalar indexing, broadcasting, mapping, filtering, reducing, grouping, and so-on. While Julia comes with built-in `AbstractDict` and `AbstractSet` supertypes, the interfaces for these are not as well established or generic as for `AbstractArray`, and the built-in dictionaries implement less of the common data manipulation operations compared to arrays.
+
+In this package we aim to devise a cohesive interface for abstract dictionaries (or associative maps), having the common supertype `AbstractDictionary`. A large part of this is working with indices (of arbitrary type) as well as convenient and efficient iteration of the containers. A second goal is to make dictionary manipulation more closely resemble array manipulation, to make it easier for users.
 
 ## Getting started
 
-The go-to container in this package is `HashDictionary`, which shares the same hash-based implementation as Julia's inbuilt `Dict` type (using `hash` and `isequal` for key lookup and comparison). You can construct one from a list of indices (or keys) and a list of values.
+Dictionaries share the common supertype `AbstractDictionary`, and the go-to container in this package is `HashDictionary` - which shares the same hash-based implementation as Julia's inbuilt `Dict` type (using `hash` and `isequal` for key lookup and comparison). You can construct one from a list of indices (or keys) and a list of values.
 
 ```julia
 julia> dict = HashDictionary(["a", "b", "c"], [1, 2, 3])
 3-element HashDictionary{String,Int64}
- c ⇒ 3
- b ⇒ 2
- a ⇒ 1
+ "c" ⇒ 3
+ "b" ⇒ 2
+ "a" ⇒ 1
 
 julia> dict["a"]
 1
@@ -28,9 +32,9 @@ If you prefer, you can use the `dictionary` function to create a dictionary from
 ```julia
 julia> dictionary(["a" => 1, "b" => 2, "c" => 3])
 3-element HashDictionary{String,Int64}
- c ⇒ 3
- b ⇒ 2
- a ⇒ 1
+ "c" ⇒ 3
+ "b" ⇒ 2
+ "a" ⇒ 1
 ```
 
 The values of `HashDictionary` are mutable, or "settable", and can be modified via `setindex!`.
@@ -42,9 +46,9 @@ julia> dict["a"] = 10
 
 julia> dict
 3-element HashDictionary{String,Int64}
- c ⇒ 3
- b ⇒ 2
- a ⇒ 10
+ "c" ⇒ 3
+ "b" ⇒ 2
+ "a" ⇒ 10
 
 julia> dict["d"] = 42
 ERROR: IndexError("Dictionary does not contain index: d")
@@ -58,29 +62,286 @@ The indices of `HashDictionary` are said to be "insertable" - indices can be add
 ```
 julia> insert!(dict, "d", 42)
 4-element HashDictionary{String,Int64}
- c ⇒ 3
- b ⇒ 2
- a ⇒ 10
- d ⇒ 42
+ "c" ⇒ 3
+ "b" ⇒ 2
+ "a" ⇒ 10
+ "d" ⇒ 42
 
 julia> delete!(dict, "d")
 3-element HashDictionary{String,Int64}
- c ⇒ 3
- b ⇒ 2
- a ⇒ 10
+ "c" ⇒ 3
+ "b" ⇒ 2
+ "a" ⇒ 10
 ```
 
 Note that `insert!` and `delete!` are precise in the sense that `insert!` will error if the index already exists, and `delete!` will error if the index does not. The `set!` function provides "upsert" functionality ("update or insert") and `unset!` is useful for removing an index that may or may not exist.
 
-## Motivation
+### Working with dictionaries
 
-While Julia comes with built-in `AbstractDict` and `AbstractSet` supertypes, the interfaces for these are not as well established or generic as for `AbstractArray`, and dictionaries implement less of the common data manipulation operations compared to arrays - such as broadcasting, `map`, `reduce`, and `filter` (and their mutating counterparts).
+Dictionaries can be manipulated and transformed using a similar interface to Julia's built-in arrays. The first thing to note is that dictionaries iterate values, so it easy to perform simple analytics on the dictionary values.
 
-In this package we aim to devise a cohesive interface for abstract dictionaries (or associative maps), having the common supertype `AbstractDictionary`. A large part of this is working with indices (of arbitrary type) as well as convenient and efficient iteration of the containers. A second goal is to make dictionary manipulation more closely resemble array manipulation, to make it easier for users.
+```julia
+julia> dict = HashDictionary(["a", "b", "c"], [1, 2, 3])
+3-element HashDictionary{String,Int64}
+ "c" ⇒ 3
+ "b" ⇒ 2
+ "a" ⇒ 1
 
-There are multiple areas of the design space that we can explore for dictionary structures that might make them more convenient for various use cases. Here we are focused on data manipulation - taking in input datasets and processing it with dictionaries as a part of a larger dataflow. A simple of example of where usablility of an interface might differ, Julia's in-built `AbstractDict` will iterate key-value pairs, whereas `AbstractDictionary` chooses to iterate values by default. An example in the data space where this convenient is starting with a dictionary mapping people's names to their age, called `ages` say, and calculating the `mean` age. With `AbstractDictionary`s (as with `AbstractArray`s) we can just use `mean(ages)`.
+julia> sum(dict)
+6
+
+julia> using Statistics; mean(dict)
+2.0
+```
+
+Mapping and broadcasting also function as-per arrays, preserving the indices and transforming the corresponding values.
+
+```julia
+julia> map(iseven, dict)
+3-element HashDictionary{String,Bool}
+ "c" ⇒ false
+ "b" ⇒ true
+ "a" ⇒ false
+
+julia> map(*, dict, dict)
+3-element HashDictionary{String,Int64}
+ "c" ⇒ 9
+ "b" ⇒ 4
+ "a" ⇒ 1
+
+julia> dict .+ 1
+3-element HashDictionary{String,Int64}
+ "c" ⇒ 4
+ "b" ⇒ 3
+ "a" ⇒ 2
+```
+
+There is a `mapview` function, which is the lazy version of the above.
+
+Filtering a dictionary also preserves the keys, dropping the remainder.
+
+```julia
+julia> filter(isodd, dict)
+2-element HashDictionary{String,Bool}
+ "c" ⇒ 3
+ "a" ⇒ 1
+```
+
+The `filterview` function is provided to lazily filter a dictionary, which may occassionally
+be more performant when working with larger containers.
+
+The `pairs` function allows access to both the index (key) and value when iterating.
+
+```julia
+julia> pairs(dict)
+3-element Dictionaries.PairDictionary{String,Int64,HashDictionary{String,Int64}}
+ "c" ⇒ "c" => 3
+ "b" ⇒ "b" => 2
+ "a" ⇒ "a" => 1
+
+julia> map(((k,v),) -> k^v, pairs(dict))
+3-element HashDictionary{String,String}
+ "c" ⇒ "ccc"
+ "b" ⇒ "bb"
+ "a" ⇒ "a"
+```
+
+### Indices
+
+The indices of a dictionary are unique, and form a set (in the mathematical sense). You can get the indices for any dictionary with the `keys` function.
+
+```julia
+julia> keys(dict)
+3-element HashIndices{String}
+ "c"
+ "b"
+ "a"
+```
+
+Whenever you call `keys(::AbstractDictionary)`, you always receive an `AbstractIndices` in return. 
+`HashIndices` shares a similar implementation to `Base.Set` and can be used to perform set operations including `union`, `intersect`, `setdiff`, `symdiff`, and mutating counterparts. You can construct one from any iterable of unique elements.
+
+```julia
+julia> inds = HashIndices(["a", "b", "c"])
+3-element HashIndices{String}
+ "c"
+ "b"
+ "a"
+```
+
+`HashIndices` are insertable, so you can use `insert!` and `delete!` (or `set!` and `unset!`) to add and remove elements.
+
+```julia
+julia> insert!(inds, "d")
+4-element HashIndices{String}
+ "c"
+ "b"
+ "a"
+ "d"
+
+julia> delete!(inds, "d")
+3-element HashIndices{String}
+ "c"
+ "b"
+ "a"
+```
+
+One crucial property of `AbstractIndices` is that they are a subtype of `AbstractDictionary` (similar to how the `keys` of an `AbstractArray` are always `AbstractArray`s). But how can a set, or indices, be a dictionary? Under `getindex`, they form a map from each element to itself.
+
+```julia
+julia> inds["b"]
+"b"
+```
+
+Since all dictionaries have `keys`, even indices must have `keys` - and in this case `keys(inds) === inds`.
+
+### Working with indices
+
+While the above properties for `AbstractIndices` may seem a little unnecessary at first, they lead to a variety of useful behavior.
+
+If you wish to perform an operation on each element of a set, you can simply `map` or `broadcast` some indices, and return a dictionary. These operations cannot return an `AbstractIndices` since the mapping may or may not be one-to-one, so the results may not be distinct, while `map`/`broadcast` must preserve the number of elements and the `keys`.
+
+```julia
+julia> map(uppercase, inds)
+3-element HashDictionary{String,String}
+ "c" ⇒ "C"
+ "b" ⇒ "B"
+ "a" ⇒ "A"
+
+julia> inds .* "at"
+3-element HashDictionary{String,String}
+ "c" ⇒ "cat"
+ "b" ⇒ "bat"
+ "a" ⇒ "aat"
+```
+
+You can filter indices.
+
+```julia
+julia> filter(in(["a", "b"]), inds)
+2-element HashIndices{String}
+ "b"
+ "a"
+```
+
+To find the subset of dictionary indices/keys that satisfy some constraint on the values, use the `findall` function.
+
+```julia
+julia> dict
+3-element HashDictionary{String,Int64}
+ "c" ⇒ 3
+ "b" ⇒ 2
+ "a" ⇒ 1
+
+julia> inds_odd = findall(isodd, dict)
+2-element HashIndices{String}
+ "c"
+ "a"
+```
+
+And, finally, one useful thing you can do with indices is, well, *indexing*. Non-scalar indexing of dictionaries is a little more complicated than that of arrays, since there is an ambiguity on whether the indexer is a *single* index or a collection of indices (for arrays, the scalar indices are integers (or `CartesianIndex`es) so this ambiguity is less of a problem). The [Indexing.jl](https://github.com/andyferris/Indexing.jl) provides the `getindices` function to return a container with the same indices as the indexer, and this is re-exported here.
+
+```julia
+julia> getindices(dict, inds2)
+2-element HashDictionary{String,Int64}
+ "c" ⇒ 3
+ "a" ⇒ 1
+```
+
+It has [been suggested](https://github.com/JuliaLang/julia/issues/30845) to make the syntax `dict.[inds2]` available in Julia in the future for unambiguous non-scalar indexing. 
+
+Lazy non-scalar indexing may be achieved, as usual, with the `view` function.
+
+```julia
+julia> view(dict, inds2)
+2-element DictionaryView{String,Int64,HashIndices{String},HashDictionary{String,Int64}}
+ "c" ⇒ 3
+ "a" ⇒ 1
+```
+
+Boolean or "logical" indexing is also ambguous with scalar and non-scalar indexing. Luckily, the `findall` function is a convenient way to convert a Boolean-valued dictionary into indices, which we can use with `getindices`:
+
+```julia
+julia> isodd.(dict)
+3-element HashDictionary{String,Bool}
+ "c" ⇒ true
+ "b" ⇒ false
+ "a" ⇒ true
+
+julia> getindices(dict, findall(isodd.(dict)))
+2-element HashDictionary{String,Int64}
+ "c" ⇒ 3
+ "a" ⇒ 1
+```
+
+(Who knows - maybe we need syntax for this, too?)
+
+### Factories for dicionary creation
+
+#### Dictionaries with the same indices
+
+The `similar` function is used to create a dictionary with defined indices, but undefined values that can be set/mutated after the fact. `similar(dict, T)` creates a container with the same indices as `dict` and, optionally, a new element type.
+
+```julia
+julia> similar(dict, Vector{Int})
+3-element HashDictionary{String,Array{Int64,1}}
+ "c" ⇒ #undef
+ "b" ⇒ #undef
+ "a" ⇒ #undef
+```
+
+The behaviour is the same if `dict` is an `AbstractIndices` - you always get a dictionary with settable/mutable elements. 
+
+On the other hand, values can be initialized with the `fill(value, dict)` function.
+
+```julia
+julia> fill(42, dict)
+3-element HashDictionary{String,Int64}
+ "c" ⇒ 42
+ "b" ⇒ 42
+ "a" ⇒ 42
+```
+
+The `fill` function can optionally define a wider type than the value, helpful for if you want to assign
+
+```julia
+julia> fill(missing, dict, Union{Missing, Int64})
+3-element HashDictionary{String,Union{Missing, Int64}}
+ "c" ⇒ missing
+ "b" ⇒ missing
+ "a" ⇒ missing
+```
+
+Functions `zeros`, `ones`, `falses` and `trues` are defined as a handy alternative to the above in common cases.
+
+```julia
+julia> zeros(dict)
+3-element HashDictionary{String,Float64}
+ "c" ⇒ 0.0
+ "b" ⇒ 0.0
+ "a" ⇒ 0.0
+
+julia> zeros(UInt8, dict)
+3-element HashDictionary{String,UInt8}
+ "c" ⇒ 0x00
+ "b" ⇒ 0x00
+ "a" ⇒ 0x00
+```
+
+Note that the *indices* of the output are not guaranteed to be mutable/insertable - in fact, in the current implementation inserting or deleting indices to the output of the above can corrupt the input container (Julia suffers similar restrictions with `AbstractArray`s with mutable indices, for example changing the size of the indices of a `SubArray` can lead to corruption and segfaults). This also holds true for the output of `map`, `broadcast`, `getindices`, `similar`, `zeros`, `ones`, `falses` and `trues`. If you want a new container with indices you can insert, use `empty` instead.
+
+#### Empty, insertable dictionaries indices
+
+The `empty` function will create an insertable container which is "similar" to the input, with zero elements and the specified type for the indices and values.
+
+ * `empty(x, I)` constructs an empty indices (whether `x` is a dictionary or indices).
+ * `empty(x, I, T)` constructs an empty dictionary (whether `x` is a dictionary or indices).
+ * `empty(x)` constructs an empty container - indices if `x` are indices, and a dictionary if `x` is a dictionary.
+
 
 ## Types, interfaces and traits
+
+This section will be of primary interest to developers who wish to understand the internals to *Dictionaries.jl* or create their own custom dictionary types.
 
 ### `AbstractDictionary`
 
@@ -88,9 +349,7 @@ The common supertype to this package is `AbstractDictionary{I, T}`, which models
 
  * `getindex(::AbstractDictionary{I, T}, ::I) --> T`
  * `keys(::AbstractDictionary{I, T}) --> AbstractIndices{I}`
- * A constructor `MyDictionary(values, indices)` returning a dictionary with the given `indices` and values set to `values`, matched by iteration. Alternatively, `values` may be a scalar in the broadcasting sense, where all elements are set to the same value.
-
-Built upon just these, a range of useful functionality is provided, generally consistent with `AbstractArray`. **NOTE:** When iterating an `AbstractDictionary`, keep in mind that only the values are iterated (like `AbstractArray`) and not key-value pairs (like `AbstractDict`). This provides a more consistent usage of `map`, `filter`, `reduce`, `broadcast`, and the functions in *SplitApplyCombine.jl* and *Indexing.jl*.
+ * `isassigned(::AbstractDictionary{I, T}, ::I) --> Bool`
 
 ### `AbstractIndices`
 
@@ -98,9 +357,9 @@ Indexable containers in Julia have `keys`, which form a "set" in the mathematic 
 
  * The `iterate` protocol, returning unique values of type `I`.
  * `in`, such that `in(i, indices)` implies there is an element of `indices` which `isequal` to `i`.
- * A one-argument constructor `MyIndices(iter)` that builds indices by iterating `iter`.
+ * Either `length`, or override `IteratorSize` to `SizeUnknown`.
 
-Indices themselves are also dictionaries (much like the indices of `AbstractArray`s are also `AbstractArray`s), and we have the subtyping relationship `AbstractIndices{I} <: AbstractDictionary{I, I}`. Indexing an `AbstractIndex` is always *idempotent*, such that `indices[i] === i`. The `keys` function is also idempotent: `keys(indices::AbstractIndices) === indices` (and therefore `keys(keys(dict::AbstractDictionary)) === keys(dict)`). While indexing into indices may seem unintuitive or obtuse at first, this is quite a natural mathematical formulation that supports the indexing behavior below and the entire `AbstractDictionary` interface. (Dictionaries that iterate values is key to allowing this formulation).
+Indices themselves are also dictionaries (much like the indices of `AbstractArray`s are also `AbstractArray`s), and we have the subtyping relationship `AbstractIndices{I} <: AbstractDictionary{I, I}`. Indexing an `AbstractIndices` is always *idempotent*, such that `indices[i] === i`. The `keys` function is also idempotent: `keys(indices::AbstractIndices) === indices` (and therefore `keys(keys(dict::AbstractDictionary)) === keys(dict)`). 
 
 ### Non-scalar indexing
 
@@ -113,7 +372,7 @@ The expression `dict3 = getindices(dict1, dict2)` follows the following simple r
 
 Non-scalar indexing is simplified such that it is essentially `getindices(dict1, dict2) = map(i -> dict1[i], dict2)`. Note also that `getindices(dict, keys(dict))` has the same keys and values as `dict`, and is synonymous with `getindices(dict, :)`.
 
-These rules match those for `AbstractArray`, including offset arrays. The `view` function will work similarly (work-in-progress), and the `setindices!` function from *Indexing.jl* is already implemented (see mutation, below).
+These rules match those for `AbstractArray`, including offset arrays. The `view` function will work similarly, and the `setindices!` function from *Indexing.jl* is already implemented (see mutation, below).
 
 ### Setting/mutating values
 
@@ -121,7 +380,6 @@ Many dictionary types support setting or mutating the the *values* of the elemen
 
  * `issettable(::AbstractDictionary)` (returning `true`)
  * `setindex!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
- * A constructor `MyDictionary(undef::UndefInitializer, indices)` returning a dictionary with the given `indices` and unitialized values.
 
 The `issettable` function is a trait function that indicate whether an `AbstractDictionary` supports `setindex!`.
 
@@ -134,47 +392,80 @@ If arbitrary indices can be added to or removed from an `AbstractDictionary`, on
  * `isinsertable(::AbstractDictionary)` (returning `true`)
  * `insert!(dict::AbstractDictionary{I, T}, ::I, ::T}` (returning `dict`)
  * `delete!(dict::AbstractDictionary{I, T}, ::I}` (returning `dict`)
- * A zero-argument constructor `MyDictionary()` returning an empty `MyDictionary`.
 
 The `insert!` and `delete!` always create or remove indices. Calling `insert!` when an index already exists will throw an error, as will attempting to `delete!` an index that does not exist. The function `set!` is provided as an "upsert" (update or insert) operation. Similarly, `unset!` function can be used to ensure a given index does not exist. The `get!` function works as in `Base`.
 
 **NOTE**: `setindex!` can *never* create new indices, unlike with Julia's `AbstractDict` (and many other programming languages!). Always use `set!` to perform an "upsert" operation. This change may seem inconvenient at first, but it is similar to `AbstractArray` and how Julia differs from MATLAB in requiring one to explicitly `push!` to the end of a vector (a much less bug-prone pattern).
 
-Sometimes one wishes to manipulate `AbstractIndices` directly, either to create the keys for a new container or as a part of set logic. To do so, implement:
+`AbstractIndices` may also be insertable, by implementing:
 
+ * `isinsertable(indices)` (returning `true`)
  * `insert!(indices, i)` - add new index `i` to `indices` (will error if index exists)
  * `delete!(indices, i)` - remove an existing index `i` from `indices` (will error if index does not exist).
- * A zero-argument constructor `MyIndices()` returning an empty `MyIndices`.
 
 The `set!` and `unset!` functions behave as expected, as do `union!`, `intersect!`, `setdiff!` and `symdiff!`. Since indices iterate values, the `filter!` function can programmatically trim back a set of indices.
 
 ### Tokens
 
-Make it fast! The concept is similar to `eachindex`, but a bit more generalized. Tokens can also be used to reduce the number of hashing and lookup operations, such as optimizing functions like `set!`, `get!` and `unset!`. Work-in-progress - there is an optimized version of `map` and `map!` that works faster than the equivalent code in `Base`.
+To make operations on dictionaries fast, we need to avoid unnecessary lookups into the dictionary and operations like recomputations of hashes. The token interface makes many things more efficient, especially co-iteration of `similar` containers containing identical `keys`.
 
-### Constructors and factories
+#### Implementing the token interface for `AbstractIndices`
 
-We need a generic interface to create new dictionaries. I'd like to make working with an imagined `StaticDictionary` or `DistributedDictionary` or `GPUDictionary` to be seemless, such that generic code "just works" and does the logical performant operations. This work is not complete.
+A token is a more efficient way of refering to an element of `indices`. Using tokens may
+help avoid multiple index lookups for a single operation.
 
-Constructors may need some more thought, and are partly implemented. In general, `MyDictionary()` seems appropriate to create an empty dictionary (or indices). For `AbstractIndices`, it seems appropriate for `MyIndices(iter)` to simply iterate through the input *values*. The form `MyDictionary(undef, ::AbstractIndices)` seems appropriate to create an `issettable` dictionary with given keys but uninitialized values. That suggests `MyDictionary(newvalues, newindices)` as the general initialized form, where the key-value pairings are defined by the mutual iteration of the inputs (or perhaps via `broadcast` so `newvalues` could be e.g. a scalar and this is like `fill`, though this is not yet implemented).
+A tokenizable indices must implement:
 
-In future work, a single argument `MyDictionary(otherdict)` could copy the keys and values from `otherdict`, and is a bit like `convert`. I also note that sometimes working with `Pair`s is most convenient, so this clashes with the idea of having `MyDictionary(iter)` to iterate `Pair`s like `Dict` would (and `MyDictionary(pairs...)` seems ill-advised). Nevertheless, a solution for `Pair`s would be nice (even if it is a factory-style pattern).
+ * `istokenizable(indices)` (returning `true`)
+ * `tokentype(indices) --> T::Type`
+ * `iteratetoken(indices, s...)` iterates the tokens of `indices`, like `iterate`
+ * `gettoken(indices, i) --> (hasindex::Bool, token)`
 
-`similar` works like `AbstractArray`: it creates a container that is settable/mutable (`issettable`) and has the same keys as the input. The values are `undef` by default. In general we can overide the element type or keys, using the form (with default values) `newdict = similar(olddict, NewT = eltype(olddict), newkeys = keys(olddict))`. I don't see any reason for the output container to be `isinsertable`.
+An `isinsertable` tokenizable indices must implement
 
-Sometimes one wants to create an empty insertable container. The `empty` function might be a good candidate, where one can set the index and value types. On the other hand, there is no reason that we can't ask for an `empty` *immutable* or *non-insertable* container (as `empty` is useful even for `Tuple`s) so perhaps a new generic function that ensures `isinsertable` is preferable. (Note: `AbstractArray` has this same problem, where generic code exists in the wild that expects to be able to `push!` to `empty(::AbstractVector)`, for example, which fails for `StaticArray`s).
+ * `gettoken!(indices, i) --> (hadtoken::Bool, token)`
+ * `deletetoken!(indices, token) --> indices`
 
-`fill` seems to be a possible factory that could take an input dictionary, such as `fill(dict, x) = fill!(similar(dict, typeof(x)), x)`. We can define `zeros`, `ones`, `falses` (and `trues`?) from this. There's no reason for `rand`, `randn`, etc not to work as expected.
+#### Implementing the token interface for `AbstractDictionary`
 
-`copy` is an interesting case - sometimes you do want to keep the same keys and values but you may want to e.g. mutate them afterwards, or add/remove elements, or even simply make a defensive copy. A generic function might be useful for each case?
+An tokenizable dictionary must implement:
 
-Sometimes one might want to enable/disable mutation and/or insertion. There has been suggestions of `freeze` and `thaw` for `Array`, for example, but you may also want to `freezekeys` or `thawkeys` (note: similarly in `Base` you may want to fix the length of `Vector` but not it's values).
+ * `istokenizable(dict)` (returning `true`)
+ * `keys(dict)` must be `istokenizable` and share tokens with `dict`
+ * `gettokenvalue(dict, token)` returning the dictionary value at `token`
+ * `istokenassigned(dict, token) --> Bool` 
 
-(As a thought - it might be possible for the above factories to do their work at the type level and then punt to the constructor, similar to *StaticArrays.jl*).
+An `issettable` tokenizable dictionary must implement:
 
-### TODO
+ * `settokenvalue!(dict, token)`
 
- * Some ability to construct dictionaries from a list of pairs.
- * A surface interface for updates like https://github.com/JuliaLang/julia/pull/31367
- * Improved printing - replace `=>` with `│` and colummar indentation, don't calculate length (beyond some cutoff) if it is `SizeUnknown`.
- * Soon we will have the concept of "ordered" indices/sets (sort-based dictionaries and B-trees). We can probably formalize an interface around a trait here. Certain operations like slicing out an interval or performing a sort-merge co-iteration for `merge` become feasible.
+An `isinsertable` tokenizable dictionary must implement:
+
+ * `gettoken!(dict, i) --> (hadtoken::Bool, token)`
+ * `deletetoken!(dict, token) --> dict`
+
+### Co-iteration implementation notes
+
+When two-or-more dictionaries share the same tokens, co-iterating through their matching
+elements becomes much more efficient. By default, the `similar` function on `HashIndices`
+and `Indices` does not make a copy of the indices. When performing an operation such as
+`map!(f, d_out, d_in)`, a check of `keys(d_out) === keys(d_in)` lets us know that the
+tokens are equivalent with a constant-time operation. When this is the case, the `map!`
+operation can skip lookup entirely, performing zero calls to `hash` and dealing with hash
+collisions.
+
+A quick benchmark verifies the result. The `copy` below makes `keys(d1) !== keys(d2)`.
+
+```julia
+julia> using Dictionaries, BenchmarkTools
+
+julia> d1 = HashDictionary(1:10_000_000, 10_000_000:-1:1);
+
+julia> d2 = d1 .+ 1;
+
+julia> @btime map(+, d1, d2);
+  155.299 ms (22 allocations: 256.00 MiB)
+
+julia> @btime map(+, d1, $(copy(d2)));
+  343.394 ms (22 allocations: 256.00 MiB)
+```
