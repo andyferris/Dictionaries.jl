@@ -259,7 +259,7 @@ julia> view(dict, inds2)
  "a" ⇒ 1
 ```
 
-Boolean or "logical" indexing is also ambguous with scalar and non-scalar indexing. Luckily, the `findall` function is a convenient way to convert a Boolean-valued dictionary into indices, which we can use with `getindices`:
+Boolean or "logical" indexing is also ambiguous with scalar and non-scalar indexing. Luckily, the `findall` function is a convenient way to convert a Boolean-valued dictionary into indices, which we can use with `getindices`:
 
 ```julia
 julia> isodd.(dict)
@@ -310,7 +310,7 @@ julia> fill(42, dict)
  "a" ⇒ 42
 ```
 
-The `fill` function can optionally define a wider type than the value, helpful for if you want to assign
+The `fill` function can optionally define a wider type than the value, helpful for if you want to assign a default value like `missing` but allow this to be updated later.
 
 ```julia
 julia> fill(missing, dict, Union{Missing, Int64})
@@ -336,7 +336,7 @@ julia> zeros(UInt8, dict)
  "a" ⇒ 0x00
 ```
 
-Note that the *indices* of the output are not guaranteed to be mutable/insertable - in fact, in the current implementation inserting or deleting indices to the output of the above can corrupt the input container (Julia suffers similar restrictions with `AbstractArray`s with mutable indices, for example changing the size of the indices of a `SubArray` can lead to corruption and segfaults). This also holds true for the output of `map`, `broadcast`, `getindices`, `similar`, `zeros`, `ones`, `falses` and `trues`. If you want a new container with indices you can insert, use `empty` instead.
+Note that the *indices* of the output are not guaranteed to be mutable/insertable - in fact, in the current implementation inserting or deleting indices to the output of the above can corrupt the input container (Julia suffers similar restrictions with `AbstractArray`s with mutable indices, for example changing the size of the indices of a `SubArray` can lead to corruption and segfaults). This also holds true for the output of `map`, `broadcast`, `getindices`, `similar`, `zeros`, `ones`, `falses` and `trues`. If you want a new container with indices you can insert, by sure to `copy` the indices furst, or use `empty` instead.
 
 #### Empty, insertable dictionaries indices
 
@@ -345,7 +345,6 @@ The `empty` function will create an insertable container which is "similar" to t
  * `empty(x, I)` constructs an empty indices (whether `x` is a dictionary or indices).
  * `empty(x, I, T)` constructs an empty dictionary (whether `x` is a dictionary or indices).
  * `empty(x)` constructs an empty container - indices if `x` are indices, and a dictionary if `x` is a dictionary.
-
 
 ## Types, interfaces and traits
 
