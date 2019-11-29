@@ -233,7 +233,7 @@ julia> dict
  "b" ⇒ 2
  "a" ⇒ 1
 
-julia> inds_odd = findall(isodd, dict)
+julia> inds2 = findall(isodd, dict)
 2-element HashIndices{String}
  "c"
  "a"
