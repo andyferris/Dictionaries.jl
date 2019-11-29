@@ -68,6 +68,11 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
         else
             print(io, "#undef")
         end
+        lines += 1
+        if lines > n_lines
+            print(io, "\n ⋮")
+            break
+        end
     end
 end
 

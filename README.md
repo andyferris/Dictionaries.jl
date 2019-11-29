@@ -9,9 +9,9 @@ This package is still under development - new features are being added and some 
 
 ## Motivation
 
-The high-level goal of this package is to define a new interface for dictionary and set structures which is convenient for functional data manipulation - including operations such as non-scalar indexing, broadcasting, mapping, filtering, reducing, grouping, and so-on. While Julia comes with built-in `AbstractDict` and `AbstractSet` supertypes, the interfaces for these are not as well established or generic as for `AbstractArray`, and the built-in dictionaries implement less of the common data manipulation operations compared to arrays.
+The high-level goal of this package is to define a new interface for dictionary and set structures which is convenient and efficient for functional data manipulation - including operations such as non-scalar indexing, broadcasting, mapping, filtering, reducing, grouping, and so-on. While Julia comes with built-in `AbstractDict` and `AbstractSet` supertypes, the interfaces for these are not as well established or generic as for `AbstractArray`, the built-in dictionaries implement less of the common data manipulation operations compared to arrays, and it is difficult to work with them in a performant manner.
 
-In this package we aim to devise a cohesive interface for abstract dictionaries (or associative maps), having the common supertype `AbstractDictionary`. A large part of this is working with indices (of arbitrary type) as well as convenient and efficient iteration of the containers. A second goal is to make dictionary manipulation more closely resemble array manipulation, to make it easier for users.
+In this package we aim to devise a cohesive interface for abstract dictionaries (or associative maps), having the common supertype `AbstractDictionary`. A large part of this is working with indices (of arbitrary type) as well as convenient and efficient iteration of the containers. A second goal is to make dictionary manipulation more closely resemble array manipulation, to make it easier for users. A third goal is to push the performance of working with dictionaries to be closer to that of working with arrays.
 
 ## Getting started
 
@@ -276,7 +276,15 @@ julia> getindices(dict, findall(isodd.(dict)))
 
 (Who knows - maybe we need syntax for this, too?)
 
-### Factories for dicionary creation
+### Other dictionary types
+
+The `Dictionary` container is a simple, iteration-based dictionary that may be faster for smaller collections. It's `keys` are the corresponding `Indices` type. By default these contain `Vector`s which support mutation, insertion and tokenization, but they can contain other iterables such as `Tuple`s (which make for good statically-sized dictionaries, with similarities with `Base.ImmutableDict` or [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl)).
+
+It is planned to add new dictionary types that support an ordering (such as sorted by the values, or the columns of a `DataFrame`, similar to [OrderedCollections.jl](https://github.com/JuliaCollections/OrderedCollections.jl)).
+
+Indices that are based on sort ordering instead of hashing (both in a dense sorted form and as a B-tree or similar) are also planned.
+
+### Factories for dictionary creation
 
 #### Dictionaries with the same indices
 
@@ -290,7 +298,7 @@ julia> similar(dict, Vector{Int})
  "a" ⇒ #undef
 ```
 
-The behaviour is the same if `dict` is an `AbstractIndices` - you always get a dictionary with settable/mutable elements. 
+The behaviour is the same if `dict` is an `AbstractIndices` - you always get a dictionary with settable/mutable elements. Preserving the indices using `similar` and setting the values provides a huge performance advantage compared to iteratively constructing a new dictionary via insertion (see the bottom of this README).
 
 On the other hand, values can be initialized with the `fill(value, dict)` function.
 
@@ -454,7 +462,9 @@ tokens are equivalent with a constant-time operation. When this is the case, the
 operation can skip lookup entirely, performing zero calls to `hash` and dealing with hash
 collisions.
 
-A quick benchmark verifies the result. The `copy` below makes `keys(d1) !== keys(d2)`.
+A quick benchmark verifies the result. The `copy` below makes `keys(d1) !== keys(d2)`,
+disabling token co-iteration (with results somewhat in line with typical usage of 
+`Base.Dict`).
 
 ```julia
 julia> using Dictionaries, BenchmarkTools
@@ -469,3 +479,48 @@ julia> @btime map(+, d1, d2);
 julia> @btime map(+, d1, $(copy(d2)));
   343.394 ms (22 allocations: 256.00 MiB)
 ```
+
+Using insertion, instead of preserving the existing indices, is comparitively slow.
+
+```julia
+julia> function f(d1, d2)
+           out = HashDictionary{Int64, Int64}()
+           for i in keys(d1)
+               insert!(out, i, d1[i] + d2[i])
+           end
+           return out
+       end
+f (generic function with 1 method)
+
+julia> @btime f(d1, d2);
+  2.161 s (10000073 allocations: 846.35 MiB)
+```
+
+Unfortunately, insertion appears to be the idomatic way of doing things with `Base.Dict`.
+Compare the above to:
+
+```julia
+julia> dict1 = Dict(pairs(d1)); dict2 = Dict(pairs(d2));
+
+julia> function g(d1, d2)
+           out = Dict{Int64, Int64}()
+           for i in keys(d1)
+               out[i] = d1[i] + d2[i]
+           end
+           return out
+       end
+g (generic function with 1 method)
+
+julia> @btime g(dict1, dict2);
+  10.985 s (72 allocations: 541.17 MiB)
+```
+
+The result is similar with generators.
+
+```julia
+julia> @btime Dict(i => dict1[i] + dict2[i] for i in keys(dict1));
+  13.787 s (89996503 allocations: 2.02 GiB)
+```
+
+This represents a 88x speedup between the first example with `HashDictionary` to this last
+example with `Base.Dict`.

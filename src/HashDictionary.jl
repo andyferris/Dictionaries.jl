@@ -19,9 +19,6 @@ end
 HashDictionary{I}() where {I} = HashDictionary{I, Any}()
 HashDictionary() = HashDictionary{Any}()
 
-HashDictionary{I}() where {I} = HashDictionary{I, Any}()
-HashDictionary() = HashDictionary{Any}()
-
 """
     HashDictionary{I, T}(indices, undef::UndefInitializer)
 
