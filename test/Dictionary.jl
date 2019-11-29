@@ -43,8 +43,8 @@ end
     d[10] = 13
     @test length(d) == 1
     @test d[10] == 13
-    io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 ⇒ 13}"
-    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64,Int64,Array{Int64,1},Array{Int64,1}}\n 10 ⇒ 13"
+    io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 │ 13}"
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64,Int64,Array{Int64,1},Array{Int64,1}}\n 10 │ 13"
     @test !isequal(d, empty(d))
     @test isequal(d, copy(d))
     @test isempty(empty(d))

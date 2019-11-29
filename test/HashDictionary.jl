@@ -33,8 +33,8 @@
     d[10] = 13
     @test length(d) == 1
     @test d[10] == 13
-    io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 ⇒ 13}"
-    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element HashDictionary{Int64,Int64}\n 10 ⇒ 13"
+    io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 │ 13}"
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element HashDictionary{Int64,Int64}\n 10 │ 13"
     @test !isequal(d, empty(d))
     @test isequal(d, copy(d))
     @test isempty(empty(d))

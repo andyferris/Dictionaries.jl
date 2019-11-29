@@ -20,9 +20,9 @@ Dictionaries share the common supertype `AbstractDictionary`, and the go-to cont
 ```julia
 julia> dict = HashDictionary(["a", "b", "c"], [1, 2, 3])
 3-element HashDictionary{String,Int64}
- "c" ⇒ 3
- "b" ⇒ 2
- "a" ⇒ 1
+ "c" │ 3
+ "b" │ 2
+ "a" │ 1
 
 julia> dict["a"]
 1
@@ -32,9 +32,9 @@ If you prefer, you can use the `dictionary` function to create a dictionary from
 ```julia
 julia> dictionary(["a" => 1, "b" => 2, "c" => 3])
 3-element HashDictionary{String,Int64}
- "c" ⇒ 3
- "b" ⇒ 2
- "a" ⇒ 1
+ "c" │ 3
+ "b" │ 2
+ "a" │ 1
 ```
 
 The values of `HashDictionary` are mutable, or "settable", and can be modified via `setindex!`.
@@ -46,9 +46,9 @@ julia> dict["a"] = 10
 
 julia> dict
 3-element HashDictionary{String,Int64}
- "c" ⇒ 3
- "b" ⇒ 2
- "a" ⇒ 10
+ "c" │ 3
+ "b" │ 2
+ "a" │ 10
 
 julia> dict["d"] = 42
 ERROR: IndexError("Dictionary does not contain index: d")
@@ -62,16 +62,16 @@ The indices of `HashDictionary` are said to be "insertable" - indices can be add
 ```
 julia> insert!(dict, "d", 42)
 4-element HashDictionary{String,Int64}
- "c" ⇒ 3
- "b" ⇒ 2
- "a" ⇒ 10
- "d" ⇒ 42
+ "c" │ 3
+ "b" │ 2
+ "a" │ 10
+ "d" │ 42
 
 julia> delete!(dict, "d")
 3-element HashDictionary{String,Int64}
- "c" ⇒ 3
- "b" ⇒ 2
- "a" ⇒ 10
+ "c" │ 3
+ "b" │ 2
+ "a" │ 10
 ```
 
 Note that `insert!` and `delete!` are precise in the sense that `insert!` will error if the index already exists, and `delete!` will error if the index does not. The `set!` function provides "upsert" functionality ("update or insert") and `unset!` is useful for removing an index that may or may not exist.
@@ -83,9 +83,9 @@ Dictionaries can be manipulated and transformed using a similar interface to Jul
 ```julia
 julia> dict = HashDictionary(["a", "b", "c"], [1, 2, 3])
 3-element HashDictionary{String,Int64}
- "c" ⇒ 3
- "b" ⇒ 2
- "a" ⇒ 1
+ "c" │ 3
+ "b" │ 2
+ "a" │ 1
 
 julia> sum(dict)
 6
@@ -99,21 +99,21 @@ Mapping and broadcasting also function as-per arrays, preserving the indices and
 ```julia
 julia> map(iseven, dict)
 3-element HashDictionary{String,Bool}
- "c" ⇒ false
- "b" ⇒ true
- "a" ⇒ false
+ "c" │ false
+ "b" │ true
+ "a" │ false
 
 julia> map(*, dict, dict)
 3-element HashDictionary{String,Int64}
- "c" ⇒ 9
- "b" ⇒ 4
- "a" ⇒ 1
+ "c" │ 9
+ "b" │ 4
+ "a" │ 1
 
 julia> dict .+ 1
 3-element HashDictionary{String,Int64}
- "c" ⇒ 4
- "b" ⇒ 3
- "a" ⇒ 2
+ "c" │ 4
+ "b" │ 3
+ "a" │ 2
 ```
 
 There is a `mapview` function, which is the lazy version of the above.
@@ -123,8 +123,8 @@ Filtering a dictionary also preserves the keys, dropping the remainder.
 ```julia
 julia> filter(isodd, dict)
 2-element HashDictionary{String,Bool}
- "c" ⇒ 3
- "a" ⇒ 1
+ "c" │ 3
+ "a" │ 1
 ```
 
 The `filterview` function is provided to lazily filter a dictionary, which may occassionally
@@ -135,15 +135,15 @@ The `pairs` function allows access to both the index (key) and value when iterat
 ```julia
 julia> pairs(dict)
 3-element Dictionaries.PairDictionary{String,Int64,HashDictionary{String,Int64}}
- "c" ⇒ "c" => 3
- "b" ⇒ "b" => 2
- "a" ⇒ "a" => 1
+ "c" │ "c" => 3
+ "b" │ "b" => 2
+ "a" │ "a" => 1
 
 julia> map(((k,v),) -> k^v, pairs(dict))
 3-element HashDictionary{String,String}
- "c" ⇒ "ccc"
- "b" ⇒ "bb"
- "a" ⇒ "a"
+ "c" │ "ccc"
+ "b" │ "bb"
+ "a" │ "a"
 ```
 
 ### Indices
@@ -204,15 +204,15 @@ If you wish to perform an operation on each element of a set, you can simply `ma
 ```julia
 julia> map(uppercase, inds)
 3-element HashDictionary{String,String}
- "c" ⇒ "C"
- "b" ⇒ "B"
- "a" ⇒ "A"
+ "c" │ "C"
+ "b" │ "B"
+ "a" │ "A"
 
 julia> inds .* "at"
 3-element HashDictionary{String,String}
- "c" ⇒ "cat"
- "b" ⇒ "bat"
- "a" ⇒ "aat"
+ "c" │ "cat"
+ "b" │ "bat"
+ "a" │ "aat"
 ```
 
 You can filter indices.
@@ -229,9 +229,9 @@ To find the subset of dictionary indices/keys that satisfy some constraint on th
 ```julia
 julia> dict
 3-element HashDictionary{String,Int64}
- "c" ⇒ 3
- "b" ⇒ 2
- "a" ⇒ 1
+ "c" │ 3
+ "b" │ 2
+ "a" │ 1
 
 julia> inds2 = findall(isodd, dict)
 2-element HashIndices{String}
@@ -244,8 +244,8 @@ And, finally, one useful thing you can do with indices is, well, *indexing*. Non
 ```julia
 julia> getindices(dict, inds2)
 2-element HashDictionary{String,Int64}
- "c" ⇒ 3
- "a" ⇒ 1
+ "c" │ 3
+ "a" │ 1
 ```
 
 It has [been suggested](https://github.com/JuliaLang/julia/issues/30845) to make the syntax `dict.[inds2]` available in Julia in the future for unambiguous non-scalar indexing. 
@@ -255,8 +255,8 @@ Lazy non-scalar indexing may be achieved, as usual, with the `view` function.
 ```julia
 julia> view(dict, inds2)
 2-element DictionaryView{String,Int64,HashIndices{String},HashDictionary{String,Int64}}
- "c" ⇒ 3
- "a" ⇒ 1
+ "c" │ 3
+ "a" │ 1
 ```
 
 Boolean or "logical" indexing is also ambiguous with scalar and non-scalar indexing. Luckily, the `findall` function is a convenient way to convert a Boolean-valued dictionary into indices, which we can use with `getindices`:
@@ -264,14 +264,14 @@ Boolean or "logical" indexing is also ambiguous with scalar and non-scalar index
 ```julia
 julia> isodd.(dict)
 3-element HashDictionary{String,Bool}
- "c" ⇒ true
- "b" ⇒ false
- "a" ⇒ true
+ "c" │ true
+ "b" │ false
+ "a" │ true
 
 julia> getindices(dict, findall(isodd.(dict)))
 2-element HashDictionary{String,Int64}
- "c" ⇒ 3
- "a" ⇒ 1
+ "c" │ 3
+ "a" │ 1
 ```
 
 (Who knows - maybe we need syntax for this, too?)
@@ -293,9 +293,9 @@ The `similar` function is used to create a dictionary with defined indices, but 
 ```julia
 julia> similar(dict, Vector{Int})
 3-element HashDictionary{String,Array{Int64,1}}
- "c" ⇒ #undef
- "b" ⇒ #undef
- "a" ⇒ #undef
+ "c" │ #undef
+ "b" │ #undef
+ "a" │ #undef
 ```
 
 The behaviour is the same if `dict` is an `AbstractIndices` - you always get a dictionary with settable/mutable elements. Preserving the indices using `similar` and setting the values provides a huge performance advantage compared to iteratively constructing a new dictionary via insertion (see the bottom of this README).
@@ -305,9 +305,9 @@ On the other hand, values can be initialized with the `fill(value, dict)` functi
 ```julia
 julia> fill(42, dict)
 3-element HashDictionary{String,Int64}
- "c" ⇒ 42
- "b" ⇒ 42
- "a" ⇒ 42
+ "c" │ 42
+ "b" │ 42
+ "a" │ 42
 ```
 
 The `fill` function can optionally define a wider type than the value, helpful for if you want to assign a default value like `missing` but allow this to be updated later.
@@ -315,9 +315,9 @@ The `fill` function can optionally define a wider type than the value, helpful f
 ```julia
 julia> fill(missing, dict, Union{Missing, Int64})
 3-element HashDictionary{String,Union{Missing, Int64}}
- "c" ⇒ missing
- "b" ⇒ missing
- "a" ⇒ missing
+ "c" │ missing
+ "b" │ missing
+ "a" │ missing
 ```
 
 Functions `zeros`, `ones`, `falses` and `trues` are defined as a handy alternative to the above in common cases.
@@ -325,15 +325,15 @@ Functions `zeros`, `ones`, `falses` and `trues` are defined as a handy alternati
 ```julia
 julia> zeros(dict)
 3-element HashDictionary{String,Float64}
- "c" ⇒ 0.0
- "b" ⇒ 0.0
- "a" ⇒ 0.0
+ "c" │ 0.0
+ "b" │ 0.0
+ "a" │ 0.0
 
 julia> zeros(UInt8, dict)
 3-element HashDictionary{String,UInt8}
- "c" ⇒ 0x00
- "b" ⇒ 0x00
- "a" ⇒ 0x00
+ "c" │ 0x00
+ "b" │ 0x00
+ "a" │ 0x00
 ```
 
 Note that the *indices* of the output are not guaranteed to be mutable/insertable - in fact, in the current implementation inserting or deleting indices to the output of the above can corrupt the input container (Julia suffers similar restrictions with `AbstractArray`s with mutable indices, for example changing the size of the indices of a `SubArray` can lead to corruption and segfaults). This also holds true for the output of `map`, `broadcast`, `getindices`, `similar`, `zeros`, `ones`, `falses` and `trues`. If you want a new container with indices you can insert, by sure to `copy` the indices furst, or use `empty` instead.

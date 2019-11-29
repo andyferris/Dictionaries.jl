@@ -39,8 +39,7 @@ end # module
 
 # # TODO
 #
-# * Improved printing - replace `⇒` with `│` and use colummar indentation, don't calculate 
-#   length (beyond some cutoff) if it is `SizeUnknown`.
+# * Improved printing - don't calculate length (beyond some cutoff) if it is `SizeUnknown`.
 # * `hash` and `isless`
 # * A manually-ordered dictionary would be quite useful, like [OrderedCollections.jl](https://github.com/JuliaCollections/OrderedCollections.jl).
 # * A surface interface for updates like https://github.com/JuliaLang/julia/pull/31367
