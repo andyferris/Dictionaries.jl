@@ -187,6 +187,54 @@ Base.falses(::Type{T}, d::AbstractDictionary) where {T} = fill(false, d, T) # T 
 Base.trues(d::AbstractDictionary) = trues(Bool, d)
 Base.trues(::Type{T}, d::AbstractDictionary) where {T} = fill(true, d, T) # T could be `Union{Missing, Bool}`, for example
 
+# rand
+
+# Drawing FROM a dictionary requires is to create a `Sampler(rng, dict, Val(1/Inf))` and overload `rand(rng, S)`
+# We need to think about how this might happen efficiently. `randtoken`?
+# This should resolve an ambiguity with another convenience method below...
+Random.rand(rng::AbstractRNG, dict::AbstractDictionary) = error("Sampling from dictionaries is not yet implemented. You can create a random dictionary with `rand([rng], sampler, dict)`, e.g. `rand(1:10, dict)`")
+
+# Creating a random dictionary
+
+function Random.rand!(dict::AbstractDictionary; S = Random.Sampler(Random.GLOBAL_RNG, eltype(dict), Val(1)))
+    map!(() -> rand(Random.GLOBAL_RNG, S), dict)
+    return dict
+end
+
+function Random.rand!(rng::AbstractRNG, dict::AbstractDictionary; S = Random.Sampler(rng, eltype(dict), Val(1)))
+    map!(() -> rand(rng, S), dict)
+    return dict
+end
+
+sampletype(::Random.Sampler{T}) where {T} = T
+
+Random.rand(S, dict::AbstractDictionary) = rand(Random.GLOBAL_RNG, S, dict)
+
+function Random.rand(rng::AbstractRNG, S, dict::AbstractDictionary)
+    sampler = Random.Sampler(rng, S, Val(Inf))
+    out = similar(dict, sampletype(sampler))
+    rand!(rng, out, S=sampler)
+    return out
+end
+
+# randn
+Random.randn!(dict::AbstractDictionary) = randn!(Random.GLOBAL_RNG, dict)
+
+function Random.randn!(rng::AbstractRNG, dict::AbstractDictionary)
+    map!(() -> randn(rng, eltype(dict)), dict)
+    return dict
+end
+
+Random.randn(dict::AbstractDictionary) = randn(Random.GLOBAL_RNG, Float64, dict)
+Random.randn(::Type{T}, dict::AbstractDictionary) where {T} = randn(Random.GLOBAL_RNG, T, dict)
+Random.randn(rng::AbstractRNG, dict::AbstractDictionary) = randn(rng, Float64, dict)
+
+function Random.randn(rng::AbstractRNG, ::Type{T}, dict::AbstractDictionary) where {T}
+    out = similar(dict, T)
+    randn!(rng, out)
+    return out
+end
+
 
 # Copying
 function Base.copy(d::AbstractDictionary)

@@ -1,5 +1,7 @@
 module Dictionaries
 
+using Random
+
 using Indexing
 using SplitApplyCombine
 

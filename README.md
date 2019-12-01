@@ -320,7 +320,7 @@ julia> fill(missing, dict, Union{Missing, Int64})
  "a" │ missing
 ```
 
-Functions `zeros`, `ones`, `falses` and `trues` are defined as a handy alternative to the above in common cases.
+Functions `zeros`, `ones`, `falses` and `trues` are defined as a handy alternative to the above in common cases, as are `rand` and `randn`.
 
 ```julia
 julia> zeros(dict)
@@ -427,6 +427,7 @@ A tokenizable indices must implement:
  * `tokentype(indices) --> T::Type`
  * `iteratetoken(indices, s...)` iterates the tokens of `indices`, like `iterate`
  * `gettoken(indices, i) --> (hasindex::Bool, token)`
+ * `gettokenvalue(indices, token)` returning the value of the index at `token`
 
 An `isinsertable` tokenizable indices must implement
 

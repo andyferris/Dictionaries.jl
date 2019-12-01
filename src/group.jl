@@ -129,3 +129,11 @@ function groupreduce(by::Function, f::Function, op::Function, iter)
 
     return out
 end
+
+groupsum(iter) = groupsum(identity, iter)
+groupsum(by, iter) = groupsum(by, identity, iter)
+groupsum(by, f, iter) = groupreduce(by, f, +, iter)
+
+groupprod(iter) = groupprod(identity, iter)
+groupprod(by, iter) = groupprod(by, identity, iter)
+groupprod(by, f, iter) = groupreduce(by, f, *, iter)

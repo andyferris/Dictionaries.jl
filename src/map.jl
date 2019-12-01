@@ -45,6 +45,19 @@ function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary)
     return out
 end
 
+function Base.map!(f, out::AbstractDictionary)
+    if istokenizable(out)
+        @inbounds for t in tokens(out)
+            settokenvalue!(out, t, f())
+        end
+    else
+        @inbounds for i in keys(out)
+            out[i] = f()
+        end
+    end
+    return out
+end
+
 function Base.map(f, d::AbstractDictionary)
     out = similar(d, Core.Compiler.return_type(f, Tuple{eltype(d)}))
     map!(f, out, d)
