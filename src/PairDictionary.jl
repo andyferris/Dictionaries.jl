@@ -1,10 +1,30 @@
 # TODO docstring
 struct PairDictionary{I, T, D <: AbstractDictionary{I, T}} <: AbstractDictionary{I, Pair{I, T}}
     d::D
-    # TODO single argument constructor isn't an `AbstractDictionary` copy-constructor!
 end
 
-# TODO docstring
+"""
+    pairs(dict::AbstractDictionary)
+
+Return a new dictionary, wrapping `dict`, that shares the same `keys` but containing
+key-value pairs.
+
+# Example
+
+```julia
+julia> dict = HashDictionary(["a", "b", "c"], [1, 2, 3])
+3-element HashDictionary{String,Int64}
+ "c" │ 3
+ "b" │ 2
+ "a" │ 1
+
+julia> pairs(dict)
+3-element Dictionaries.PairDictionary{String,Int64,HashDictionary{String,Int64}}
+ "c" │ "c" => 3
+ "b" │ "b" => 2
+ "a" │ "a" => 1
+```
+"""
 Base.pairs(d::AbstractDictionary) = PairDictionary{keytype(d), eltype(d), typeof(d)}(d)
 
 Base.parent(d::PairDictionary) = d.d

@@ -41,7 +41,7 @@ end # module
 
 # # TODO
 #
-# * Improved printing - don't calculate length (beyond some cutoff) if it is `SizeUnknown`.
+# * Improved printing - don't calculate length (beyond some cutoff) if it is `SizeUnknown` and limit=true.
 # * `hash` and `isless`
 # * A manually-ordered dictionary would be quite useful, like [OrderedCollections.jl](https://github.com/JuliaCollections/OrderedCollections.jl).
 # * A surface interface for updates like https://github.com/JuliaLang/julia/pull/31367

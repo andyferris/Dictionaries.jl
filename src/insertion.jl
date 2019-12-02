@@ -1,13 +1,3 @@
-# Insertable maps can have both keys and values that mutate
-#
-# TODO: define functions like `empty` that guarantee an insertable dictionary.
-#
-#    - empty_insertable(input) - no keys or values
-#    - similar_insertable(input) - same keys, undef values
-#    - copy_insertable(input) - same keys and values
-#
-# Also, need same for indices (with either dictionary or indices outputs)
-
 """
     isinsertable(dict::AbstractDictionary)
 

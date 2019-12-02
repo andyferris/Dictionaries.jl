@@ -216,7 +216,7 @@ Base.sizehint!(h::HashIndices, newsz::Int) = _sizehint!(h, nothing, newsz)
 function _sizehint!(h::HashIndices{T}, values::Union{Nothing, Vector}, newsz::Int) where {T}
     oldsz = length(h.slots)
     if newsz <= oldsz
-        # todo: shrink
+        # TODO: shrink
         # be careful: rehash!() assumes everything fits. it was only designed
         # for growing.
         return hash

@@ -98,7 +98,7 @@ end
 
 # Indices are isequal if they iterate in the same order
 function Base.isequal(i1::AbstractIndices, i2::AbstractIndices)
-    if i1 === i2
+    if sharetokens(i1, i2)
         return true
     end
 
@@ -106,7 +106,6 @@ function Base.isequal(i1::AbstractIndices, i2::AbstractIndices)
         return false
     end
 
-    # TODO can we tokenize this?
     for (j1, j2) in zip(i1, i2)
         if !isequal(j1, j2)
             return false
@@ -118,7 +117,7 @@ end
 
 # Use `issetequal` semantics
 function Base.:(==)(i1::AbstractIndices, i2::AbstractIndices)
-    if i1 === i2
+    if sharetokens(i1, i2)
         return true
     end
 
@@ -135,4 +134,75 @@ function Base.:(==)(i1::AbstractIndices, i2::AbstractIndices)
     return true
 end
 
-# TODO hash and isless for indices and dictionaries.
+# Lexical ordering based on iteration
+function Base.isless(inds1::AbstractIndices, inds2::AbstractIndices)
+    if sharetokens(inds1, inds2)
+        return false # they are isequal
+    end
+
+    # We want to iterate... until one is longer than the other (no `zip`)
+    tmp1 = iterate(inds1)
+    tmp2 = iterate(inds2)
+    while tmp1 !== nothing
+        if tmp2 === nothing
+            return false # shorter collections are isless in lexical ordering
+        end
+        (i1, s1) = tmp1
+        (i2, s2) = tmp2
+        !isequal(i1, i2)
+        c = cmp(i1, i2)
+        
+        if c == -1
+            return true
+        elseif c == 1
+            return false
+        end
+
+        tmp1 = iterate(inds1, s1)
+        tmp2 = iterate(inds2, s2)
+    end
+    return tmp2 !== nothing # shorter collections are isless in lexical ordering, otherwise isequal
+end
+
+function Base.cmp(inds1::AbstractIndices, inds2::AbstractIndices)
+    if sharetokens(inds1, inds2)
+        return 0 # they are isequal
+    end
+
+    # We want to iterate... until one is longer than the other (no `zip`)
+    tmp1 = iterate(inds1)
+    tmp2 = iterate(inds2)
+    while tmp1 !== nothing
+        if tmp2 === nothing
+            return 1 # shorter collections are isless in lexical ordering
+        end
+        (i1, s1) = tmp1
+        (i2, s2) = tmp2
+        !isequal(i1, i2)
+        c = cmp(i1, i2)
+        
+        if c == -1
+            return -1
+        elseif c == 1
+            return 1
+        end
+
+        tmp1 = iterate(inds1, s1)
+        tmp2 = iterate(inds2, s2)
+    end
+    if tmp2 === nothing
+        return 0
+    else
+        return -1 # shorter collections are isless in lexical ordering
+    end
+end
+
+## Hashing - matches the dictionary case (matching keys and matching values)
+function Base.hash(inds::AbstractIndices, h::UInt)
+    h1 = h
+    for i in inds
+        h1 = hash(i, h1)
+    end
+    
+    return hash(hash(UInt === UInt64 ? 0x8955a87bc313a509 : 0xa9cff5d1, h1), h1)
+end

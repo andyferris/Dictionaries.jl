@@ -66,8 +66,23 @@ function HashDictionary{I, T}(indices, values) where {I, T}
 
     return d
 end
-HashDictionary{I}(indices, values) where {I} = HashDictionary{I, eltype(values)}(indices, values)
-HashDictionary(indices, values) = HashDictionary{eltype(indices)}(indices, values)
+function HashDictionary{I}(indices, values) where {I}
+    if Base.IteratorEltype(values) === Base.EltypeUnknown()
+        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
+        values = collect(values)
+    end
+
+    return HashDictionary{I, eltype(values)}(indices, values)
+end
+
+function HashDictionary(indices, values)
+    if Base.IteratorEltype(indices) === Base.EltypeUnknown()
+        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
+        indices = collect(indices)
+    end
+
+    return HashDictionary{eltype(indices)}(indices, values)
+end
 
 """
     HashDictionary(dict::AbstractDictionary)
@@ -89,7 +104,10 @@ Construct a new `AbstractDictionary` from an iterable `iter` of key-value `Pair`
 default container type is `HashDictionary`.
 """
 function dictionary(iter)
-    # TODO eltype unknown
+    if Base.IteratorEltype(iter) === Base.EltypeUnknown()
+        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
+        iter = collect(iter)
+    end
     _dictionary(eltype(iter), iter)
 end
 

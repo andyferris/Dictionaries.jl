@@ -72,22 +72,12 @@ function Base.isequal(d1::AbstractDictionary, d2::AbstractDictionary)
         return true
     end
 
-    if length(d1) != length(d2)
-        return false
-    end
-
-    # TODO tokenize this, possibly use co-iteration
-    for (i1, i2) in zip(keys(d1), keys(d2))
-        if !isequal(i1, i2) || !isequal(d1[i1], d2[i2])
-            return false
+    if sharetokens(d1, d2)
+        @inbounds for t in tokens(d1)
+            if !isequal(gettokenvalue(d1, t), gettokenvalue(d2, t))
+                return false
+            end
         end
-    end
-
-    return true
-end
-
-function Base.:(==)(d1::AbstractDictionary, d2::AbstractDictionary)
-    if d1 === d2
         return true
     end
 
@@ -95,14 +85,144 @@ function Base.:(==)(d1::AbstractDictionary, d2::AbstractDictionary)
         return false
     end
 
-    # TODO tokenize this, possibly use co-iteration
-    for i in keys(d1)
-        if !haskey(d2, i) || d1[i] != d2[i]
+    for (p1, p2) in zip(pairs(d1), pairs(d2))
+        if !isequal(p1, p2)
             return false
         end
     end
 
     return true
+end
+
+# `==` doesn't care about the iteration order. Keys must be `isequal` and values `==`
+function Base.:(==)(d1::AbstractDictionary, d2::AbstractDictionary)
+    if d1 === d2
+        return true
+    end
+
+    if sharetokens(d1, d2)
+        @inbounds for t in tokens(d1)
+            if gettokenvalue(d1, t) != gettokenvalue(d2, t)
+                return false
+            end
+        end
+        return true
+    end
+
+    if length(d1) != length(d2)
+        return false
+    end
+
+    if istokenizable(d2)
+        for (i,v) in pairs(d1)
+            (hastoken, token) = gettoken(d2, i)
+            if !hastoken || v != gettokenvalue(d2, token)
+                return false
+            end
+        end
+    else
+        for (i,v) in pairs(d1)
+            if !haskey(d2, i) || v != d2[i]
+                return false
+            end
+        end
+    end
+
+    return true
+end
+
+# Lexical ordering based on iteration (of pairs - lesser key takes priority over lesser value, as implmeneted in `cmp(::Pair)`)
+function Base.isless(dict1::AbstractDictionary, dict2::AbstractDictionary)
+    if sharetokens(dict1, dict2)
+        @inbounds for t in tokens(dict1)
+            c = cmp(gettokenvalue(dict1, t), gettokenvalue(dict2, t))
+            if c == -1
+                return true
+            elseif c == 1
+                return false
+            end
+        end
+        return false # they are isequal
+    end
+
+    # We want to iterate... until one is longer than the other (no `zip`)
+    pairdict1 = pairs(dict1)
+    pairdict2 = pairs(dict2)
+    tmp1 = iterate(pairdict1)
+    tmp2 = iterate(pairdict2)
+    while tmp1 !== nothing
+        if tmp2 === nothing
+            return false # shorter collections are isless in lexical ordering
+        end
+        (p1, s1) = tmp1
+        (p2, s2) = tmp2
+        c = cmp(p1, p2)
+        
+        if c == -1
+            return true
+        elseif c == 1
+            return false
+        end
+
+        tmp1 = iterate(pairdict1, s1)
+        tmp2 = iterate(pairdict2, s2)
+    end
+    return tmp2 !== nothing # shorter collections are isless in lexical ordering
+end
+
+function Base.cmp(dict1::AbstractDictionary, dict2::AbstractDictionary)
+    if sharetokens(dict1, dict2)
+        @inbounds for t in tokens(dict1)
+            c = cmp(gettokenvalue(dict1, t), gettokenvalue(dict2, t))
+            if c == -1
+                return -1
+            elseif c == 1
+                return 1
+            end
+        end
+        return 0
+    end
+
+    # We want to iterate... until one is longer than the other (no `zip`)
+    pairdict1 = pairs(dict1)
+    pairdict2 = pairs(dict2)
+    tmp1 = iterate(pairdict1)
+    tmp2 = iterate(pairdict2)
+    while tmp1 !== nothing
+        if tmp2 === nothing
+            return 1 # shorter collections are isless in lexical ordering
+        end
+        (p1, s1) = tmp1
+        (p2, s2) = tmp2
+        c = cmp(p1, p2)
+        
+        if c == -1
+            return -1
+        elseif c == 1
+            return 1
+        end
+
+        tmp1 = iterate(pairdict1, s1)
+        tmp2 = iterate(pairdict2, s2)
+    end
+    if tmp2 === nothing # shorter collections are isless in lexical ordering
+        return 0
+    else
+        return -1
+    end
+end
+
+## Hashing
+
+function Base.hash(dict::AbstractDictionary, h::UInt)
+    h1 = h
+    h2 = h
+    for (i, v) in pairs(dict)
+        h1 = hash(i, h1)
+        h2 = hash(v, h2)
+    end
+    
+    return hash(hash(UInt === UInt64 ? 0x8955a87bc313a509 : 0xa9cff5d1, h1), h2)
 end
 
 ## unique returns an Indices
@@ -260,7 +380,7 @@ function Random.randn(rng::AbstractRNG, ::Type{T}, dict::AbstractDictionary) whe
 end
 
 
-# Copying
+# Copying - note that this doesn't necessarily copy the indices! (`copy(keys(dict))` can do that)
 function Base.copy(d::AbstractDictionary)
     out = similar(d)
     copyto!(out, d)

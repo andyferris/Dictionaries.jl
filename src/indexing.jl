@@ -50,7 +50,7 @@ end
 
 @inline function Indexing.getindices(inds1::AbstractIndices, inds2::AbstractIndices)
     @boundscheck checkindices(inds1, inds2)
-    return inds2 # TODO should this be a `copy`, perhaps?
+    return inds2 # TODO should this be a `copy`, perhaps? The output shouldn't alias inds1, but what about inds2?
 end
 
 ## Views
