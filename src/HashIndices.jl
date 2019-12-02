@@ -304,6 +304,7 @@ end
         h.idxfloor = token
     end
     
+    # TODO revisit this...
     #=
     sz = length(h.inds)
     # Rehash now if necessary
@@ -331,33 +332,4 @@ end
 Base.filter!(pred, h::HashIndices) = Base.unsafe_filter!(pred, h)
 
 # The default insertable indices
-Base.empty(d::AbstractIndices, ::Type{T}) where {T} = HashIndices{T}()
-
-# ------------------------------------------------------------------------
-# The tokens of a hash index is an AbstractDictionary from keys to integer token
-#=
-struct HashTokens{I} <: AbstractDictionary{I, Int}
-    indices::HashIndices{I}
-end
-
-tokens(h::HashIndices{I}) where {I} = HashTokens{I}(h)
-
-Base.keys(t::HashTokens) = t.indices
-@inline function Base.getindex(t::HashTokens{I}, i::I) where {I}
-    token = gettoken(t.indices, i)
-
-    @boundscheck if token < 0
-        throw(IndexError("HashTokens has no index: $i"))
-    end
-
-    return token
-end
-
-@propagate_inbounds _iterate(t::HashTokens{T}, i::Int) where {T} = i > length(t.indices.inds) ? nothing : (i, i + 1)
-function Base.iterate(t::HashTokens)
-    _iterate(t, skip_deleted_floor!(t.indices))
-end
-@propagate_inbounds Base.iterate(t::HashTokens, i::Int) = _iterate(t, skip_deleted(t.indices, i))
-
-tokenized(t::HashTokens, h::HashIndices) = h.inds
-=#
+Base.empty(d::AbstractDictionary, ::Type{T}) where {T} = HashIndices{T}()

@@ -116,10 +116,9 @@ function Base.isequal(i1::AbstractIndices, i2::AbstractIndices)
     return true
 end
 
-# For now, indices are == if they are isequal or issetequal
+# Use `issetequal` semantics
 function Base.:(==)(i1::AbstractIndices, i2::AbstractIndices)
-    error("The semantic for ``==` is not yet fixed in Dictionaries.jl (regarding dictionaries with the same elements but different orderings). If you have an opinion, please contact the package maintainers.")
-    #=if i1 === i2
+    if i1 === i2
         return true
     end
 
@@ -133,9 +132,7 @@ function Base.:(==)(i1::AbstractIndices, i2::AbstractIndices)
         end
     end
 
-    return true=#
+    return true
 end
 
 # TODO hash and isless for indices and dictionaries.
-
-# TODO factory for empty indices

@@ -2,6 +2,8 @@ group(iter) = group(identity, iter)
 
 group(by::Function, iter) = group(by, identity, iter)
 
+group(by::Function, f::Function, iter1, iter2, iters...) = group((x -> by(x...)), (x -> f(x...)), zip(iter1, iter2, iters...))
+
 function group(by::Function, f::Function, iter)
     I = Core.Compiler.return_type(by, Tuple{eltype(iter)})
     T = Core.Compiler.return_type(f, Tuple{eltype(iter)})
@@ -113,9 +115,12 @@ end
 
 groupreduce(by::Function, op::Function, iter) = groupreduce(by, identity, op, iter)
 
-function groupreduce(by::Function, f::Function, op::Function, iter)
+groupreduce(by, f, op, iter1, iter2, iters...; kw...) = groupreduce((x -> by(x...)), (x -> f(x...)), op, zip(iter1, iter2, iters...); kw...)
+
+function groupreduce(by::Function, f::Function, op::Function, iter; kw...)
     I = Core.Compiler.return_type(by, Tuple{eltype(iter)})
     T = Core.Compiler.return_type(f, Tuple{eltype(iter)})
+    nt = kw.data
     
     out = HashDictionary{I, T}()
     for x in iter
@@ -123,7 +128,13 @@ function groupreduce(by::Function, f::Function, op::Function, iter)
         if hadtoken
             settokenvalue!(out, token, op(gettokenvalue(out, token), f(x)))
         else
-            settokenvalue!(out, token, f(x))
+            if nt isa NamedTuple{()}
+                settokenvalue!(out, token, f(x))
+            elseif nt isa NamedTuple{(:init,)}
+                settokenvalue!(out, token, op(nt.init, f(x)))
+            else
+                throw(ArgumentError("groupreduce doesn't support these keyword arguments: $(setdiff(keys(nt), (:init,)))"))
+            end
         end
     end
 

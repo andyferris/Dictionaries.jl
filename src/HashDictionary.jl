@@ -93,6 +93,8 @@ function dictionary(iter)
     _dictionary(eltype(iter), iter)
 end
 
+dictionary(p1::Pair, p2::Pair...) = dictionary((p1, p2...))
+
 function _dictionary(::Type{Pair{I, T}}, iter) where {I, T}
     iter_size = Base.IteratorSize(iter)
     if iter_size isa Union{Base.HasLength, Base.HasShape}

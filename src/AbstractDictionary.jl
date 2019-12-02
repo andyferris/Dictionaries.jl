@@ -76,7 +76,7 @@ function Base.isequal(d1::AbstractDictionary, d2::AbstractDictionary)
         return false
     end
 
-    # TODO can we tokenize this?
+    # TODO tokenize this, possibly use co-iteration
     for (i1, i2) in zip(keys(d1), keys(d2))
         if !isequal(i1, i2) || !isequal(d1[i1], d2[i2])
             return false
@@ -86,10 +86,34 @@ function Base.isequal(d1::AbstractDictionary, d2::AbstractDictionary)
     return true
 end
 
-function Base.:(==)(i1::AbstractDictionary, i2::AbstractDictionary)
-    error("The semantic for ``==` is not yet fixed in Dictionaries.jl (regarding dictionaries with the same elements but different orderings). If you have an opinion, please contact the package maintainers.")
+function Base.:(==)(d1::AbstractDictionary, d2::AbstractDictionary)
+    if d1 === d2
+        return true
+    end
+
+    if length(d1) != length(d2)
+        return false
+    end
+
+    # TODO tokenize this, possibly use co-iteration
+    for i in keys(d1)
+        if !haskey(d2, i) || d1[i] != d2[i]
+            return false
+        end
+    end
+
+    return true
 end
 
+## unique returns an Indices
+
+function Base.unique(d::AbstractDictionary)
+    out = empty(d, eltype(d)) # an AbstractIndices
+    for x in d
+        set!(out, x)
+    end
+    return out
+end
 
 ### Settable interface
 
@@ -246,15 +270,3 @@ end
 function Base.copyto!(out::AbstractDictionary, d::AbstractDictionary)
     map!(identity, out, d)
 end
-
-
-# Conversion to-and-from AbstractDicts
-# TODO rethink this
-
-function (::Type{T})(d::AbstractDict) where {T <: AbstractDictionary}
-    return T(values(d), keys(d))
-end
-
-#function (::Type{T})(d::AbstractDictionary) where {T <: Dict}
-#    return T(pairs(d))
-#end

@@ -6,6 +6,8 @@
     @test isinsertable(h)
     @test length(h) == 0
     @test keys(h) === h
+    @test h == h
+    @test h == copy(h)
     @test isempty(h)
     @test isequal(copy(h), h)
     @test_throws IndexError h[10]
@@ -18,6 +20,9 @@
 
     @test length(h) == 1
     @test keys(h) === h
+    @test unique(h) === h
+    @test h == h
+    @test h == copy(h)
     @test !isempty(h)
     @test isequal(copy(h), h)
     @test h[10] == 10

@@ -5,6 +5,8 @@
 
     @test isinsertable(d)
     @test length(d) == 0
+    @test d == d
+    @test d == copy(d)
     @test isempty(d)
     @test isempty(keys(d))
     @test isequal(copy(d), d)
@@ -23,6 +25,9 @@
     @test get!(d, 10, 15) == 11
     @test length(d) == 1
     @test keys(d) === keys(keys(d))
+    @test unique(d)::HashIndices{Int64} == HashIndices([11])
+    @test d == d
+    @test d == copy(d)
     @test !isempty(d)
     @test isequal(copy(d), d)
     @test_throws IndexError insert!(d, 10, 12)
