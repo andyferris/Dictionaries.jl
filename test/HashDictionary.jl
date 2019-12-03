@@ -3,13 +3,26 @@
 
     d = HashDictionary{Int64, Int64}()
 
+    @test eltype(d) === Int64
+    @test keytype(d) === Int64
+    @test tokentype(d) === Int
+    @test Base.IteratorSize(d) === Base.HasLength()
     @test isinsertable(d)
     @test length(d) == 0
-    @test d == d
-    @test d == copy(d)
     @test isempty(d)
     @test isempty(keys(d))
+    @test d == d
+    @test d == copy(d)
+    @test d == HashDictionary(copy(keys(d)), d)
+    @test isequal(d, d)
     @test isequal(copy(d), d)
+    @test isequal(HashDictionary(copy(keys(d)), d), d)
+    @test !isless(d, d)
+    @test !isless(copy(d), d)
+    @test !isless(HashDictionary(copy(keys(d)), d), d)
+    @test cmp(d, d) == 0
+    @test cmp(copy(d), d) == 0
+    @test cmp(HashDictionary(copy(keys(d)), d), d) == 0
     @test_throws IndexError d[10]
     @test get(d, 10, 15) == 15
     @test length(unset!(d, 10)) == 0
@@ -26,10 +39,43 @@
     @test length(d) == 1
     @test keys(d) === keys(keys(d))
     @test unique(d)::HashIndices{Int64} == HashIndices([11])
+    @test !isempty(d)
     @test d == d
     @test d == copy(d)
-    @test !isempty(d)
+    @test d == HashDictionary(copy(keys(d)), d)
+    @test d != empty(d)
+    @test empty(d) != d
+    @test fill(0, d) != d
+    @test d != fill(0, d)
+    @test fill(0, copy(keys(d))) != d
+    @test d != fill(0, copy(keys(d)))
+    @test isequal(d, d)
     @test isequal(copy(d), d)
+    @test isequal(HashDictionary(copy(keys(d)), d), d)
+    @test !isequal(d, empty(d))
+    @test !isequal(empty(d), d)
+    @test !isequal(fill(0, d), d) 
+    @test !isequal(d, fill(0, d))
+    @test !isequal(fill(0, copy(keys(d))), d) 
+    @test !isequal(d, fill(0, copy(keys(d))))
+    @test !isless(d, d)
+    @test !isless(copy(d), d)
+    @test !isless(HashDictionary(copy(keys(d)), d), d)
+    @test !isless(d, empty(d))
+    @test isless(empty(d), d)
+    @test isless(fill(0, d), d)
+    @test !isless(d, fill(0, d))
+    @test isless(fill(0, copy(keys(d))), d)
+    @test !isless(d, fill(0, copy(keys(d))))
+    @test cmp(d, d) == 0
+    @test cmp(copy(d), d) == 0
+    @test cmp(HashDictionary(copy(keys(d)), d), d) == 0
+    @test cmp(d, empty(d)) == 1
+    @test cmp(empty(d), d) == -1
+    @test cmp(fill(0, d), d) == -1
+    @test cmp(d, fill(0, d)) == 1
+    @test cmp(fill(0, copy(keys(d))), d) == -1
+    @test cmp(d, fill(0, copy(keys(d)))) == 1
     @test_throws IndexError insert!(d, 10, 12)
     @test d[10] == 11
     set!(d, 10, 12)

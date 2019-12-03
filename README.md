@@ -476,7 +476,7 @@ julia> d2 = d1 .+ 1;
 julia> @btime map(+, d1, d2);
   155.299 ms (22 allocations: 256.00 MiB)
 
-julia> @btime map(+, d1, $(copy(d2)));
+julia> @btime map(+, d1, $(HashDictionary(copy(keys(d2)), d2)));
   343.394 ms (22 allocations: 256.00 MiB)
 ```
 

@@ -1,6 +1,9 @@
 @testset "Dictionary" begin
     d = Dictionary{Int, Int}((1,3,5), (2,4,6))
 
+    @test !issettable(d)
+    @test !isinsertable(d)
+    @test !istokenizable(d)
     @test length(d) == 3
     @test d[3] == 4
     @test_throws IndexError d[4]
@@ -13,7 +16,9 @@ end
 
     d = Dictionary{Int64, Int64}()
 
+    @test issettable(d)
     @test isinsertable(d)
+    @test istokenizable(d)
     @test length(d) == 0
     @test isempty(d)
     @test isempty(keys(d))

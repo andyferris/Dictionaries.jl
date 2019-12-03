@@ -35,7 +35,7 @@ end
 
 function HashDictionary{I, T}(indices::HashIndices{I}, values) where {I, T}
     vals = Vector{T}(undef, length(indices.slots))
-    d = HashDictionary{I, T}(vals, indices, nothing)
+    d = HashDictionary{I, T}(indices, vals, nothing)
 
     @inbounds for (i, v) in zip(tokens(indices), values)
         vals[i] = v
@@ -165,7 +165,7 @@ function gettoken!(d::HashDictionary{T}, key::T) where {T}
 end
 
 function Base.copy(d::HashDictionary{I, T}) where {I, T}
-    return HashDictionary{I, T}(copy(d.indices), copy(d.values), nothing)
+    return HashDictionary{I, T}(d.indices, copy(d.values), nothing)
 end
 
 tokenized(d::HashDictionary) = d.values

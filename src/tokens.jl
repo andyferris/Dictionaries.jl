@@ -46,6 +46,22 @@ istokenizable(d::AbstractIndices) = false
 istokenizable(d::AbstractDictionary) = istokenizable(keys(d))
 
 """
+    tokentype(dict)
+
+Return the type of the tokens retrieved via `gettoken` for dictionary `dict`, for
+dictionaries that are `istokenizable`.
+"""
+tokentype(d::AbstractDictionary) = tokentype(keys(d))
+
+function tokentype(inds::AbstractIndices)
+    if istokenizable(inds)
+        error("`tokentype` needs to be defined for tokenizable indices: $(typeof(inds))")
+    else
+        error("Indices are not tokenizable: $(typeof(inds))")
+    end
+end
+
+"""
     IndicesTokens(indices)
 
 Return a dictionary mapping from `i ∈ indices` to a valid token.
