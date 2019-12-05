@@ -1,17 +1,17 @@
 # Dictionaries.jl
 
-*An alternative interface for dictionaries in Julia*
+*An alternative interface for dictionaries in Julia, for improved productivity and performance*
 
 [![Build Status](https://travis-ci.org/andyferris/Dictionaries.jl.svg?branch=master)](https://travis-ci.org/andyferris/Dictionaries.jl)
 [![Codecov](https://codecov.io/gh/andyferris/Dictionaries.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/andyferris/Dictionaries.jl)
 
-This package is still under development - new features are being added and some (low-level) interfaces may be tweaked in the future, but things should be stable enough for general usage. Contributions welcome - please submit an issue or PR!
+This package is still quite young - new features are being added and some (low-level) interfaces may be tweaked in the future, but things should be stable enough for general usage. Contributions welcome - please submit an issue or PR!
 
 ## Motivation
 
 The high-level goal of this package is to define a new interface for dictionary and set structures which is convenient and efficient for functional data manipulation - including operations such as non-scalar indexing, broadcasting, mapping, filtering, reducing, grouping, and so-on. While Julia comes with built-in `AbstractDict` and `AbstractSet` supertypes, the interfaces for these are not as well established or generic as for `AbstractArray`, the built-in dictionaries implement less of the common data manipulation operations compared to arrays, and it is difficult to work with them in a performant manner.
 
-In this package we aim to devise a cohesive interface for abstract dictionaries (or associative maps), having the common supertype `AbstractDictionary`. A large part of this is working with indices (of arbitrary type) as well as convenient and efficient iteration of the containers. A second goal is to make dictionary manipulation more closely resemble array manipulation, to make it easier for users. A third goal is to push the performance of working with dictionaries to be closer to that of working with arrays.
+In this package we aim to devise a cohesive interface for abstract dictionaries (or associative maps), having the common supertype `AbstractDictionary`. A large part of this is working with indices (of arbitrary type) as well as convenient and efficient iteration of the containers. A second goal is to make dictionary manipulation more closely resemble array manipulation, to make it easier for users. Simultaneously, we are pushing the performance of working with dictionaries to be closer to that of working with arrays.
 
 ## Getting started
 
@@ -480,6 +480,20 @@ julia> @btime map(+, d1, $(HashDictionary(copy(keys(d2)), d2)));
   343.394 ms (22 allocations: 256.00 MiB)
 ```
 
+For a comparitive baseline benchmark, we can try the same with dense vectors.
+
+```julia
+julia> v = collect(10_000_000:-1:1);
+
+julia> @btime map(+, v, v);
+  26.910 ms (5 allocations: 76.29 MiB)
+```
+
+Here, the operation uses SIMD, and the vector is densely packed whereas the values of the
+dictionaries above are sparsely distributed into slots with a filling ratio of ~3.4. Thus,
+the fact that the vector operation is 5.8x faster seems explainable (note that the gap may
+narrow with more complex data types and mapping functions).
+
 Using insertion, instead of preserving the existing indices, is comparitively slow.
 
 ```julia
@@ -496,7 +510,7 @@ julia> @btime f(d1, d2);
   2.161 s (10000073 allocations: 846.35 MiB)
 ```
 
-Unfortunately, insertion appears to be the idomatic way of doing things with `Base.Dict`.
+Unfortunately, insertion appears to be the idiomatic way of doing things with `Base.Dict`.
 Compare the above to:
 
 ```julia
@@ -515,7 +529,8 @@ julia> @btime g(dict1, dict2);
   10.985 s (72 allocations: 541.17 MiB)
 ```
 
-The result is similar with generators.
+The result is similar with generators, which is possibly the easiest way of dealing with
+`Base.Dict`.
 
 ```julia
 julia> @btime Dict(i => dict1[i] + dict2[i] for i in keys(dict1));
