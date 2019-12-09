@@ -3,6 +3,7 @@ struct MappedDictionary{I, T, F, Maps <: Tuple{AbstractDictionary{<:I}, Vararg{A
     dicts::Maps
 end
 
+#=
 function SplitApplyCombine.mapview(f, d::AbstractDictionary)
     I = keytype(d)
     T = Core.Compiler.return_type(f, Tuple{eltype(d)})
@@ -18,6 +19,7 @@ function SplitApplyCombine.mapview(f, d::AbstractDictionary, ds::AbstractDiction
     
     return MappedDictionary{I, T, typeof(f), typeof((d, ds...))}(f, (d, ds...))
 end
+=#
 
 Base.keys(d::MappedDictionary{I}) where {I} = keys(d.dicts[1])::AbstractIndices{I}
 

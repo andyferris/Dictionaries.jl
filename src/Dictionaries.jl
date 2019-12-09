@@ -3,9 +3,9 @@ module Dictionaries
 using Random
 
 using Indexing
-using SplitApplyCombine
+#using SplitApplyCombine
 
-using Base: @propagate_inbounds
+using Base: @propagate_inbounds, Callable
 
 export getindices, setindices!, mapview
 

@@ -1,3 +1,4 @@
+#=
 group(iter) = group(identity, iter)
 
 group(by::Function, iter) = group(by, identity, iter)
@@ -148,3 +149,4 @@ groupsum(by, f, iter) = groupreduce(by, f, +, iter)
 groupprod(iter) = groupprod(identity, iter)
 groupprod(by, iter) = groupprod(by, identity, iter)
 groupprod(by, f, iter) = groupreduce(by, f, *, iter)
+=#
