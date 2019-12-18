@@ -3,9 +3,8 @@ module Dictionaries
 using Random
 
 using Indexing
-using SplitApplyCombine
 
-using Base: @propagate_inbounds
+using Base: @propagate_inbounds, Callable
 
 export getindices, setindices!, mapview
 
@@ -27,7 +26,6 @@ include("foreach.jl")
 include("map.jl")
 include("broadcast.jl")
 include("find.jl")
-include("group.jl")
 include("show.jl")
 
 include("PairDictionary.jl")

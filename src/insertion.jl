@@ -239,7 +239,32 @@ function Base.get!(d::AbstractDictionary{I, T}, i::I, default::T) where {I, T}
     end
 end
 
-# TODO: the `get!(f, dict, i)` form. Similarly for `set!` - see 
+"""
+    get!(f::Union{Function, Type}, dict::AbstractDictionary, i)
+
+Return the value `dict[i]` if index `i` exists. Otherwise, a new index `i` is inserted and
+set to the value `f()`, which is returned.
+"""
+function Base.get!(f::Callable, d::AbstractDictionary{I}, i) where {I}
+    i2 = convert(I, i)
+    if !isequal(i, i2)
+        throw(ArgumentError("$i is not a valid key for type $I"))
+    end
+    get!(f, d, i2)
+end
+
+
+function Base.get!(f::Callable, d::AbstractDictionary{I}, i::I) where {I}
+    (hadindex, token) = gettoken!(d, i)
+    if hadindex
+        return gettokenvalue(d, token)
+    else
+        default = f()
+        settokenvalue!(d, token, default)
+        return default
+    end
+end
+
 
 """
     delete!(indices::AbstractIndices, i)
@@ -301,7 +326,7 @@ end
 
 Base.merge!(d::AbstractDictionary, ds::AbstractDictionary...) = merge!(last, d, ds...)
 
-function Base.merge!(combiner::Function, d::AbstractDictionary, d2::AbstractDictionary)
+function Base.merge!(combiner::Callable, d::AbstractDictionary, d2::AbstractDictionary)
     for (i, v) in pairs(d2)
         (hasindex, token) = gettoken!(d, i)
         if hasindex
@@ -329,11 +354,11 @@ function Base.merge!(::typeof(first), d::AbstractDictionary, d2::AbstractDiction
     return d
 end
 
-function Base.merge!(combiner::Function, d::AbstractDictionary, d2::AbstractDictionary, ds::AbstractDictionary...)
+function Base.merge!(combiner::Callable, d::AbstractDictionary, d2::AbstractDictionary, ds::AbstractDictionary...)
     merge!(combiner, merge!(combiner, d, d2), ds...)
 end
 
-function Base.merge!(combiner::Function, d::AbstractIndices, d2::AbstractIndices)
+function Base.merge!(combiner::Callable, d::AbstractIndices, d2::AbstractIndices)
     # Hopefully no-one provides a bad combiner
     union!(d, d2)
 end

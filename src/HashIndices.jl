@@ -224,7 +224,7 @@ function _sizehint!(h::HashIndices{T}, values::Union{Nothing, Vector}, newsz::In
     # grow at least 25%
     newsz = min(max(newsz, (oldsz*5)>>2),
                 Base.max_values(T))
-    _rehash!(h, values, newsz)
+    return _rehash!(h, values, newsz)
 end
 
 

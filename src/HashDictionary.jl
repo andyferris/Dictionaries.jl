@@ -184,7 +184,7 @@ function deletetoken!(d::HashDictionary{I, T}, token) where {I, T}
 end
 
 function Base.sizehint!(d::HashDictionary, sz::Int)
-    _sizehint!(d.indices, d.values, sz)
+    d.values = _sizehint!(d.indices, d.values, sz)
     return d
 end
 

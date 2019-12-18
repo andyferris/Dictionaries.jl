@@ -3,22 +3,6 @@ struct MappedDictionary{I, T, F, Maps <: Tuple{AbstractDictionary{<:I}, Vararg{A
     dicts::Maps
 end
 
-function SplitApplyCombine.mapview(f, d::AbstractDictionary)
-    I = keytype(d)
-    T = Core.Compiler.return_type(f, Tuple{eltype(d)})
-    
-    return MappedDictionary{I, T, typeof(f), Tuple{typeof(d)}}(f, (d,))
-end
-
-function SplitApplyCombine.mapview(f, d::AbstractDictionary, ds::AbstractDictionary...)
-    I = typejoin(keytype(d), keytype.(ds)...)
-    T = Core.Compiler.return_type(f, Tuple{eltype(d), eltype.(ds)...})
-
-    # Check the things have the same keys...
-    
-    return MappedDictionary{I, T, typeof(f), typeof((d, ds...))}(f, (d, ds...))
-end
-
 Base.keys(d::MappedDictionary{I}) where {I} = keys(d.dicts[1])::AbstractIndices{I}
 
 function Base.isassigned(d::MappedDictionary{I}, i::I) where {I}

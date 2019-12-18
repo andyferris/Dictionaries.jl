@@ -1,6 +1,5 @@
 using Test
 using Dictionaries
-using SplitApplyCombine
 using Indexing
 
 include("Indices.jl")
@@ -14,4 +13,3 @@ include("map.jl")
 include("broadcast.jl")
 include("filter.jl")
 include("find.jl")
-include("group.jl")
