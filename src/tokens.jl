@@ -178,6 +178,10 @@ end
     return gettoken(keys(d), i)
 end
 
+@propagate_inbounds function gettoken(d::AbstractDictionary{I}, i) where I
+    return gettoken(d, convert(I, i))
+end
+
 @propagate_inbounds function gettokenvalue(d::AbstractDictionary, token)
     if istokenizable(d)
         error("gettokenvalue needs to be defined for tokenizable $(d isa AbstractIndices ? "indices" : "dictionary"): $(typeof(d))")
