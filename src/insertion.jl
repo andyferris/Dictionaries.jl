@@ -399,25 +399,27 @@ end
 
 ## Filtering
 
-# `filter!` is basically a programmatic version of `intersect!`. 
-function Base.filter!(pred, indices::AbstractIndices)
-    for i in indices
-        if !pred(i)
-            delete!(indices, i)
-        end
-    end
-    return indices
-end
+# These generic implementations are gimped.
 
-# Dictionary version is similar
-function Base.filter!(pred, dict::AbstractDictionary)
-    for (i, v) in pairs(dict)
-        if !pred(v)
-            delete!(dict, i)
-        end
-    end
-    return dict
-end
+# # `filter!` is basically a programmatic version of `intersect!`. 
+# function Base.filter!(pred, indices::AbstractIndices)
+#     for i in copy(indices)
+#         if !pred(i)
+#             delete!(indices, i)
+#         end
+#     end
+#     return indices
+# end
+
+# # Dictionary version is similar
+# function Base.filter!(pred, dict::AbstractDictionary)
+#     for (i, v) in pairs(copy(dict))
+#         if !pred(v)
+#             delete!(dict, i)
+#         end
+#     end
+#     return dict
+# end
 
 # This implementation is faster when deleting indices does not invalidate tokens/iteration,
 # and is opt-in only. Works for both dictionaries and indices
@@ -458,4 +460,6 @@ of type `T` (even when the first argument is are indices). The default container
 Return an empty, insertable `AbstractDictionary` with indices of type `keytype(dict)` and
 elements of type `eltype(inds)`.
 """
-Base.empty(d::AbstractDictionary) = empty(d, keytype(d), eltype(d))
+Base.empty(d::AbstractDictionary) = empty(keys(d), keytype(d), eltype(d))
+
+Base.empty(d::AbstractDictionary, ::Type{I}) where {I} = empty(keys(d), I)
