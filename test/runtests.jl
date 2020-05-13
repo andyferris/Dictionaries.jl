@@ -1,4 +1,5 @@
 using Test
+using Compat: mergewith, mergewith!
 using Dictionaries
 using Indexing
 
@@ -13,3 +14,4 @@ include("map.jl")
 include("broadcast.jl")
 include("filter.jl")
 include("find.jl")
+include("merge.jl")

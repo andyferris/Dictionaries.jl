@@ -324,9 +324,10 @@ end
 
 ### Non-scalar insertion/deletion
 
-Base.merge!(d::AbstractDictionary, ds::AbstractDictionary...) = merge!(last, d, ds...)
+Base.merge!(d::AbstractDictionary, ds::AbstractDictionary...) = mergewith!(last, d, ds...)
+Base.merge!(combiner::Callable, ds::AbstractDictionary...) = mergewith!(combiner, ds...)
 
-function Base.merge!(combiner::Callable, d::AbstractDictionary, d2::AbstractDictionary)
+function mergewith!(combiner, d::AbstractDictionary, d2::AbstractDictionary)
     for (i, v) in pairs(d2)
         (hasindex, token) = gettoken!(d, i)
         if hasindex
@@ -339,7 +340,7 @@ function Base.merge!(combiner::Callable, d::AbstractDictionary, d2::AbstractDict
 end
 
 # TODO `last` is incorrect, it should be `latter(x,y) = y`
-function Base.merge!(::typeof(last), d::AbstractDictionary, d2::AbstractDictionary)
+function mergewith!(::typeof(last), d::AbstractDictionary, d2::AbstractDictionary)
     for (i, v) in pairs(d2)
         set!(d, i, v)
     end
@@ -347,21 +348,29 @@ function Base.merge!(::typeof(last), d::AbstractDictionary, d2::AbstractDictiona
 end
 
 # TODO `first` is incorrect, it should be `former(x,y) = y`
-function Base.merge!(::typeof(first), d::AbstractDictionary, d2::AbstractDictionary)
+function mergewith!(::typeof(first), d::AbstractDictionary, d2::AbstractDictionary)
     for (i, v) in pairs(d2)
         get!(d, i, v)
     end
     return d
 end
 
-function Base.merge!(combiner::Callable, d::AbstractDictionary, d2::AbstractDictionary, ds::AbstractDictionary...)
-    merge!(combiner, merge!(combiner, d, d2), ds...)
-end
+mergewith!(combiner, d::AbstractDictionary, ds::AbstractDictionary...) =
+    foldl(mergewith!(combiner), ds; init = d)
 
 function Base.merge!(combiner::Callable, d::AbstractIndices, d2::AbstractIndices)
     # Hopefully no-one provides a bad combiner
     union!(d, d2)
 end
+
+Base.merge(d::AbstractDictionary, ds::AbstractDictionary...) = mergewith(last, d, ds...)
+Base.merge(combiner::Callable, ds::AbstractDictionary...) = mergewith(combiner, ds...)
+
+mergewith(combiner, d::AbstractDictionary, ds::AbstractDictionary...) =
+    mergewith!(combiner,
+               HashDictionary{keytype(d), eltype(d)}(copy(keys(d)), copy(values(d))),
+               ds...)
+# Using `HashDictionary` is faster than: copyto!(similar(copy(keys(d)), eltype(d)), d)
 
 # TODO some kind of exclusive merge (throw on key clash like `insert!`)
 

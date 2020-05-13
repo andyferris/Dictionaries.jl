@@ -15,6 +15,12 @@ export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, ist
 
 export filterview # TODO move to SplitApplyCombine.jl (and re-order project dependencies?)
 
+if isdefined(Base, :mergewith)
+    import Base: mergewith, mergewith!
+else
+    import Compat: mergewith, mergewith!
+end
+
 include("AbstractDictionary.jl")
 include("AbstractIndices.jl")
 
