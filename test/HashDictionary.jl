@@ -106,4 +106,66 @@
     @test isempty(empty!(d))
    
     # TODO token interface
+
+    @testset "Dict tests from Base" begin
+        h = HashDictionary{Int, Int}()
+
+        for i in 1:10000
+            insert!(h, i, i+1)
+        end
+        for i in 1:10000
+            @test h[i] == i+1
+        end
+        for i in 1:2:10000
+            delete!(h, i)
+        end
+        for i in 1:10000
+            if iseven(i)
+                @test h[i] == i+1
+            else
+                @test_throws IndexError h[i]
+            end
+        end
+        for i in 1:2:10000
+            insert!(h, i, i+1)
+        end
+        for i in 1:10000
+            @test h[i] == i+1
+        end
+        for i in 1:10000
+            delete!(h, i)
+        end
+        @test isempty(h)
+        insert!(h, 77, 100)
+        @test h[77] == 100
+        for i in 1:10000
+            set!(h, i, i+1)
+        end
+        for i in 1:10000
+            @test h[i] == i+1
+        end
+        for i in 1:2:10000
+            delete!(h, i)
+        end
+        for i in 1:10000
+            if iseven(i)
+                @test h[i] == i+1
+            else
+                @test_throws IndexError h[i]
+            end
+        end
+        for i in 10001:20000
+            insert!(h, i, i+1)
+        end
+        for i in 1:10000
+            if iseven(i)
+                @test h[i] == i+1
+            else
+                @test_throws IndexError h[i]
+            end
+        end
+        for i in 10000:20000
+            @test h[i] == i+1
+        end
+    end
 end

@@ -179,10 +179,10 @@ function gettoken(indices::HashIndices{I}, i::I) where {I}
         trial_index = indices.slots[trial_slot]
         if trial_index == 0
             return (false, (0, 0))
-        end
-
-        if full_hash === indices.hashes[trial_index] && isequal(i, indices.values[trial_index]) # Note: the first bit also ensures the value wasn't deleted (and potentiall undefined)
-            return (true, (trial_slot, trial_index))
+        elseif trial_index > 0
+            if full_hash === indices.hashes[trial_index] && isequal(i, indices.values[trial_index]) # Note: the first bit also ensures the value wasn't deleted (and potentiall undefined)
+                return (true, (trial_slot, trial_index))
+            end    
         end
 
         trial_slot = trial_slot & bit_mask
@@ -213,15 +213,16 @@ function gettoken!(indices::HashIndices{I}, i::I, values = ()) where {I}
         trial_index = indices.slots[trial_slot]
         if trial_index == 0
             break
-        end
-        if trial_index < 0 && deleted_slot == 0
-            deleted_slot = trial_slot
-        end
+        elseif trial_index < 0
+            if deleted_slot == 0
+                deleted_slot = trial_slot
+            end
+        else
+            trial_hash = indices.hashes[trial_index]
 
-        trial_hash = indices.hashes[trial_index]
-
-        if trial_hash === full_hash && isequal(i, indices.values[trial_index]) # Note: the first bit also ensures the value wasn't deleted (and potentiall undefined)
-            return (true, (trial_slot, trial_index))
+            if trial_hash === full_hash && isequal(i, indices.values[trial_index]) # Note: the first bit also ensures the value wasn't deleted (and potentiall undefined)
+                return (true, (trial_slot, trial_index))
+            end
         end
 
         trial_slot = trial_slot & bit_mask
@@ -234,7 +235,7 @@ function gettoken!(indices::HashIndices{I}, i::I, values = ()) where {I}
         indices.slots[trial_slot] = new_index
     else
         # Use the deleted slot
-        indices.slots[trial_slot] = new_index
+        indices.slots[deleted_slot] = new_index
         indices.deleted -= 1
     end
     push!(indices.hashes, full_hash)

@@ -46,5 +46,53 @@
     @test all(in(i, h) == iseven(i) for i in 2:1000)
     @test isempty(empty!(h))
 
+    @testset "Adapated from Dict tests from Base" begin
+        h = HashIndices{Int}()
+        N = 10000
+
+        for i in 1:N
+            insert!(h, i)
+        end
+        for i in 1:N
+            @test i in h
+        end
+        for i in 1:2:N
+            delete!(h, i)
+        end
+        for i in 1:N
+            @test (i in h) == iseven(i)
+        end
+        for i in 1:2:N
+            insert!(h, i)
+        end
+        for i in 1:N
+            @test i in h
+        end
+        for i in 1:N
+            delete!(h, i)
+        end
+        @test isempty(h)
+        insert!(h, 77)
+        @test 77 in h
+        for i in 1:N
+            set!(h, i)
+        end
+        for i in 1:N
+            @test i in h
+        end
+        for i in 1:2:N
+            delete!(h, i)
+        end
+        for i in 1:N
+            @test (i in h) == iseven(i)
+        end
+        for i in N+1:2N
+            insert!(h, i)
+        end
+        for i in 1:2N
+            @test (i in h) == i > N || h == iseven(i)
+        end
+    end
+
     # TODO: token interface
 end
