@@ -4,17 +4,16 @@ uuid = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
 version = "0.2.1"
 
 [deps]
-Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 Indexing = "313cdc1a-70c2-5d6a-ae34-0150d3930a38"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [extras]
+Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Compat", "Test"]
 
 [compat]
 julia = "1"
-Compat = "3.9"
 Indexing = "1.1"

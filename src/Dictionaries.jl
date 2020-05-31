@@ -17,9 +17,9 @@ export filterview # TODO move to SplitApplyCombine.jl (and re-order project depe
 
 if isdefined(Base, :mergewith)
     import Base: mergewith, mergewith!
-else
-    import Compat: mergewith, mergewith!
 end
+# Otherwise, implement them as internal functions that are used for
+# `merge` and `merge!`.
 
 include("AbstractDictionary.jl")
 include("AbstractIndices.jl")
