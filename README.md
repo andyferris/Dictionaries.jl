@@ -2,7 +2,7 @@
 
 *An alternative interface for dictionaries in Julia, for improved productivity and performance*
 
-[![Build Status](https://travis-ci.org/andyferris/Dictionaries.jl.svg?branch=master)](https://travis-ci.org/andyferris/Dictionaries.jl)
+![Test Status](https://github.com/andyferris/Dictionaries.jl/workflows/Test/badge.svg)
 [![Codecov](https://codecov.io/gh/andyferris/Dictionaries.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/andyferris/Dictionaries.jl)
 
 This package is still quite young - new features are being added and some (low-level) interfaces may be tweaked in the future, but things should be stable enough for general usage. Contributions welcome - please submit an issue or PR!
