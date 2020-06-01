@@ -69,3 +69,8 @@ end
 Base.empty(inds::VectorIndices, ::Type{I}) where {I} = Indices{I, Vector{I}}(Vector{I}())
 
 Base.copy(inds::VectorIndices) = Indices(copy(inds.inds))
+
+function Base.filter!(pred, inds::VectorIndices)
+    filter!(pred, inds.inds)
+    return inds
+end

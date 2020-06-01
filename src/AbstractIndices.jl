@@ -206,3 +206,51 @@ function Base.hash(inds::AbstractIndices, h::UInt)
     
     return hash(hash(UInt === UInt64 ? 0x8955a87bc313a509 : 0xa9cff5d1, h1), h1)
 end
+
+function Base.union(i::AbstractIndices, itr)
+    if isinsertable(i)
+        out = copy(i)
+        union!(out, itr)
+    else
+        out = empty(i)
+        union!(out, i)
+        union!(out, itr)
+    end
+    return out
+end
+
+function Base.intersect(i::AbstractIndices, itr)
+    if isinsertable(i)
+        out = copy(i)
+        intersect!(out, itr)
+    else
+        out = empty(i)
+        intersect!(out, i)
+        intersect!(out, itr)
+    end
+    return out
+end
+
+function Base.setdiff(i::AbstractIndices, itr)
+    if isinsertable(i)
+        out = copy(i)
+        setdiff!(out, itr)
+    else
+        out = empty(i)
+        setdiff!(out, i)
+        setdiff!(out, itr)
+    end
+    return out
+end
+
+function Base.symdiff(i::AbstractIndices, itr)
+    if isinsertable(i)
+        out = copy(i)
+        symdiff!(out, itr)
+    else
+        out = empty(i)
+        symdiff!(out, i)
+        symdiff!(out, itr)
+    end
+    return out
+end
