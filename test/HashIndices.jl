@@ -90,7 +90,7 @@
             insert!(h, i)
         end
         for i in 1:2N
-            @test (i in h) == i > N || h == iseven(i)
+            @test (i in h) == (i > N || iseven(i))
         end
     end
 

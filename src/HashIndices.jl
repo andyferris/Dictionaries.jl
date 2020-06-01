@@ -9,7 +9,7 @@ mutable struct HashIndices{I} <: AbstractIndices{I}
     hashes::Vector{UInt} # Deletion marker stored in high bit
     values::Vector{I}
 
-    deleted::Int
+    holes::Int # Number of "vacant" slots in hashes and values
 end
 
 HashIndices(; sizehint = 8) = HashIndices{Any}(; sizehint = sizehint)
@@ -27,7 +27,6 @@ Construct a `HashIndices` with indices from iterable container `iter`.
 """
 function HashIndices(iter)
     if Base.IteratorEltype(iter) === Base.EltypeUnknown()
-        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
         iter = collect(iter)
     end
 
@@ -61,10 +60,10 @@ function HashIndices{I}(values::Vector{I}) where {I}
 end
 
 function Base.copy(indices::HashIndices{I}) where {I}
-    if indices.deleted == 0
+    if indices.holes == 0
         return HashIndices{I}(copy(indices.slots), copy(indices.hashes), copy(indices.values), 0)
     else
-        out = HashIndices{I}(Vector{Int}(), copy(indices.hashes), copy(indices.values), indices.deleted)
+        out = HashIndices{I}(Vector{Int}(), copy(indices.hashes), copy(indices.values), indices.holes)
         newsize = Base._tablesz(3*length(indices) >> 0x01)
         rehash!(out, newsize)
     end
@@ -76,7 +75,7 @@ function rehash!(indices::HashIndices{I}, newsize::Int, values = (), include_las
     fill!(slots, 0)
     bit_mask = newsize - 1 # newsize is a power of two
     
-    if indices.deleted == 0
+    if indices.holes == 0
         for (index, full_hash) in enumerate(indices.hashes)
             trial_slot = reinterpret(Int, full_hash) & bit_mask
             @inbounds while true
@@ -87,11 +86,11 @@ function rehash!(indices::HashIndices{I}, newsize::Int, values = (), include_las
                 else
                     trial_slot = trial_slot & bit_mask
                 end
-                # This is potentially an infinte loop and care must be taken by the callee not
-                # to overfill the container
+                # This is potentially an infinte loop and care must be taken not to overfill the container
             end
         end
     else
+        # Compactify indices.values, indices.hashes and the values while we are at it
         to_index = Ref(1) # Reassigning to to_index/from_index gives the closure capture boxing issue, so mutate a reference instead
         from_index = Ref(1)
         n_values = length(indices.values)
@@ -106,6 +105,9 @@ function rehash!(indices::HashIndices{I}, newsize::Int, values = (), include_las
                         indices.hashes[to_index[]] = indices.hashes[from_index[]]
                         indices.values[to_index[]] = indices.values[from_index[]]
                         if include_last_values || from_index[] < n_values
+                            # Note - the last slot might end up with a random value (or
+                            # GC'd reference). It's the callers responsibility to ensure the
+                            # last slot is written to after this operation.
                             map(values) do (vals)
                                 @inbounds vals[to_index[]] = vals[from_index[]]
                             end
@@ -121,18 +123,18 @@ function rehash!(indices::HashIndices{I}, newsize::Int, values = (), include_las
             from_index[] += 1
         end
     
-        new_size = length(indices.values) - indices.deleted
+        new_size = n_values - indices.holes
         resize!(indices.values, new_size)
         resize!(indices.hashes, new_size)
         map(values) do (vals)
             resize!(vals, new_size)
         end
-        indices.deleted = 0
+        indices.holes = 0
     end
     return indices
 end
 
-Base.length(indices::HashIndices) = length(indices.values) - indices.deleted
+Base.length(indices::HashIndices) = length(indices.values) - indices.holes
 
 # Token interface
 istokenizable(::HashIndices) = true
@@ -141,7 +143,7 @@ tokentype(::HashIndices) = Int
 
 # Duration iteration the token cannot be used for deletion - we do not worry about the slots
 @propagate_inbounds function iteratetoken(indices::HashIndices)
-    if indices.deleted == 0
+    if indices.holes == 0
         return length(indices) > 0 ? ((0, 1), 1) : nothing
     end
     index = 1
@@ -156,7 +158,7 @@ end
 
 @propagate_inbounds function iteratetoken(indices::HashIndices, index::Int)
     index += 1
-    if indices.deleted == 0 # apparently this is enough to make it iterate as fast as `Vector`
+    if indices.holes == 0 # apparently this is enough to make it iterate as fast as `Vector`
         return index <= length(indices.values) ? ((0, index), index) : nothing
     end
     @inbounds while index <= length(indices.hashes)
@@ -203,7 +205,6 @@ function gettoken!(indices::HashIndices{I}, i::I, values = ()) where {I}
     n_slots = length(indices.slots)
     bit_mask = n_slots - 1 # n_slots is always a power of two
     n_values = length(indices.values)
-    new_index = n_values + 1
 
     trial_slot = reinterpret(Int, full_hash) & bit_mask
     trial_index = 0
@@ -230,27 +231,30 @@ function gettoken!(indices::HashIndices{I}, i::I, values = ()) where {I}
         # to completely fill the container
     end
 
+    new_index = n_values + 1
     if deleted_slot == 0
         # Use the trail slot
         indices.slots[trial_slot] = new_index
     else
         # Use the deleted slot
         indices.slots[deleted_slot] = new_index
-        indices.deleted -= 1
     end
     push!(indices.hashes, full_hash)
     push!(indices.values, i)
     map(values) do (vals)
         resize!(vals, length(vals) + 1)
     end
-    
+
     # Expand the hash map when it reaches 2/3rd full
     if 3 * new_index > 2 * n_slots
         # Grow faster for small hash maps than for large ones
         newsize = n_slots > 16000 ? 2 * n_slots : 4 * n_slots
         rehash!(indices, newsize, values, false)
 
-        # The slot almost certainly has changed
+        # The index has changed
+        new_index = length(indices.values)
+
+        # The slot also has changed
         bit_mask = newsize - 1
         trial_slot = reinterpret(Int, full_hash) & bit_mask
         @inbounds while true
@@ -260,9 +264,6 @@ function gettoken!(indices::HashIndices{I}, i::I, values = ()) where {I}
             end
             trial_slot = trial_slot & bit_mask
         end
-
-        # The index may have changed
-        new_index = length(indices.values)
     end
 
     return (false, (trial_slot, new_index))
@@ -275,13 +276,13 @@ end
     indices.slots[slot] = -index
     indices.hashes[index] = deletion_mask
     isbitstype(I) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), indices.values, index-1)
-    indices.deleted += 1
+    indices.holes += 1
 
     # Recreate the hash map when 1/3rd of the values are deletions
-    n_slots = length(indices.slots)
-    n_values = length(indices.values) - indices.deleted
-    if 3 * indices.deleted > n_values
+    n_values = length(indices.values) - indices.holes
+    if 3 * indices.holes > n_values
         # Halve if necessary
+        n_slots = length(indices.slots)
         halve = 4 * n_values < n_slots && n_slots > 8
         rehash!(indices, halve ? n_slots >> 0x01 : n_slots, values)
     end
@@ -293,7 +294,7 @@ function Base.empty!(indices::HashIndices{I}) where {I}
     indices.hashes = Vector{UInt}()
     indices.values = Vector{I}()
     indices.slots = fill(0, 8)
-    indices.deleted = 0
+    indices.holes = 0
     
     return indices
 end
@@ -301,13 +302,13 @@ end
 # Accelerated filtering
 
 function Base.filter!(pred, indices::HashIndices)
-    _filter!(i -> pred(@inbounds indices.values[i]), keys(indices.values), indices.values, indices.hashes, ())
-    indices.deleted = 0
+    _filter!(i -> pred(@inbounds indices.values[i]), indices.values, indices.hashes, ())
+    indices.holes = 0
     newsize = Base._tablesz(3*length(indices.values) >> 0x01)
     rehash!(indices, newsize)
 end
 
-@inline function _filter!(pred, range, indices, hashes, values = ())
+@inline function _filter!(pred, indices, hashes, values = ())
     n = length(indices)
     i = Ref(0)
     j = Ref(0)
