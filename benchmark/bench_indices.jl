@@ -6,7 +6,7 @@ using Dictionaries
 const suite = BenchmarkGroup()
 
 #sizes = [(8 .^ (0:8))...]
-sizes = [10, 100, 1000, 10_000] #, 10_000, 10_000_000]
+sizes = [10 ]#, 100, 1000, 10_000] #, 10_000, 10_000_000]
 cutoff = 101
 
 function build_vector_by_insertion(n)
@@ -122,12 +122,12 @@ for n in sizes
     s["OldHashIndices"] = @benchmarkable build_old_hashindices_by_insertion($n)
 
     s = suite_n["empty by deletion ($n)"] = BenchmarkGroup()
-    n < cutoff && (s["Vector (pop!)"] = @benchmarkable empty_by_deletion(s, $n) setup=(s=collect($r)))
-    s["Set"] = @benchmarkable empty_by_deletion(s, $n) setup=(s=Set($r))
-    n < cutoff && (s["Indices"] = @benchmarkable empty_by_deletion(s, $n) setup=(s=Indices(collect($r))))
-    s["HashIndices"] = @benchmarkable empty_by_deletion(s, $n) setup=(s=HashIndices($r))
-    s["OldHashIndices"] = @benchmarkable empty_by_deletion(s, $n) setup=(s=Dictionaries.OldHashIndices($r))
-    
+    n < cutoff && (s["Vector (pop!)"] = @benchmarkable empty_by_deletion(s, $n) setup=(s=collect($r)) evals=1)
+    s["Set"] = @benchmarkable empty_by_deletion(s, $n) setup=(s=Set($r)) evals=1
+    n < cutoff && (s["Indices"] = @benchmarkable empty_by_deletion(s, $n) setup=(s=Indices(collect($r))) evals=1)
+    s["HashIndices"] = @benchmarkable empty_by_deletion(s, $n) setup=(s=HashIndices($r)) evals=1
+    s["OldHashIndices"] = @benchmarkable empty_by_deletion(s, $n) setup=(s=Dictionaries.OldHashIndices($r)) evals=1
+
     s = suite_n["in ($n)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable in($y, $vec))
     s["Set"] = @benchmarkable in($y, $set)
@@ -185,25 +185,25 @@ for n in sizes
     s["OldHashIndices"] = @benchmarkable filter($pred2, $old_hash_indices)
 
     s = suite_n["filter! (most) ($n)"] = BenchmarkGroup()
-    n < cutoff && (s["Vector"] = @benchmarkable filter!($pred1, s) setup=(s=collect($r)))
-    s["Set"] = @benchmarkable filter!($pred1, s) setup=(s=Set($r))
-    n < cutoff && (s["Indices"] = @benchmarkable filter!($pred1, s) setup=(s=Indices(collect($r))))
-    s["HashIndices"] = @benchmarkable filter!($pred1, s) setup=(s=HashIndices($r))
-    s["OldHashIndices"] = @benchmarkable filter!($pred1, s) setup=(s=Dictionaries.OldHashIndices($r))
+    n < cutoff && (s["Vector"] = @benchmarkable filter!($pred1, s) setup=(s=collect($r)) evals=1)
+    s["Set"] = @benchmarkable filter!($pred1, s) setup=(s=Set($r)) evals=1
+    n < cutoff && (s["Indices"] = @benchmarkable filter!($pred1, s) setup=(s=Indices(collect($r))) evals=1)
+    s["HashIndices"] = @benchmarkable filter!($pred1, s) setup=(s=HashIndices($r)) evals=1
+    s["OldHashIndices"] = @benchmarkable filter!($pred1, s) setup=(s=Dictionaries.OldHashIndices($r)) evals=1
 
     s = suite_n["filter! (half) ($n)"] = BenchmarkGroup()
-    n < cutoff && (s["Vector"] = @benchmarkable filter!($iseven, s) setup=(s=collect($r)))
-    s["Set"] = @benchmarkable filter!($iseven, s) setup=(s=Set($r))
-    n < cutoff && (s["Indices"] = @benchmarkable filter!($iseven, s) setup=(s=Indices(collect($r))))
-    s["HashIndices"] = @benchmarkable filter!($iseven, s) setup=(s=HashIndices($r))
-    s["OldHashIndices"] = @benchmarkable filter!($iseven, s) setup=(s=Dictionaries.OldHashIndices($r))
+    n < cutoff && (s["Vector"] = @benchmarkable filter!($iseven, s) setup=(s=collect($r)) evals=1)
+    s["Set"] = @benchmarkable filter!($iseven, s) setup=(s=Set($r)) evals=1
+    n < cutoff && (s["Indices"] = @benchmarkable filter!($iseven, s) setup=(s=Indices(collect($r))) evals=1)
+    s["HashIndices"] = @benchmarkable filter!($iseven, s) setup=(s=HashIndices($r)) evals=1
+    s["OldHashIndices"] = @benchmarkable filter!($iseven, s) setup=(s=Dictionaries.OldHashIndices($r)) evals=1
 
     s = suite_n["filter! (few) ($n)"] = BenchmarkGroup()
-    n < cutoff && (s["Vector"] = @benchmarkable filter!($pred2, s) setup=(s=collect($r)))
-    s["Set"] = @benchmarkable filter!($pred2, s) setup=(s=Set($r))
-    n < cutoff && (s["Indices"] = @benchmarkable filter!($pred2, s) setup=(s=Indices(collect($r))))
-    s["HashIndices"] = @benchmarkable filter!($pred2, s) setup=(s=HashIndices($r))
-    s["OldHashIndices"] = @benchmarkable filter!($pred2, s) setup=(s=Dictionaries.OldHashIndices($r))
+    n < cutoff && (s["Vector"] = @benchmarkable filter!($pred2, s) setup=(s=collect($r)) evals=1)
+    s["Set"] = @benchmarkable filter!($pred2, s) setup=(s=Set($r)) evals=1
+    n < cutoff && (s["Indices"] = @benchmarkable filter!($pred2, s) setup=(s=Indices(collect($r))) evals=1)
+    s["HashIndices"] = @benchmarkable filter!($pred2, s) setup=(s=HashIndices($r)) evals=1
+    s["OldHashIndices"] = @benchmarkable filter!($pred2, s) setup=(s=Dictionaries.OldHashIndices($r)) evals=1
 
     s = suite_n["union ($n)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable union($even_vec, $odd_vec))

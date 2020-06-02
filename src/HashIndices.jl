@@ -179,12 +179,12 @@ function gettoken(indices::HashIndices{I}, i::I) where {I}
     @inbounds while true
         trial_slot = (trial_slot + 1)
         trial_index = indices.slots[trial_slot]
-        if trial_index == 0
-            return (false, (0, 0))
-        elseif trial_index > 0
+        if trial_index > 0
             if full_hash === indices.hashes[trial_index] && isequal(i, indices.values[trial_index]) # Note: the first bit also ensures the value wasn't deleted (and potentiall undefined)
                 return (true, (trial_slot, trial_index))
             end    
+        elseif trial_index === 0
+            return (false, (0, 0))
         end
 
         trial_slot = trial_slot & bit_mask

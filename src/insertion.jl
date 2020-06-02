@@ -232,9 +232,9 @@ end
 function Base.get!(d::AbstractDictionary{I, T}, i::I, default::T) where {I, T}
     (hadindex, token) = gettoken!(d, i)
     if hadindex
-        return gettokenvalue(d, token)
+        return @inbounds gettokenvalue(d, token)
     else
-        settokenvalue!(d, token, default)
+        @inbounds settokenvalue!(d, token, default)
         return default
     end
 end
@@ -257,10 +257,10 @@ end
 function Base.get!(f::Callable, d::AbstractDictionary{I}, i::I) where {I}
     (hadindex, token) = gettoken!(d, i)
     if hadindex
-        return gettokenvalue(d, token)
+        return @inbounds gettokenvalue(d, token)
     else
         default = f()
-        settokenvalue!(d, token, default)
+        @inbounds settokenvalue!(d, token, default)
         return default
     end
 end
@@ -290,7 +290,7 @@ function Base.delete!(d::AbstractDictionary{I}, i::I) where {I}
     if !hasindex
         throw(IndexError("Index doesn't exist: $i"))
     end
-    deletetoken!(d, token)
+    @inbounds deletetoken!(d, token)
     return d
 end
 
@@ -317,7 +317,7 @@ end
 function unset!(d::AbstractDictionary{I}, i::I) where {I}
     (hasindex, token) = gettoken(d, i)
     if hasindex
-        deletetoken!(d, token)
+        @inbounds deletetoken!(d, token)
     end
     return d
 end
@@ -330,9 +330,9 @@ function Base.merge!(combiner::Callable, d::AbstractDictionary, d2::AbstractDict
     for (i, v) in pairs(d2)
         (hasindex, token) = gettoken!(d, i)
         if hasindex
-            settokenvalue!(d, token, combiner(gettokenvalue(d, token), v))
+            @inbounds settokenvalue!(d, token, combiner(gettokenvalue(d, token), v))
         else
-            settokenvalue!(d, token, v)
+            @inbounds settokenvalue!(d, token, v)
         end
     end
     return d
@@ -391,7 +391,7 @@ function Base.symdiff!(s1::AbstractIndices, s2::AbstractIndices)
     for i in s2
         (hastoken, token) = gettoken!(s1, i)
         if hastoken
-            deletetoken!(s1, token)
+            @inbounds deletetoken!(s1, token)
         end
     end
     return s1
