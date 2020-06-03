@@ -51,6 +51,7 @@ function HashIndices{I}(iter) where {I}
 end
 
 function HashIndices{I}(values::Vector{I}) where {I}
+    # TODO Incrementally build the hashmap removing duplicates
     hashes = map(v -> hash(v) & hash_mask, values)
     slots = Vector{Int}()
     out = HashIndices{I}(slots, hashes, values, 0)
@@ -180,7 +181,8 @@ function gettoken(indices::HashIndices{I}, i::I) where {I}
         trial_slot = (trial_slot + 1)
         trial_index = indices.slots[trial_slot]
         if trial_index > 0
-            if full_hash === indices.hashes[trial_index] && isequal(i, indices.values[trial_index]) # Note: the first bit also ensures the value wasn't deleted (and potentiall undefined)
+            value = indices.values[trial_index]
+            if i === value || isequal(i, value)
                 return (true, (trial_slot, trial_index))
             end    
         elseif trial_index === 0
@@ -219,9 +221,8 @@ function gettoken!(indices::HashIndices{I}, i::I, values = ()) where {I}
                 deleted_slot = trial_slot
             end
         else
-            trial_hash = indices.hashes[trial_index]
-
-            if trial_hash === full_hash && isequal(i, indices.values[trial_index]) # Note: the first bit also ensures the value wasn't deleted (and potentiall undefined)
+            value = indices.values[trial_index]            
+            if i === value || isequal(i, value)
                 return (true, (trial_slot, trial_index))
             end
         end
