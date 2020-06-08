@@ -369,9 +369,20 @@ end
 
 ### Indices ("sets") versions of above
 
-function Base.union!(s1::AbstractIndices, s2::AbstractIndices)
-    for i in s2
-        set!(s1, i)
+function Base.union!(s1::AbstractIndices, itr)
+    # Optimized to handle repeated values in `itr` - e.g. if `itr` is already sorted
+    x = iterate(itr)
+    if x === nothing
+        return s1
+    end
+    (i, s) = x
+    set!(s1, i)
+    i_old = i
+    while x !== nothing
+        (i, s) = x
+        !isequal(i, i_old) && set!(s1, i)
+        i_old = i
+        x = iterate(itr, s)
     end
     return s1
 end
@@ -463,3 +474,5 @@ elements of type `eltype(inds)`.
 Base.empty(d::AbstractDictionary) = empty(keys(d), keytype(d), eltype(d))
 
 Base.empty(d::AbstractDictionary, ::Type{I}) where {I} = empty(keys(d), I)
+
+Base.empty(::AbstractIndices, ::Type{I}, ::Type{T}) where {I, T} = HashDictionary{I, T}()

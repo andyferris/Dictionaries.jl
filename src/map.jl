@@ -1,16 +1,27 @@
 # Make `map!` fast if the inputs and output share tokens
 
-# TODO consider if `map` should respect iteration order or indices??
-
 function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary, d2::AbstractDictionary, ds::AbstractDictionary...)
     if sharetokens(out, d, d2, ds...)
         @inbounds for t in tokens(out)
             settokenvalue!(out, t, f(gettokenvalue(d, t), gettokenvalue(d2, t), map(x -> @inbounds(gettokenvalue(x, t)), ds)...))
         end
+    elseif istokenizable(out)
+       @boundscheck if !isequal(keys(out), keys(d)) || !isequal(keys(out), keys(d2)) || any(dict -> !isequal(keys(out), keys(dict)), ds)
+            throw(IndexError("Indices do not match"))
+       end
+       @inbounds for txs in zip(tokens(out), d, d2, ds...)
+            t = txs[1]
+            xs = Base.tail(txs)
+            settokenvalue!(out, t, f(xs...))
+       end
     else
-        @boundscheck nothing # TODO check that indices match
-        @inbounds for i in keys(out)
-            out[i] = f(d[i], d2[i], map(x -> @inbounds(x[i]), ds)...)
+        @boundscheck if !isequal(keys(out), keys(d)) || !isequal(keys(out), keys(d2)) || any(dict -> !isequal(keys(out), keys(dict)), ds)
+            throw(IndexError("Indices do not match"))
+        end 
+        @inbounds for ixs in zip(keys(out), d, d2, ds...)
+            i = ixs[1]
+            xs = Base.tail(ixs)
+            out[i] = f(xs...)
         end
     end
     return out
@@ -22,8 +33,17 @@ function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary, d2::Abstra
         @inbounds for t in tokens(out)
             settokenvalue!(out, t, f(gettokenvalue(d, t), gettokenvalue(d2, t)))
         end
+    elseif istokenizable(out)
+        @boundscheck if !isequal(keys(out), keys(d)) || !isequal(keys(out), keys(d2))
+            throw(IndexError("Indices do not match"))
+       end
+       @inbounds for (t, x, x2) in zip(tokens(out), d, d2)
+            settokenvalue!(out, t, f(x, x2))
+       end
     else
-        @boundscheck nothing # TODO check that indices match
+        @boundscheck if !isequal(keys(out), keys(d)) || !isequal(keys(out), keys(d2))
+            throw(IndexError("Indices do not match"))
+        end 
         @inbounds for i in keys(out)
             out[i] = f(d[i], d2[i])
         end
@@ -36,10 +56,19 @@ function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary)
         @inbounds for t in tokens(out)
             settokenvalue!(out, t, f(gettokenvalue(d, t)))
         end
+    elseif istokenizable(out)
+       @boundscheck if !isequal(keys(out), keys(d))
+            throw(IndexError("Indices do not match"))
+       end
+       @inbounds for (t, x) in zip(tokens(out), d)
+            settokenvalue!(out, t, f(x))
+       end
     else
-        @boundscheck nothing # TODO check that indices match
-        @inbounds for i in keys(out)
-            out[i] = f(d[i])
+        @boundscheck if !isequal(keys(out), keys(d))
+             throw(IndexError("Indices do not match"))
+        end
+        @inbounds for (i, x) in zip(keys(out), d)
+            out[i] = f(x)
         end
     end
     return out
@@ -60,12 +89,14 @@ end
 
 function Base.map(f, d::AbstractDictionary)
     out = similar(d, Core.Compiler.return_type(f, Tuple{eltype(d)}))
-    map!(f, out, d)
+    @inbounds map!(f, out, d)
     return out
 end
 
 function Base.map(f, d::AbstractDictionary, ds::AbstractDictionary...)
     out = similar(d, Core.Compiler.return_type(f, Tuple{eltype(d), map(eltype, ds)...}))
-    map!(f, out, d, ds...)
+    @inbounds map!(f, out, d, ds...)
     return out
 end
+
+# TODO mapreduce (mapfoldl)

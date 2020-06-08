@@ -235,6 +235,80 @@ function Base.unique(d::AbstractDictionary)
     return out
 end
 
+# TODO think of a name for this. This matches Base.unique but ideally `distinct` could be
+# be an abstract factory method, like `distinct(BTreeIndices{Int}, itr)`.
+#=
+"""
+    distinct(f, itr; to=HashDictionary)
+
+Collect the first element of iterator `itr` for each unique value produced by `f` applied to
+elements of `itr` into a new collection, defaulting to `HashDictionary`. Similar to
+`Base.unique`, except returning a dictionary instead of an array.
+
+# Example
+
+```julia
+julia> distinct(first, ["Alice", "Bob", "Charlie"])
+3-element HashDictionary{Char,String}
+ 'A' │ "Alice"
+ 'B' │ "Bob"
+ 'C' │ "Charlie"
+
+julia> distinct(first, ["Alice", "Bob", "Charlie", "Chaz"])
+3-element HashDictionary{Char,String}
+ 'A' │ "Alice"
+ 'B' │ "Bob"
+ 'C' │ "Charlie" 
+```
+"""
+distinct(f, itr) = _distinct(f, HashDictionary, itr)
+=#
+
+function _distinct(f, ::Type{T}, itr) where T
+    out = T()
+    for x in itr
+        i = f(x)
+        (hadtoken, token) = gettoken!(out, x)
+        if !hadtoken
+            @inbounds settokenvalue!(out, token, i)
+        end
+    end
+    return out
+end
+
+# An auto-widening AbstractDictionary constructor
+function __distinct(f, dict, itr, s)
+    I = keytype(dict)
+    T = eltype(dict)
+    tmp = iterate(itr, s)
+    while tmp !== nothing
+        (x, s) = tmp
+        i = f(x)
+        if !(i isa I)
+            new_inds = copy(keys(dict), promote_type(I, typeof(i)))
+            new_dict = similar(new_inds, promote_type(T, typeof(x)))
+            (hadtoken, token) = gettoken!(new_dict, i)
+            if !hadtoken
+                @inbounds settokenvalue!(new_dict, token, x)
+            end
+            return __distinct(f, new_dict, itr, s)
+        elseif !(x isa T)
+            new_dict = copy(dict, promote_type(T, typeof(x)))
+            (hadtoken, token) = gettoken!(new_dict, i)
+            if !hadtoken
+                @inbounds settokenvalue!(new_dict, token, x)
+            end
+            return __distinct(f, new_dict, itr, s)
+        end
+        (hadtoken, token) = gettoken!(dict, i)
+        if !hadtoken
+            @inbounds settokenvalue!(dict, token, x)
+        end
+        tmp = iterate(itr, s)
+    end
+    return dict
+end
+
 ### Settable interface
 
 """
@@ -268,7 +342,7 @@ function Base.isassigned(dict::AbstractDictionary{I}, i::I) where {I}
     end
 end
 
-function Base.setindex!(dict::AbstractDictionary{I, T}, value::T, i::I) where {I, T}
+@propagate_inbounds function Base.setindex!(dict::AbstractDictionary{I, T}, value::T, i::I) where {I, T}
     if !(istokenizable(dict))
         error("Every settable AbstractDictionary type must define a method for `setindex!`: $(typeof(dict))")
     end
@@ -292,6 +366,10 @@ Construct a new `issettable` dictionary with identical `keys` as `d` and an elem
 """
 Base.similar(d::AbstractDictionary) = similar(keys(d), eltype(d))
 Base.similar(d::AbstractDictionary, ::Type{T}) where {T} = similar(keys(d), T)
+
+function Base.similar(indices::AbstractIndices{I}, ::Type{T}) where {I, T}
+    return similar(convert(HashIndices{I}, indices), T)
+end
 
 # fill! and fill
 
@@ -381,8 +459,17 @@ end
 
 
 # Copying - note that this doesn't necessarily copy the indices! (`copy(keys(dict))` can do that)
-function Base.copy(d::AbstractDictionary)
-    out = similar(d)
+"""
+    copy(dict::AbstractDictionary)
+    copy(dict::AbstractDictionary, ::Type{T})
+
+Create a shallow copy of the values of `dict`. Note that `keys(dict)` is not copied, and
+therefore care must be taken that inserting/deleting elements. A new element type `T` can 
+optionally be specified.
+"""
+Base.copy(dict::AbstractDictionary) = copy(dict, eltype(dict))
+function Base.copy(d::AbstractDictionary, ::Type{T}) where {T}
+    out = similar(d, T)
     copyto!(out, d)
     return out
 end

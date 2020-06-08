@@ -3,6 +3,7 @@ struct HashDictionary{I, T} <: AbstractDictionary{I, T}
     values::Vector{T}
 
     function HashDictionary{I, T}(inds::HashIndices{I}, values::Vector{T}) where {I, T}
+        # TODO make sure sizes match, deal with the fact that inds.holes might be nonzero
         return new(inds, values)
     end
 end
@@ -164,8 +165,20 @@ end
 
 # Factories
 
-Base.empty(::AbstractIndices, ::Type{I}, ::Type{T}) where {I, T} = HashDictionary{I, T}()
+function Base.similar(indices::HashIndices{I}, ::Type{T}) where {I, T}
+    return HashDictionary(indices, Vector{T}(undef, length(indices.values)))
+end
 
-function Base.similar(indices::AbstractIndices{I}, ::Type{T}) where {I, T}
-    return HashDictionary(indices, Vector{T}(undef, length(indices)))
+function _distinct(f, ::Type{HashDictionary}, itr)
+    tmp = iterate(itr)
+    if tmp === nothing
+        T = Base.@default_eltype(itr)
+        I = Core.Compiler.return_type(f, Tuple{T})
+        return HashDictionary{I, T}()
+    end
+    (x, s) = tmp
+    i = f(x)
+    dict = HashDictionary{typeof(i), typeof(x)}()
+    insert!(dict, i, x)
+    return __distinct(f, dict, itr, s)
 end

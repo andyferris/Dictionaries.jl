@@ -68,7 +68,13 @@ end
 
 Base.empty(inds::VectorIndices, ::Type{I}) where {I} = Indices{I, Vector{I}}(Vector{I}())
 
-Base.copy(inds::VectorIndices) = Indices(copy(inds.inds))
+function Base.copy(inds::VectorIndices, ::Type{I}) where {I}
+    if I === eltype(inds)
+        Indices{I}(copy(inds.inds))
+    else
+        Indices{I}(inds.inds) # The constructor will call convert
+    end
+end
 
 function Base.filter!(pred, inds::VectorIndices)
     filter!(pred, inds.inds)

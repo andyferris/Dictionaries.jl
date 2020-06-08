@@ -79,6 +79,49 @@ end
 
 Base.unique(i::AbstractIndices) = i
 
+"""
+    copy(inds::AbstractIndices)
+    copy(inds::AbstractIndices, I::Type)
+
+Construct a shallow copy of `inds`, possibly specifying a new element type `I`. The output
+container is not guaranteed to be the same type as the input.
+"""
+Base.copy(inds::AbstractIndices) = copy(inds, eltype(inds))
+
+function Base.copy(inds::AbstractIndices, ::Type{I}) where I
+    out = empty(inds, I)
+    for i in inds
+        insert!(out, i)
+    end
+    return out
+end
+
+Base.empty(::AbstractIndices, ::Type{I}) where {I} = HashIndices{I}()
+
+"""
+    distinct(itr)
+
+Collect the distinct elements of iterator `itr` into a new collection. Similar to
+`Base.unique`, except returning a set (`HashIndices`) instead of an array.
+
+# Example
+
+```julia
+julia> distinct([1,2,3,3])
+3-element HashIndices{Int64}
+ 1
+ 2
+ 3
+```
+"""
+distinct(itr) = _distinct(HashIndices, itr)
+
+function _distinct(::Type{T}, itr) where T
+    out = T()
+    union!(out, itr)
+    return out
+end
+
 struct IndexError <: Exception
 	msg::String
 end
@@ -225,7 +268,7 @@ function Base.intersect(i::AbstractIndices, itr)
         intersect!(out, itr)
     else
         out = empty(i)
-        intersect!(out, i)
+        union!(out, i)
         intersect!(out, itr)
     end
     return out
@@ -237,7 +280,7 @@ function Base.setdiff(i::AbstractIndices, itr)
         setdiff!(out, itr)
     else
         out = empty(i)
-        setdiff!(out, i)
+        union!(out, i)
         setdiff!(out, itr)
     end
     return out
@@ -249,8 +292,26 @@ function Base.symdiff(i::AbstractIndices, itr)
         symdiff!(out, itr)
     else
         out = empty(i)
-        symdiff!(out, i)
+        union!(out, i)
         symdiff!(out, itr)
     end
     return out
+end
+
+# issetequal and issubset(equal) should work already
+
+"""
+    disjoint(set1, set2)
+
+Return `true` if `set1` and `set2` are disjoint or `false`. Two sets are disjoint if no
+elements of `set1` is in `set2`, and vice-versa. Somewhat equivalent to, but faster than,
+`isempty(intersect(set1, set2))`.
+"""
+function disjoint(set1, set2)
+    for i in set1
+        if i in set2
+            return false
+        end
+    end
+    return true
 end

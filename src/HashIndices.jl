@@ -24,6 +24,32 @@ end
     HashIndices{I}(iter)
 
 Construct a `HashIndices` with indices from iterable container `iter`.
+
+Note that the elements of `iter` must be distinct/unique. Instead, the `distinct` function
+can be used for finding the unique elements.
+
+# Examples
+
+```julia
+julia> HashIndices([1,2,3])
+3-element HashIndices{Int64}
+ 1
+ 2
+ 3
+
+julia> HashIndices([1,2,3,3])
+ERROR: IndexError("Indices are not unique (inputs at positions 3 and 4) - consider using the distinct function")
+Stacktrace:
+ [1] HashIndices{Int64}(::Array{Int64,1}) at /home/ferris/.julia/dev/Dictionaries/src/HashIndices.jl:92
+ [2] HashIndices(::Array{Int64,1}) at /home/ferris/.julia/dev/Dictionaries/src/HashIndices.jl:53
+ [3] top-level scope at REPL[12]:1
+
+julia> distinct([1,2,3,3])
+3-element HashIndices{Int64}
+ 1
+ 2
+ 3
+```
 """
 function HashIndices(iter)
     if Base.IteratorEltype(iter) === Base.EltypeUnknown()
@@ -40,31 +66,96 @@ function HashIndices{I}(iter) where {I}
         @inbounds for (i, value) in enumerate(iter)
             values[i] = value
         end
-        return HashIndices{I}(values)
     else
-        h = HashIndices{I}()
-        for i in iter
-            insert!(h, i)
+        values = Vector{I}()
+        @inbounds for value in iter
+            push!(values, value)
         end
-        return h
     end
+    return HashIndices{I}(values)
 end
 
 function HashIndices{I}(values::Vector{I}) where {I}
-    # TODO Incrementally build the hashmap removing duplicates
+    # The input must have unique elements (the constructor is not to be used in place of `distinct`)
     hashes = map(v -> hash(v) & hash_mask, values)
-    slots = Vector{Int}()
-    out = HashIndices{I}(slots, hashes, values, 0)
+    
+    # Incrementally build the hashmap and throw if duplicates detected
     newsize = Base._tablesz(3*length(values) >> 0x01)
-    rehash!(out, newsize)
-    return out
+    bit_mask = newsize - 1 # newsize is a power of two
+    slots = zeros(Int, newsize)
+    @inbounds for index in keys(hashes)
+        full_hash = hashes[index]
+        trial_slot = reinterpret(Int, full_hash) & bit_mask
+        @inbounds while true
+            trial_slot = (trial_slot + 1)
+            if slots[trial_slot] == 0
+                slots[trial_slot] = index
+                break
+            else
+                # TODO make this check optional
+                if isequal(values[index], values[slots[trial_slot]])
+                    throw(IndexError("Indices are not unique (inputs at positions $(slots[trial_slot]) and $index) - consider using the distinct function"))
+                end
+            end
+            trial_slot = trial_slot & bit_mask
+            # This is potentially an infinte loop and care must be taken not to overfill the container
+        end
+    end
+    return HashIndices{I}(slots, hashes, values, 0)
 end
 
-function Base.copy(indices::HashIndices{I}) where {I}
+Base.convert(::Type{HashIndices}, inds::AbstractIndices{I}) where {I} = convert(HashIndices{I}, inds)
+
+function Base.convert(::Type{HashIndices{I}}, inds::AbstractIndices) where {I}
+    # Fast path
+    if inds isa HashIndices && inds.holes == 0
+        # Note: `convert` doesn't have copy semantics
+        return HashIndices{I}(inds.slots, inds.hashes, convert(Vector{I}, inds.values), 0)
+    end
+
+    # The input is already unique
+    values = collect(I, inds)
+    hashes = map(v -> hash(v) & hash_mask, values)
+    
+    # Incrementally build the hashmap
+    newsize = Base._tablesz(3*length(values) >> 0x01)
+    bit_mask = newsize - 1 # newsize is a power of two
+    slots = zeros(Int, newsize)
+    @inbounds for index in keys(hashes)
+        full_hash = hashes[index]
+        trial_slot = reinterpret(Int, full_hash) & bit_mask
+        @inbounds while true
+            trial_slot = (trial_slot + 1)
+            if slots[trial_slot] == 0
+                slots[trial_slot] = index
+                break
+            else
+                # TODO make this check optional
+                if isequal(values[index], values[slots[trial_slot]])
+                    throw(IndexError("Indices are not unique (inputs at positions $(slots[trial_slot]) and $index)"))
+                end
+            end
+            trial_slot = trial_slot & bit_mask
+            # This is potentially an infinte loop and care must be taken not to overfill the container
+        end
+    end
+    return HashIndices{I}(slots, hashes, values, 0)
+end
+
+"""
+    copy(inds::AbstractIndices)
+    copy(inds::AbstractIndices, ::Type{I})
+
+Create a shallow copy of the indices, optionally changing the element type.
+
+(Note that `copy` on a dictionary does not copy its indices).
+"""
+function Base.copy(indices::HashIndices, ::Type{I}) where {I}
+    _copy = I === eltype(indices) ? copy : identity # the constructor will call `convert`
     if indices.holes == 0
-        return HashIndices{I}(copy(indices.slots), copy(indices.hashes), copy(indices.values), 0)
+        return HashIndices{I}(_copy(indices.slots), _copy(indices.hashes), _copy(indices.values), 0)
     else
-        out = HashIndices{I}(Vector{Int}(), copy(indices.hashes), copy(indices.values), indices.holes)
+        out = HashIndices{I}(Vector{Int}(), _copy(indices.hashes), _copy(indices.values), indices.holes)
         newsize = Base._tablesz(3*length(indices) >> 0x01)
         rehash!(out, newsize)
     end
@@ -330,4 +421,38 @@ end
 
 # Factories
 
-Base.empty(::AbstractIndices, ::Type{I}) where {I} = HashIndices{I}()
+# TODO make this generic... maybe a type-based `empty`?
+function _distinct(::Type{HashIndices}, itr)
+    if Base.IteratorEltype(itr) === Base.HasEltype()
+        return _distinct(HashIndices{eltype(itr)}, itr)
+    end
+
+    tmp = iterate(itr)
+    if tmp === nothing
+        return HashIndices{Base.@default_eltype(itr)}()
+    end
+    (x, s) = tmp
+    indices = HashIndices{typeof(x)}()
+    insert!(indices, x)
+    return __distinct!(indices, itr, s, x)
+end
+
+# An auto-widening constructor for insertable AbstractIndices
+function __distinct!(indices::AbstractIndices, itr, s, x_old)
+    T = eltype(indices)
+    tmp = iterate(itr, s)
+    while tmp !== nothing
+        (x, s) = tmp
+        if !isequal(x, x_old) # Optimized for repeating elements of `itr`, e.g. if `itr` is sorted
+            if !(x isa T) && promote_type(typeof(x), T) != T
+                new_indices = copy(indices, promote_type(T, typeof(x)))
+                set!(new_indices, x)
+                return __distinct!(new_indices, itr, s, x)
+            end
+            set!(indices, x)
+            x_old = x
+        end
+        tmp = iterate(itr, s)
+    end
+    return indices
+end

@@ -132,7 +132,7 @@ function gettoken!(d::OldHashDictionary{T}, key::T) where {T}
     end 
 end
 
-function Base.copy(d::OldHashDictionary{I, T}) where {I, T}
+function Base.copy(d::OldHashDictionary{I, T}, ::Type{I}, ::Type{T}) where {I, T}
     return OldHashDictionary{I, T}(d.indices, copy(d.values), nothing)
 end
 

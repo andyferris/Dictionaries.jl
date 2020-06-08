@@ -57,7 +57,7 @@ function OldHashIndices{T}(iter) where {T}
     return h
 end
 
-function Base.copy(h::OldHashIndices{T}) where {T}
+function Base.copy(h::OldHashIndices{T}, ::Type{T}) where {T}
     return OldHashIndices{T}(copy(h.slots), copy(h.inds), h.ndel, h.count, h.idxfloor, h.maxprobe)
 end
 

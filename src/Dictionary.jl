@@ -77,8 +77,6 @@ issettable(::VectorDictionary) = true
     return d
 end
 
-Base.copy(d::VectorDictionary) = Dictionary(d.indices, copy(d.values))
-
 function Base.similar(inds::VectorIndices, ::Type{T}) where {T}
     return Dictionary(inds.inds, Vector{T}(undef, length(inds)))
 end

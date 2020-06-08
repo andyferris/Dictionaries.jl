@@ -1,19 +1,16 @@
 module Dictionaries
 
 using Random
-
 using Indexing
-
 using Base: @propagate_inbounds, Callable
 
 export getindices, setindices!
 
 export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary, DictionaryView, FilteredDictionary, FilteredIndices, BroadcastedDictionary
 
-export issettable, isinsertable, set!, unset!, dictionary
+export dictionary, distinct, disjoint, filterview
+export issettable, isinsertable, set!, unset!
 export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, settokenvalue!, gettoken!, deletetoken!, sharetokens
-
-export filterview # TODO move to SplitApplyCombine.jl (and re-order project dependencies?)
 
 include("AbstractDictionary.jl")
 include("AbstractIndices.jl")
