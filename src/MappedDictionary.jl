@@ -26,7 +26,7 @@ end
 # TODO FIXME what do about tokens when there is more than one mapped dictioanry? For now, we disable them...
 istokenizable(d::MappedDictionary) = false
 function istokenizable(d::MappedDictionary{I, T, <:Any, <:Tuple{AbstractDictionary{<:I}}}) where {I, T}
-    return istokenizable(d.maps[1])
+    return istokenizable(d.dicts[1])
 end
 
 @propagate_inbounds function gettokenvalue(d::MappedDictionary{I, T, <:Any, <:Tuple{AbstractDictionary{<:I}}}, t) where {I, T}
