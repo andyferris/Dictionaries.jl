@@ -94,5 +94,12 @@
         end
     end
 
+    @testset "distinct" begin
+        res = HashIndices([1,2,3])
+        @test distinct(res) === res
+        @test isequal(distinct([1,2,3]), res)
+        @test isequal(distinct([1,2,3,1]), res)
+        @test isequal(distinct([1,2,3]), res)
+    end
     # TODO: token interface
 end

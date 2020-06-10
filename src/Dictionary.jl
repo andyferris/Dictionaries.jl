@@ -38,13 +38,15 @@ undefined/unitialized.
 Dictionary{I, T}(inds, ::UndefInitializer) where {I, T} = Dictionary{I, T}(inds, Vector{T}(undef, length(inds)))
 
 """
-    Dictionary(dict::AbstractDictionary)
+    Dictionary(indexable)
 
-Construct a `Dictionary` copy of `dict` with the same keys and values.
+Construct a `Dictionary` from an indexable container `indexable` with the same `keys` and
+`values`, equivalent to `Dictionary(keys(indexable), values(indexable))`. Note that
+`indexable` may not be copied.
 """
-Dictionary(dict::AbstractDictionary) = Dictionary(keys(dict), dict)
-Dictionary{I}(dict::AbstractDictionary) where {I} = Dictionary{I}(keys(dict), dict)
-Dictionary{I, T}(dict::AbstractDictionary) where {I, T} = Dictionary{I, T}(keys(dict), dict)
+Dictionary(indexable) = Dictionary(keys(indexable), values(indexable))
+Dictionary{I}(indexable) where {I} = Dictionary{I}(keys(indexable), values(indexable))
+Dictionary{I, T}(indexable) where {I, T} = Dictionary{I, T}(keys(indexable), values(indexable))
 
 
 function Base.keys(d::Dictionary{I}) where {I}
@@ -66,7 +68,7 @@ const VectorDictionary{I, T} = Dictionary{I, T, Vector{I}, Vector{T}}
 # token interface
 istokenizable(::VectorDictionary) = true
 
-istokenassigned(d::VectorDictionary, t::Int) = isassigned(d.values, t)
+istokenassigned(d::VectorDictionary, t) = isassigned(d.values, t)
 @propagate_inbounds gettokenvalue(d::VectorDictionary{<:Any, T}, t::Int) where {T} = d.values[t]::T
 
 # settable interface

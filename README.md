@@ -17,6 +17,8 @@ In this package we aim to devise a cohesive interface for abstract dictionaries 
 
 Dictionaries share the common supertype `AbstractDictionary`, and the go-to container in this package is `HashDictionary` - which is a new hash-based implementation that serves as a replacement of Julia's inbuilt `Dict` type (using `hash` and `isequal` for key lookup and comparison). The three main difference to `Dict` are that it preserves the order of elements, it iterates much faster, and it iterates values rather than key-value pairs.
 
+### Constructing dictionaries
+
 You can construct one from a list of indices (or keys) and a list of values.
 
 ```julia
@@ -29,7 +31,19 @@ julia> dict = HashDictionary(["a", "b", "c"], [1, 2, 3])
 julia> dict["a"]
 1
 ```
-If you prefer, you can use the `dictionary` function to create a dictionary from something that iterates key-value pairs (note: this includes `Dict`s).
+
+The constructor also accepts any indexable container, preserving the keys and values.
+```julia
+julia> HashDictionary(Dict("a"=>1, "b"=>2, "c"=>3))
+3-element HashDictionary{String,Int64}
+ "c" │ 3
+ "b" │ 2
+ "a" │ 1
+```
+
+If you prefer, you can use the `dictionary` function to create a dictionary from something
+that iterates key-value pairs (either as a `Pair` or a two-tuple, etc), somewhat like a
+`Dict` constructor.
 
 ```julia
 julia> dictionary(["a" => 1, "b" => 2, "c" => 3])
@@ -38,6 +52,19 @@ julia> dictionary(["a" => 1, "b" => 2, "c" => 3])
  "b" │ 2
  "c" │ 3
 ```
+
+One final way to construct a dictionary is using the `index` function, which accepts a
+function that constructs a "key" for each element in the collection.
+
+```julia
+julia> index(first, ["Alice", "Bob", "Charlie"])
+3-element HashDictionary{Char,String}
+ 'A' │ "Alice"
+ 'B' │ "Bob"
+ 'C' │ "Charlie"
+```
+
+### Accessing dictionaries
 
 The values of `HashDictionary` are mutable, or "settable", and can be modified via `setindex!`.
 However, just like for `Array`s, new indices (keys) are *never* created or rearranged this way.

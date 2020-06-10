@@ -168,4 +168,18 @@
             @test h[i] == i+1
         end
     end
+
+    @testset "dictionary" begin
+        res = HashDictionary(['a','b','c'], [1,2,3])
+        @test isequal(dictionary(pairs(res)), res)
+        @test isequal(dictionary(['a'=>1, 'b'=>2, 'c'=>3]), res)
+        @test isequal(dictionary(['a'=>1, 'b'=>2, 'c'=>3, 'a'=>4]), res)
+        @test isequal(dictionary((k,v) for (k,v) in pairs(res)), res)
+    end
+
+    @testset "index" begin
+        res = HashDictionary(['A','B','C'], ["Alice","Bob","Charlie"])
+        @test isequal(index(first, ["Alice", "Bob", "Charlie"]), res)
+        @test isequal(index(first, ["Alice", "Bob", "Charlie", "Conner"]), res)
+    end
 end

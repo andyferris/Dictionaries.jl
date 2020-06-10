@@ -156,7 +156,7 @@ function Base.sizehint!(d::OldHashDictionary, sz::Int)
     return d
 end
 
-function Base.rehash!(d::OldHashDictionary, newsz::Int = length(d.inds))
+function Base.rehash!(d::OldHashDictionary, newsz::Int = length(d.indices))
     _rehash!(d.indices, d.values, newsz)
     return d
 end

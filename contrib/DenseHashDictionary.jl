@@ -1,3 +1,7 @@
+module DenseHashDictionaries
+
+import Base: @propagate_inbounds
+using Dictionaries
 export DenseHashIndices, DenseHashDictionary
 
 perfect_hash(::Any) = false
@@ -41,19 +45,19 @@ end
 Base.length(indices::DenseHashIndices) = length(indices.values)
 
 # Token interface
-istokenizable(::DenseHashIndices) = true
+Dictionaries.istokenizable(::DenseHashIndices) = true
 
-tokentype(::DenseHashIndices) = Int
+Dictionaries.tokentype(::DenseHashIndices) = Int
 
 # Duration iteration the token cannot be used for deletion - we do not worry about the slots
-@propagate_inbounds function iteratetoken(indices::DenseHashIndices)
+@propagate_inbounds function Dictionaries.iteratetoken(indices::DenseHashIndices)
     if isempty(indices.values)
         return nothing
     end
     return ((0, 1), 1)
 end
 
-@propagate_inbounds function iteratetoken(indices::DenseHashIndices, index::Int)
+@propagate_inbounds function Dictionaries.iteratetoken(indices::DenseHashIndices, index::Int)
     if index == length(indices.values)
         return nothing
     end
@@ -62,7 +66,7 @@ end
 end
 
 
-function gettoken(indices::DenseHashIndices{I}, i::I) where {I}
+function Dictionaries.gettoken(indices::DenseHashIndices{I}, i::I) where {I}
     full_hash = hash(i)
     n_slots = length(indices.slots)
     bit_mask = n_slots - 1 # n_slots is always a power of two
@@ -85,14 +89,14 @@ function gettoken(indices::DenseHashIndices{I}, i::I) where {I}
     end
 end
 
-@propagate_inbounds function gettokenvalue(indices::DenseHashIndices, (_slot, index))
+@propagate_inbounds function Dictionaries.gettokenvalue(indices::DenseHashIndices, (_slot, index))
     return indices.values[index]
 end
 
 # Insertion interface
-isinsertable(::DenseHashIndices) = true
+Dictionaries.isinsertable(::DenseHashIndices) = true
 
-function gettoken!(indices::DenseHashIndices{I}, i::I) where {I}
+function Dictionaries.gettoken!(indices::DenseHashIndices{I}, i::I) where {I}
     full_hash = hash(i)
     n_slots = length(indices.slots)
     bit_mask = n_slots - 1 # n_slots is always a power of two
@@ -131,7 +135,7 @@ function gettoken!(indices::DenseHashIndices{I}, i::I) where {I}
     return (false, (trial_slot, n_values + 1))
 end
 
-@propagate_inbounds function deletetoken!(indices::DenseHashIndices, (slot, index))
+@propagate_inbounds function Dictionaries.deletetoken!(indices::DenseHashIndices, (slot, index))
     indices.slots[slot] = -1
     splice!(indices.hashes, index)
     splice!(indices.values, index)
@@ -168,28 +172,28 @@ Base.keys(dict::DenseHashDictionary) = dict.indices
 
 # tokens
 
-tokenized(dict::DenseHashDictionary) = dict.values
+Dictionaries.tokenized(dict::DenseHashDictionary) = dict.values
 
 # values
 
-function istokenassigned(dict::DenseHashDictionary, (_slot, index))
+function Dictionaries.istokenassigned(dict::DenseHashDictionary, (_slot, index))
     return isassigned(dict.values, index)
 end
 
-@propagate_inbounds function gettokenvalue(dict::DenseHashDictionary, (_slot, index))
+@propagate_inbounds function Dictionaries.gettokenvalue(dict::DenseHashDictionary, (_slot, index))
     return dict.values[index]
 end
 
-issettable(::DenseHashDictionary) = true
+Dictionaries.issettable(::DenseHashDictionary) = true
 
-@propagate_inbounds function settokenvalue!(dict::DenseHashDictionary{<:Any, T}, (_slot, index), value::T) where {T}
+@propagate_inbounds function Dictionaries.settokenvalue!(dict::DenseHashDictionary{<:Any, T}, (_slot, index), value::T) where {T}
     dict.values[index] = value
     return dict
 end
 
 # insertion
 
-function gettoken!(dict::DenseHashDictionary{I}, i::I) where {I}
+function Dictionaries.gettoken!(dict::DenseHashDictionary{I}, i::I) where {I}
     (hadtoken, (slot, index)) = gettoken!(keys(dict), i)
     if !hadtoken
         resize!(dict.values, length(dict.values) + 1)
@@ -197,7 +201,7 @@ function gettoken!(dict::DenseHashDictionary{I}, i::I) where {I}
     return (hadtoken, (slot, index))
 end
 
-function deletetoken!(dict::DenseHashDictionary, (slot, index))
+function Dictionaries.deletetoken!(dict::DenseHashDictionary, (slot, index))
     deletetoken!(dict.indices, (slot, index))
     splice!(dict.values, index)
     return dict
@@ -211,3 +215,5 @@ Base.empty(::DenseHashIndices, ::Type{I}, ::Type{T}) where {I, T} = DenseHashDic
 function Base.similar(indices::DenseHashIndices{I}, ::Type{T}) where {I, T}
     return DenseHashDictionary(indices, Vector{T}(undef, length(indices)))
 end
+
+end # module
