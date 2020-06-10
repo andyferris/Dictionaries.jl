@@ -513,7 +513,7 @@ julia> d1 = HashDictionary(1:10_000_000, 10_000_000:-1:1);
 julia> d2 = d1 .+ 1;
 
 julia> @btime map(+, d1, d2);
-  23.362 ms (18 allocations: 76.29 MiB)
+  25.712 ms (20 allocations: 76.29 MiB)
 ```
 
 The `copy` below makes `keys(d1) !== keys(d2)`, disabling token co-iteration (requiring
@@ -521,7 +521,7 @@ mulitple hash-table lookups per element).
 
 ```julia
 julia> @btime map(+, d1, $(HashDictionary(copy(keys(d2)), d2)));
-  1.485 s (18 allocations: 76.29 MiB)
+  61.615 ms (20 allocations: 76.29 MiB)
 ```
 
 For a comparitive baseline benchmark, we can try the same with dense vectors.
@@ -532,7 +532,7 @@ julia> v1 = collect(10_000_000:-1:1);
 julia> v2 = v1 .+ 1;
 
 julia> @btime map(+, v1, v2);
-  25.449 ms (5 allocations: 76.29 MiB)
+  27.587 ms (5 allocations: 76.29 MiB)
 ```
 
 Here, the vector results are in line with the dictionary co-iteration!
@@ -550,7 +550,7 @@ julia> function f(d1, d2)
 f (generic function with 1 method)
 
 julia> @btime f(d1, d2);
-  2.793 s (10000090 allocations: 668.42 MiB)
+  2.819 s (10000091 allocations: 668.42 MiB)
 ```
 
 Unfortunately, insertion appears to be the idiomatic way of doing things with `Base.Dict`.
@@ -569,7 +569,7 @@ julia> function g(d1, d2)
 g (generic function with 1 method)
 
 julia> @btime g(dict1, dict2);
-  9.362 s (72 allocations: 541.17 MiB)
+  9.507 s (72 allocations: 541.17 MiB)
 ```
 
 The result is similar with generators, which is possibly the easiest way of dealing with
@@ -577,8 +577,8 @@ The result is similar with generators, which is possibly the easiest way of deal
 
 ```julia
 julia> @btime Dict(i => dict1[i] + dict2[i] for i in keys(dict1));
-  13.787 s (89996503 allocations: 2.02 GiB)
+  13.046 s (89996503 allocations: 2.02 GiB)
 ```
 
-This represents a 590x speedup between the first example with `HashDictionary` to this last
+This represents a 500x speedup between the first example with `HashDictionary` to this last
 example with `Base.Dict`.

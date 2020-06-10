@@ -3,8 +3,8 @@ struct HashDictionary{I, T} <: AbstractDictionary{I, T}
     values::Vector{T}
 
     function HashDictionary{I, T}(inds::HashIndices{I}, values::Vector{T}, ::Nothing) where {I, T}
-        @assert length(values) == length(inds.values)
-        return new(inds, values)
+       @assert length(values) == length(inds.values)
+       return new{I,T}(inds, values)
     end
 end
 

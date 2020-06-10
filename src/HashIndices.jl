@@ -456,3 +456,7 @@ function __distinct!(indices::AbstractIndices, itr, s, x_old)
     end
     return indices
 end
+
+# CAUTION: I have observed Julia 1.4.2 fail to preserve the object identity of HashIndices
+# (or perhaps there is a coding error I don't understand that causes it to be recreated)
+sharetokens(i1::HashIndices, i2::HashIndices) = i1.slots === i2.slots
