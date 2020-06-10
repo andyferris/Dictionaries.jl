@@ -115,6 +115,7 @@ julia> distinct([1,2,3,3])
 ```
 """
 distinct(itr) = _distinct(HashIndices, itr)
+distinct(inds::AbstractIndices) = inds
 
 function _distinct(::Type{T}, itr) where T
     out = T()
