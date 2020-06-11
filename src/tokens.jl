@@ -198,7 +198,7 @@ end
     return isassigned(d, token)
 end
 
-@propagate_inbounds function settokenvalue!(d::AbstractDictionary{<:Any,T}, t, value::T) where {T}
+@propagate_inbounds function settokenvalue!(d::AbstractDictionary{<:Any,T}, t, value) where {T}
     return settokenvalue!(d, t, convert(T, value))
 end
 
