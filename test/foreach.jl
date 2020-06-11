@@ -1,5 +1,5 @@
 @testset "foreach" begin
-    i = HashIndices([1,2,3,4,5])
+    i = Indices([1,2,3,4,5])
 
     tmp = Ref(0)
     foreach(x -> tmp[] += x, i)

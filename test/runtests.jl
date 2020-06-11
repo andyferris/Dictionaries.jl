@@ -4,8 +4,8 @@ using Indexing
 
 include("Indices.jl")
 include("Dictionary.jl")
-include("HashIndices.jl")
-include("HashDictionary.jl")
+include("ArrayIndices.jl")
+include("ArrayDictionary.jl")
 include("PairDictionary.jl")
 include("indexing.jl")
 include("foreach.jl")

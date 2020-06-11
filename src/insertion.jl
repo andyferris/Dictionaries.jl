@@ -430,7 +430,7 @@ end
     empty(dict::AbstractDictionary, I::Type)
 
 Return an empty, insertable `AbstractIndices` of element type `I` (even when the first
-argument is a dictionary). The default container is `HashIndices{I}`, but the output may
+argument is a dictionary). The default container is `Indices{I}`, but the output may
 depend on the first argument.
 
     empty(inds::AbstractIndices)
@@ -445,7 +445,7 @@ Base.empty(inds::AbstractIndices) = empty(inds, eltype(inds))
 
 Return an empty, insertable `AbstractDictionary` of with indices of type `I` and elements
 of type `T` (even when the first argument is are indices). The default container is
-`HashDictionary{I}`, but the output may depend on the first argument.
+`Dictionary{I}`, but the output may depend on the first argument.
 
     empty(dict::AbstractDictionary)
 
@@ -456,4 +456,4 @@ Base.empty(d::AbstractDictionary) = empty(keys(d), keytype(d), eltype(d))
 
 Base.empty(d::AbstractDictionary, ::Type{I}) where {I} = empty(keys(d), I)
 
-Base.empty(::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T} = HashDictionary{I, T}()
+Base.empty(::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T} = Dictionary{I, T}()
