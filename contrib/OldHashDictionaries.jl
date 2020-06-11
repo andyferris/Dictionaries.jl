@@ -1,3 +1,10 @@
+module OldHashDictionaries
+
+using Dictionaries
+using Base: @propagate_inbounds
+
+export OldHashIndices, OldHashDictionary
+
 # These can be changed, to trade off better performance for space
 const global maxallowedprobe = 16
 const global maxprobeshift   = 6
@@ -67,8 +74,8 @@ Base.length(h::OldHashIndices) = h.count
 
 ## Token interface
 
-istokenizable(::OldHashIndices) = true
-tokentype(::OldHashIndices) = Int
+Dictionaries.istokenizable(::OldHashIndices) = true
+Dictionaries.tokentype(::OldHashIndices) = Int
 
 @propagate_inbounds isslotempty(h::OldHashIndices, i::Int) = h.slots[i] == 0x0
 @propagate_inbounds isslotfilled(h::OldHashIndices, i::Int) = h.slots[i] == 0x1
@@ -86,7 +93,7 @@ function skip_deleted(h::OldHashIndices, i)
     return i
 end
 
-@propagate_inbounds function iteratetoken(h::OldHashIndices{T}) where {T}
+@propagate_inbounds function Dictionaries.iteratetoken(h::OldHashIndices{T}) where {T}
     idx = skip_deleted(h, h.idxfloor)
     h.idxfloor = idx # An optimization to skip unnecessary elements when iterating multiple times
     
@@ -97,7 +104,7 @@ end
     end
 end
 
-@propagate_inbounds function iteratetoken(h::OldHashIndices{T}, idx::Int) where {T}
+@propagate_inbounds function Dictionaries.iteratetoken(h::OldHashIndices{T}, idx::Int) where {T}
     idx = skip_deleted(h, idx)
     
     if idx > length(h.inds)
@@ -113,7 +120,7 @@ function hashtoken(key, sz::Int)
     (((hash(key)%Int) & (sz-1)) + 1)::Int
 end
 
-function gettoken(h::OldHashIndices{T}, key::T) where {T}
+function Dictionaries.gettoken(h::OldHashIndices{T}, key::T) where {T}
     sz = length(h.inds)
     iter = 0
     maxprobe = h.maxprobe
@@ -136,13 +143,13 @@ function gettoken(h::OldHashIndices{T}, key::T) where {T}
 end
 
 # gettokenvalue
-@propagate_inbounds function gettokenvalue(h::OldHashIndices, token::Int)
+@propagate_inbounds function Dictionaries.gettokenvalue(h::OldHashIndices, token::Int)
     return h.inds[token]
 end
 
 
 # insertable interface
-isinsertable(::OldHashIndices) = true
+Dictionaries.isinsertable(::OldHashIndices) = true
 
 function Base.empty!(h::OldHashIndices{T}) where {T}
     fill!(h.slots, 0x0) # It should be OK to reduce this back to some smaller size.
@@ -155,7 +162,7 @@ function Base.empty!(h::OldHashIndices{T}) where {T}
     return h
 end
 
-function Base.rehash!(h::OldHashIndices, newsz::Int = length(h.inds))
+function rehash!(h::OldHashIndices, newsz::Int = length(h.inds))
     _rehash!(h, nothing, newsz)
     return h
 end
@@ -226,7 +233,7 @@ end
 
 
 
-function gettoken!(h::OldHashIndices{T}, key::T) where {T}
+function Dictionaries.gettoken!(h::OldHashIndices{T}, key::T) where {T}
     (token, _) = _gettoken!(h, nothing, key) # This will make sure a slot is available at `token` (or `-token` if it is new)
 
     if token < 0
@@ -316,7 +323,7 @@ end
 end
 
 
-function deletetoken!(h::OldHashIndices{T}, token::Int) where {T}
+function Dictionaries.deletetoken!(h::OldHashIndices{T}, token::Int) where {T}
     h.slots[token] = 0x2
     isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), h.inds, token-1)
     
@@ -330,3 +337,180 @@ Base.filter!(pred, h::OldHashIndices) = Base.unsafe_filter!(pred, h)
 
 # The default insertable indices
 Base.empty(d::OldHashIndices, ::Type{T}) where {T} = OldHashIndices{T}()
+
+
+mutable struct OldHashDictionary{I,T} <: AbstractDictionary{I, T}
+    indices::OldHashIndices{I}
+    values::Vector{T}
+
+    OldHashDictionary{I, T}(indices::OldHashIndices{I}, values::Vector{T}, ::Nothing) where {I, T} = new(indices, values)
+end
+
+"""
+    OldHashDictionary{I, T}()
+
+Construct an empty `OldHashDictionary` with index type `I` and element type `T`. This type of
+dictionary uses hashes for fast lookup and insertion, and is both mutable and insertable.
+(See `issettable` and `isinsertable`).
+"""
+function OldHashDictionary{I, T}(; sizehint::Int = 16) where {I, T}
+    indices = OldHashIndices{I}(; sizehint=sizehint)
+    OldHashDictionary{I, T}(indices, Vector{T}(undef, length(indices.slots)), nothing)
+end
+OldHashDictionary{I}() where {I} = OldHashDictionary{I, Any}()
+OldHashDictionary() = OldHashDictionary{Any}()
+
+"""
+    OldHashDictionary{I, T}(indices, undef::UndefInitializer)
+
+Construct a `OldHashDictionary` with index type `I` and element type `T`. The container is
+initialized with `keys` that match the values of `indices`, but the values are unintialized.
+"""
+function OldHashDictionary{I, T}(indices, ::UndefInitializer) where {I, T} 
+    return OldHashDictionary{I, T}(OldHashIndices{I}(indices), undef)
+end
+
+function OldHashDictionary{I, T}(h::OldHashIndices{I}, ::UndefInitializer) where {I, T}
+    return OldHashDictionary{I, T}(h, Vector{T}(undef, length(h.slots)), nothing)
+end
+
+function OldHashDictionary{I, T}(indices::OldHashIndices{I}, values) where {I, T}
+    vals = Vector{T}(undef, length(indices.slots))
+    d = OldHashDictionary{I, T}(indices, vals, nothing)
+
+    @inbounds for (i, v) in zip(tokens(indices), values)
+        vals[i] = v
+    end
+
+    return d
+end
+
+"""
+    OldHashDictionary(indices, values)
+    OldHashDictionary{I}(indices, values)
+    OldHashDictionary{I, T}(indices, values)
+
+Construct a `OldHashDictionary` with indices from `indices` and values from `values`, matched
+in iteration order.
+"""
+function OldHashDictionary{I, T}(indices, values) where {I, T}
+    iter_size = Base.IteratorSize(indices)
+    if iter_size isa Union{Base.HasLength, Base.HasShape}
+        d = OldHashDictionary{I, T}(; sizehint = length(indices)*2)
+    else
+        d = OldHashDictionary{I, T}()
+    end
+
+    for (i, v) in zip(indices, values)
+        insert!(d, i, v)
+    end
+
+    return d
+end
+function OldHashDictionary{I}(indices, values) where {I}
+    if Base.IteratorEltype(values) === Base.EltypeUnknown()
+        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
+        values = collect(values)
+    end
+
+    return OldHashDictionary{I, eltype(values)}(indices, values)
+end
+
+function OldHashDictionary(indices, values)
+    if Base.IteratorEltype(indices) === Base.EltypeUnknown()
+        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
+        indices = collect(indices)
+    end
+
+    return OldHashDictionary{eltype(indices)}(indices, values)
+end
+
+"""
+    OldHashDictionary(dict::AbstractDictionary)
+    OldHashDictionary{I}(dict::AbstractDictionary)
+    OldHashDictionary{I, T}(dict::AbstractDictionary)
+
+Construct a copy of `dict` with the same keys and values.
+(For copying an `AbstractDict` or other iterable of `Pair`s, see `dictionary`).
+"""
+OldHashDictionary(dict::AbstractDictionary) = OldHashDictionary(keys(dict), dict)
+OldHashDictionary{I}(dict::AbstractDictionary) where {I} = OldHashDictionary{I}(keys(dict), dict)
+OldHashDictionary{I, T}(dict::AbstractDictionary) where {I, T} = OldHashDictionary{I, T}(keys(dict), dict)
+
+## Implementation
+
+Base.keys(d::OldHashDictionary) = d.indices
+Dictionaries.isinsertable(d::OldHashDictionary) = true
+Dictionaries.issettable(d::OldHashDictionary) = true
+
+@propagate_inbounds function Dictionaries.gettoken(d::OldHashDictionary{I}, i::I) where {I}
+    return gettoken(keys(d), i)
+end
+
+@inline function Dictionaries.gettokenvalue(d::OldHashDictionary, token)
+    return @inbounds d.values[token]
+end
+
+function Dictionaries.istokenassigned(d::OldHashDictionary, token)
+    return isassigned(d.values, token)
+end
+
+@inline function Dictionaries.settokenvalue!(d::OldHashDictionary{I, T}, token, value::T) where {I, T}
+    @inbounds d.values[token] = value
+    return d
+end
+
+function Dictionaries.gettoken!(d::OldHashDictionary{T}, key::T) where {T}
+    indices = keys(d)
+    (token, values) = _gettoken!(indices, d.values, key)
+    if token < 0
+        (token, values) = _insert!(indices, values, key, -token)
+        d.values = values
+        return (false, token)
+    else
+        d.values = values
+        return (true, token)
+    end 
+end
+
+function Base.copy(d::OldHashDictionary{I, T}, ::Type{I}, ::Type{T}) where {I, T}
+    return OldHashDictionary{I, T}(d.indices, copy(d.values), nothing)
+end
+
+Dictionaries.tokenized(d::OldHashDictionary) = d.values
+
+function Base.empty!(d::OldHashDictionary)
+    empty!(d.indices)
+    empty!(d.values)
+    resize!(d.values, length(keys(d).slots))
+    return d
+end
+
+function Dictionaries.deletetoken!(d::OldHashDictionary{I, T}, token) where {I, T}
+    deletetoken!(keys(d), token)
+    isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), d.values, token-1)
+    return d
+end
+
+function Base.sizehint!(d::OldHashDictionary, sz::Int)
+    d.values = _sizehint!(d.indices, d.values, sz)
+    return d
+end
+
+function Base.rehash!(d::OldHashDictionary, newsz::Int = length(d.indices))
+    _rehash!(d.indices, d.values, newsz)
+    return d
+end
+
+Base.filter!(pred, d::OldHashDictionary) = Base.unsafe_filter!(pred, d)
+
+# For `OldHashIndices` we don't copy the indices, we allow the `keys` to remain identical (`===`)
+function Base.similar(indices::OldHashIndices{I}, ::Type{T}) where {I, T}
+    return OldHashDictionary{I, T}(indices, undef)
+end
+
+function Base.empty(indices::OldHashIndices, ::Type{I}, ::Type{T}) where {I, T}
+    return OldHashDictionary{I, T}()
+end
+
+end # module
