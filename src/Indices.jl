@@ -26,7 +26,13 @@ Indices{I}(iter) where {I} = Indices{I, typeof(iter)}(iter) # There is a corner 
 end
 
 Base.in(i::I, inds::Indices{I}) where {I} = in(i, inds.inds)
-Base.IteratorSize(i::Indices) = Base.IteratorSize(i.inds)
+function Base.IteratorSize(i::Indices)
+    out = Base.IteratorSize(i.inds)
+    if out isa Base.HasShape
+        return Base.HasLength()
+    end
+    return out
+end
 Base.length(i::Indices) = length(i.inds)
 
 # Specialize for `Vector` elements. Satisfy the tokenization and insertion interface
@@ -68,4 +74,15 @@ end
 
 Base.empty(inds::VectorIndices, ::Type{I}) where {I} = Indices{I, Vector{I}}(Vector{I}())
 
-Base.copy(inds::VectorIndices) = Indices(copy(inds.inds))
+function Base.copy(inds::VectorIndices, ::Type{I}) where {I}
+    if I === eltype(inds)
+        Indices{I}(copy(inds.inds))
+    else
+        Indices{I}(inds.inds) # The constructor will call convert
+    end
+end
+
+function Base.filter!(pred, inds::VectorIndices)
+    filter!(pred, inds.inds)
+    return inds
+end

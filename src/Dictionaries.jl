@@ -1,19 +1,16 @@
 module Dictionaries
 
 using Random
-
 using Indexing
-
 using Base: @propagate_inbounds, Callable
 
-export getindices, setindices!, mapview
+export getindices, setindices!
 
 export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary, DictionaryView, FilteredDictionary, FilteredIndices, BroadcastedDictionary
 
-export issettable, isinsertable, set!, unset!, dictionary
+export dictionary, index, distinct, disjoint, isdictequal, filterview
+export issettable, isinsertable, set!, unset!
 export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, settokenvalue!, gettoken!, deletetoken!, sharetokens
-
-export filterview # TODO move to SplitApplyCombine.jl (and re-order project dependencies?)
 
 include("AbstractDictionary.jl")
 include("AbstractIndices.jl")
@@ -39,11 +36,12 @@ end # module
 
 # # TODO
 #
-# * Improved printing - don't calculate length (beyond some cutoff) if it is `SizeUnknown` and limit=true.
-# * `hash` and `isless`
-# * A manually-ordered dictionary would be quite useful, like [OrderedCollections.jl](https://github.com/JuliaCollections/OrderedCollections.jl).
+# * Improved printing - don't calculate length (beyond some cutoff) if it is `SizeUnknown` and limit=true, fix indentiation problems for wider values
+# * TODO: have `delete!` return next key, `deletetoken!` return next token.
+#   For these kinds of algorithms, probably need: firstindex, firsttoken, nextind, prevind,
+#   nexttoken, prevtoken, lastindex, lasttoken.
 # * A surface interface for updates like https://github.com/JuliaLang/julia/pull/31367
-# * Soon we will have the concept of "ordered" indices/sets (sort-based dictionaries and
+# * More operations for "ordered" indices/sets (sort-based dictionaries and
 #   B-trees). We can probably formalize an interface around a trait here. Certain operations
 #   like slicing out an interval or performing a sort-merge co-iteration for `merge` become
 #   feasible.

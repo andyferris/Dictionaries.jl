@@ -63,7 +63,7 @@ function Base.in(i, indices::AbstractIndices{I}) where I
 end
 
 # Match the default setting from Base - the majority of containers will know their size
-Base.IteratorSize(indices::AbstractIndices) = Base.HasLength() 
+Base.IteratorSize(::AbstractIndices) = Base.HasLength() 
 
 function Base.length(indices::AbstractIndices)
     if Base.IteratorSize(indices) isa Base.SizeUnknown
@@ -78,6 +78,50 @@ function Base.length(indices::AbstractIndices)
 end
 
 Base.unique(i::AbstractIndices) = i
+
+"""
+    copy(inds::AbstractIndices)
+    copy(inds::AbstractIndices, I::Type)
+
+Construct a shallow copy of `inds`, possibly specifying a new element type `I`. The output
+container is not guaranteed to be the same type as the input.
+"""
+Base.copy(inds::AbstractIndices) = copy(inds, eltype(inds))
+
+function Base.copy(inds::AbstractIndices, ::Type{I}) where I
+    out = empty(inds, I)
+    for i in inds
+        insert!(out, i)
+    end
+    return out
+end
+
+Base.empty(::AbstractIndices, ::Type{I}) where {I} = HashIndices{I}()
+
+"""
+    distinct(itr)
+
+Collect the distinct elements of iterator `itr` into a new collection. Similar to
+`Base.unique`, except returning a set (`HashIndices`) instead of an array.
+
+# Example
+
+```julia
+julia> distinct([1,2,3,3])
+3-element HashIndices{Int64}
+ 1
+ 2
+ 3
+```
+"""
+distinct(itr) = _distinct(HashIndices, itr)
+distinct(inds::AbstractIndices) = inds
+
+function _distinct(::Type{T}, itr) where T
+    out = T()
+    union!(out, itr)
+    return out
+end
 
 struct IndexError <: Exception
 	msg::String
@@ -115,23 +159,37 @@ function Base.isequal(i1::AbstractIndices, i2::AbstractIndices)
     return true
 end
 
-# Use `issetequal` semantics
+# The indices must be isequal and the values ==, same ordering
 function Base.:(==)(i1::AbstractIndices, i2::AbstractIndices)
+    out = true
+
     if sharetokens(i1, i2)
-        return true
+        # TODO - can we get rid of this loop for reflexive == element types?
+        @inbounds for t in tokens(i1)
+            # make sure it works for `missing`
+            out &= gettokenvalue(i1, t) == gettokenvalue(i2, t)
+            if out === false
+                return false
+            end
+        end
+        return out
     end
 
     if length(i1) != length(i2)
         return false
     end
 
-    for i in i1
-        if !(i in i2)
+    for (j1, j2) in zip(i1, i2)
+        if !isequal(j1, j2)
+            return false
+        end
+        out &= j1 == j2 # make sure it works for `missing`
+        if out === false
             return false
         end
     end
 
-    return true
+    return out
 end
 
 # Lexical ordering based on iteration
@@ -205,4 +263,70 @@ function Base.hash(inds::AbstractIndices, h::UInt)
     end
     
     return hash(hash(UInt === UInt64 ? 0x8955a87bc313a509 : 0xa9cff5d1, h1), h1)
+end
+
+function Base.union(i::AbstractIndices, itr)
+    if isinsertable(i)
+        out = copy(i)
+        union!(out, itr)
+    else
+        out = empty(i)
+        union!(out, i)
+        union!(out, itr)
+    end
+    return out
+end
+
+function Base.intersect(i::AbstractIndices, itr)
+    if isinsertable(i)
+        out = copy(i)
+        intersect!(out, itr)
+    else
+        out = empty(i)
+        union!(out, i)
+        intersect!(out, itr)
+    end
+    return out
+end
+
+function Base.setdiff(i::AbstractIndices, itr)
+    if isinsertable(i)
+        out = copy(i)
+        setdiff!(out, itr)
+    else
+        out = empty(i)
+        union!(out, i)
+        setdiff!(out, itr)
+    end
+    return out
+end
+
+function Base.symdiff(i::AbstractIndices, itr)
+    if isinsertable(i)
+        out = copy(i)
+        symdiff!(out, itr)
+    else
+        out = empty(i)
+        union!(out, i)
+        symdiff!(out, itr)
+    end
+    return out
+end
+
+# issetequal and issubset(equal) should work already
+
+"""
+    disjoint(set1, set2)
+
+Return `true` if `set1` and `set2` are disjoint or `false`. Two sets are disjoint if no
+elements of `set1` is in `set2`, and vice-versa. Somewhat equivalent to, but faster than,
+`isempty(intersect(set1, set2))`.
+"""
+function disjoint(set1, set2)
+    for i in set1
+        if i in set2
+            return false
+        end
+    end
+    return true
 end

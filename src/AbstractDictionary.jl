@@ -94,41 +94,85 @@ function Base.isequal(d1::AbstractDictionary, d2::AbstractDictionary)
     return true
 end
 
-# `==` doesn't care about the iteration order. Keys must be `isequal` and values `==`
+# The indices must be isequal and the values ==, same ordering
 function Base.:(==)(d1::AbstractDictionary, d2::AbstractDictionary)
-    if d1 === d2
-        return true
-    end
+    out = true
 
     if sharetokens(d1, d2)
         @inbounds for t in tokens(d1)
-            if gettokenvalue(d1, t) != gettokenvalue(d2, t)
+            out &= gettokenvalue(d1, t) == gettokenvalue(d2, t)
+            if out === false
                 return false
             end
         end
-        return true
+        return out
     end
 
     if length(d1) != length(d2)
         return false
     end
 
-    if istokenizable(d2)
-        for (i,v) in pairs(d1)
-            (hastoken, token) = gettoken(d2, i)
-            if !hastoken || v != gettokenvalue(d2, token)
-                return false
-            end
+    for ((i1,x1), (i2,x2)) in zip(pairs(d1), pairs(d2))
+        if !isequal(i1, i2)
+            return false
         end
-    else
-        for (i,v) in pairs(d1)
-            if !haskey(d2, i) || v != d2[i]
-                return false
-            end
+        out &= x1 == x2 # make sure it works for `missing`
+        if out === false
+            return false
         end
     end
 
-    return true
+    return out
+end
+
+"""
+    isdictequal(d1, d2)
+
+Determine if two dictionaries are equivalent. Dictionaries `d1` and `d2` are equivalent if
+`issetequal(keys(d1), keys(d2))` and for each key `i`, `d1[i] == d2[i]`.
+
+Example
+
+```julia
+julia> isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','a'],[2,1]))
+true
+
+julia> isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','a'],[2,3]))
+false
+
+julia> isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','a'],[2,missing]))
+missing
+```
+"""
+function isdictequal(d1::AbstractDictionary, d2::AbstractDictionary)
+    out = true
+
+    if sharetokens(d1, d2)
+        @inbounds for t in tokens(d1)
+            out &= gettokenvalue(d1, t) == gettokenvalue(d2, t)
+            if out === false
+                return false
+            end
+        end
+        return out
+    end
+
+    if length(d1) != length(d2)
+        return false
+    end
+
+    for (i,x1) in pairs(d1)
+        (hastoken, t) = gettoken(d2, i)
+        if !hastoken
+            return false
+        end
+        out &= x1 == gettokenvalue(d2, t) # make sure it works for `missing`
+        if out === false
+            return false
+        end
+    end
+
+    return out
 end
 
 # Lexical ordering based on iteration (of pairs - lesser key takes priority over lesser value, as implmeneted in `cmp(::Pair)`)
@@ -235,6 +279,48 @@ function Base.unique(d::AbstractDictionary)
     return out
 end
 
+# TODO think of a name for this. This matches Base.unique but ideally `distinct` could be
+# be an abstract factory method, like `distinct(BTreeIndices{Int}, itr)`.
+#=
+"""
+    distinct(f, itr; to=HashDictionary)
+
+Collect the first element of iterator `itr` for each unique value produced by `f` applied to
+elements of `itr` into a new collection, defaulting to `HashDictionary`. Similar to
+`Base.unique`, except returning a dictionary instead of an array.
+
+# Example
+
+```julia
+julia> distinct(first, ["Alice", "Bob", "Charlie"])
+3-element HashDictionary{Char,String}
+ 'A' │ "Alice"
+ 'B' │ "Bob"
+ 'C' │ "Charlie"
+
+julia> distinct(first, ["Alice", "Bob", "Charlie", "Chaz"])
+3-element HashDictionary{Char,String}
+ 'A' │ "Alice"
+ 'B' │ "Bob"
+ 'C' │ "Charlie" 
+```
+"""
+distinct(f, itr) = _distinct(f, HashDictionary, itr)
+=#
+
+function _distinct(f, ::Type{T}, itr) where T
+    out = T()
+    for x in itr
+        i = f(x)
+        (hadtoken, token) = gettoken!(out, x)
+        if !hadtoken
+            @inbounds settokenvalue!(out, token, i)
+        end
+    end
+    return out
+end
+
+
 ### Settable interface
 
 """
@@ -268,7 +354,7 @@ function Base.isassigned(dict::AbstractDictionary{I}, i::I) where {I}
     end
 end
 
-function Base.setindex!(dict::AbstractDictionary{I, T}, value::T, i::I) where {I, T}
+@propagate_inbounds function Base.setindex!(dict::AbstractDictionary{I, T}, value::T, i::I) where {I, T}
     if !(istokenizable(dict))
         error("Every settable AbstractDictionary type must define a method for `setindex!`: $(typeof(dict))")
     end
@@ -288,10 +374,32 @@ end
     similar(d::AbstractDictionary, [T=eltype(d)])
 
 Construct a new `issettable` dictionary with identical `keys` as `d` and an element type of
-`T`. The initial values are unitialized/undefined.
+`T`. The initial values are3unitialized/undefined.
 """
 Base.similar(d::AbstractDictionary) = similar(keys(d), eltype(d))
 Base.similar(d::AbstractDictionary, ::Type{T}) where {T} = similar(keys(d), T)
+
+function Base.similar(indices::AbstractIndices{I}, ::Type{T}) where {I, T}
+    return similar(convert(HashIndices{I}, indices), T)
+end
+
+function Base.merge(d1::AbstractDictionary, d2::AbstractDictionary)
+    # Note: need to copy the keys
+    out = similar(copy(keys(d1)), eltype(d1))
+    copyto!(out, d1)
+    merge!(out, d2)
+    return out
+end
+
+if isdefined(Base, :mergewith) # Julia 1.5+
+    function Base.mergewith(combner, d1::AbstractDictionary, d2::AbstractDictionary)
+        # Note: need to copy the keys
+        out = similar(copy(keys(d1)), eltype(d1))
+        copyto!(out, d1)
+        mergewith!(combner, out, d2)
+        return out
+    end
+end
 
 # fill! and fill
 
@@ -381,8 +489,17 @@ end
 
 
 # Copying - note that this doesn't necessarily copy the indices! (`copy(keys(dict))` can do that)
-function Base.copy(d::AbstractDictionary)
-    out = similar(d)
+"""
+    copy(dict::AbstractDictionary)
+    copy(dict::AbstractDictionary, ::Type{T})
+
+Create a shallow copy of the values of `dict`. Note that `keys(dict)` is not copied, and
+therefore care must be taken that inserting/deleting elements. A new element type `T` can 
+optionally be specified.
+"""
+Base.copy(dict::AbstractDictionary) = copy(dict, eltype(dict))
+function Base.copy(d::AbstractDictionary, ::Type{T}) where {T}
+    out = similar(d, T)
     copyto!(out, d)
     return out
 end

@@ -4,9 +4,12 @@ function Base.foreach(f, d::AbstractDictionary, d2::AbstractDictionary, ds::Abst
             f(gettokenvalue(d, t), gettokenvalue(d2, t), map(x -> @inbounds(gettokenvalue(x, t)), ds)...)
         end
     else
-        @inbounds for i in keys(d)
-            f(d[i], d2[i], map(x -> @inbounds(x[i]), ds)...)
-        end
+       @boundscheck if !isequal(keys(d), keys(d2)) || any(dict -> !isequal(keys(d), keys(dict)), ds)
+            throw(IndexError("Indices do not match"))
+       end
+       @inbounds for xs in zip(d, d2, ds...)
+            f(xs...)
+       end
     end
     return nothing
 end
@@ -18,9 +21,12 @@ function Base.foreach(f, d::AbstractDictionary, d2::AbstractDictionary)
             f(gettokenvalue(d, t), gettokenvalue(d2, t))
         end
     else
-        @inbounds for i in keys(d)
-            f(d[i], d2[i])
-        end
+       @boundscheck if !isequal(keys(d), keys(d2))
+            throw(IndexError("Indices do not match"))
+       end
+       @inbounds for (x, x2) in zip(d, d2)
+            f(x, x2)
+       end
     end
     return nothing
 end

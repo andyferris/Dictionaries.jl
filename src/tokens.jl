@@ -198,7 +198,11 @@ end
     return isassigned(d, token)
 end
 
-@propagate_inbounds function settokenvalue!(d::AbstractDictionary, i, value)
+@propagate_inbounds function settokenvalue!(d::AbstractDictionary{<:Any,T}, t, value) where {T}
+    return settokenvalue!(d, t, convert(T, value))
+end
+
+@propagate_inbounds function settokenvalue!(d::AbstractDictionary{<:Any,T}, i, value::T) where {T}
     if !issettable(d)
         error("Cannot mutate values of dictionary: $(typeof(d))")
     end
@@ -222,5 +226,6 @@ performed quickly (e.g. O(1) rather than O(N)). Return `false` otherwise.
 
 Note: the test may not be precise, this defaults to `tokens(dict1) === tokens(dict2)`.
 """
-sharetokens(d1, d2) = istokenizable(d1) && istokenizable(d2) && tokens(d1) === tokens(d2)
+sharetokens(i1::AbstractIndices, i2::AbstractIndices) = istokenizable(i1) && i1 === i2
+sharetokens(d1, d2) = sharetokens(keys(d1), keys(d2))
 sharetokens(d1, d2, ds...) = sharetokens(d1, d2) && sharetokens(d1, ds...)

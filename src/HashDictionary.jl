@@ -1,212 +1,318 @@
-mutable struct HashDictionary{I,T} <: AbstractDictionary{I, T}
+struct HashDictionary{I, T} <: AbstractDictionary{I, T}
     indices::HashIndices{I}
     values::Vector{T}
 
-    HashDictionary{I, T}(indices::HashIndices{I}, values::Vector{T}, ::Nothing) where {I, T} = new(indices, values)
-end
-
-"""
-    HashDictionary{I, T}()
-
-Construct an empty `HashDictionary` with index type `I` and element type `T`. This type of
-dictionary uses hashes for fast lookup and insertion, and is both mutable and insertable.
-(See `issettable` and `isinsertable`).
-"""
-function HashDictionary{I, T}(; sizehint::Int = 16) where {I, T}
-    indices = HashIndices{I}(; sizehint=sizehint)
-    HashDictionary{I, T}(indices, Vector{T}(undef, length(indices.slots)), nothing)
-end
-HashDictionary{I}() where {I} = HashDictionary{I, Any}()
-HashDictionary() = HashDictionary{Any}()
-
-"""
-    HashDictionary{I, T}(indices, undef::UndefInitializer)
-
-Construct a `HashDictionary` with index type `I` and element type `T`. The container is
-initialized with `keys` that match the values of `indices`, but the values are unintialized.
-"""
-function HashDictionary{I, T}(indices, ::UndefInitializer) where {I, T} 
-    return HashDictionary{I, T}(HashIndices{I}(indices), undef)
-end
-
-function HashDictionary{I, T}(h::HashIndices{I}, ::UndefInitializer) where {I, T}
-    return HashDictionary{I, T}(h, Vector{T}(undef, length(h.slots)), nothing)
-end
-
-function HashDictionary{I, T}(indices::HashIndices{I}, values) where {I, T}
-    vals = Vector{T}(undef, length(indices.slots))
-    d = HashDictionary{I, T}(indices, vals, nothing)
-
-    @inbounds for (i, v) in zip(tokens(indices), values)
-        vals[i] = v
+    function HashDictionary{I, T}(inds::HashIndices{I}, values::Vector{T}, ::Nothing) where {I, T}
+       @assert length(values) == length(inds.values)
+       return new{I,T}(inds, values)
     end
-
-    return d
 end
 
 """
-    HashDictionary(indices, values)
-    HashDictionary{I}(indices, values)
-    HashDictionary{I, T}(indices, values)
+    HashDictionary{I,T}(;sizehint = 8)
 
-Construct a `HashDictionary` with indices from `indices` and values from `values`, matched
-in iteration order.
+Construct an empty hash-based dictionary. `I` and `T` default to `Any` if not specified. A
+`sizehint` may be specified to set the initial size of the hash table, which may speed up
+subsequent `insert!` operations.
+
+# Example
+
+```julia
+julia> d = HashDictionary{Int, Int}()
+0-element HashDictionary{Int64,Int64}
+```
 """
-function HashDictionary{I, T}(indices, values) where {I, T}
-    iter_size = Base.IteratorSize(indices)
-    if iter_size isa Union{Base.HasLength, Base.HasShape}
-        d = HashDictionary{I, T}(; sizehint = length(indices)*2)
-    else
-        d = HashDictionary{I, T}()
-    end
+HashDictionary(; sizehint = 8) = HashDictionary{Any, Any}(; sizehint = sizehint)
+HashDictionary{I}(; sizehint = 8) where {I} = HashDictionary{I, Any}(; sizehint = sizehint)
 
-    for (i, v) in zip(indices, values)
-        insert!(d, i, v)
-    end
-
-    return d
+function HashDictionary{I, T}(; sizehint = 8) where {I, T}
+    HashDictionary{I, T}(HashIndices{I}(; sizehint = sizehint), Vector{T}(), nothing)
 end
-function HashDictionary{I}(indices, values) where {I}
+
+"""
+    HashDictionary(indexable)
+    HashDictionary{I}(indexable)
+    HashDictionary{I,T}(indexable)
+
+Construct a hash-based dictionary from an indexable input `indexable`, equivalent to
+`HashDictionary(keys(indexable), values(indexable))`. The input might not be copied.
+
+Note: to construct a dictionary from `Pair`s use the `dictionary` function. See also the
+`index` function.
+
+# Examples
+
+```julia
+julia> HashDictionary(Dict(:a=>1, :b=>2))
+2-element HashDictionary{Symbol,Int64}
+ :a │ 1
+ :b │ 2
+
+julia> HashDictionary(3:-1:1)
+3-element HashDictionary{Int64,Int64}
+ 1 │ 3
+ 2 │ 2
+ 3 │ 1 
+```
+"""
+HashDictionary(indexable) = HashDictionary(keys(indexable), values(indexable))
+HashDictionary{I}(indexable) where {I} = HashDictionary{I}(keys(indexable), values(indexable))
+HashDictionary{I, T}(indexable) where {I, T} = HashDictionary{I, T}(keys(indexable), values(indexable))
+
+"""
+    HashDictionary(inds, values)
+    HashDictionary{I}(inds, values)
+    HashDictionary{I, T}(inds, values)
+
+Construct a hash-based dictionary from two iterable inputs `inds` and `values`. The first
+value of `inds` will be the index for the first value of `values`. The input might not be
+copied.
+
+Note: the values of `inds` must be distinct. Consider using `dictionary(zip(inds, values))`
+if they are not. See also the `index` function.
+
+# Example
+
+julia> HashDictionary(["a", "b", "c"], [1, 2, 3])
+3-element HashDictionary{String,Int64}
+ "a" │ 1
+ "b" │ 2
+ "c" │ 3
+
+julia> HashDictionary{String, Float64}(["a", "b", "c"], [1, 2, 3])
+3-element HashDictionary{String,Float6464}
+ "a" │ 1.0
+ "b" │ 2.0
+ "c" │ 3.0
+"""
+function HashDictionary(inds, values)
+    return HashDictionary(HashIndices(inds), values)
+end
+
+function HashDictionary(inds::HashIndices{I}, values) where {I}
+    return HashDictionary{I}(inds, values)
+end
+
+function HashDictionary{I}(inds, values) where {I}
+    return HashDictionary{I}(HashIndices{I}(inds), values)
+end
+
+function HashDictionary{I}(inds::HashIndices{I}, values) where {I}
     if Base.IteratorEltype(values) === Base.EltypeUnknown()
-        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
         values = collect(values)
     end
-
-    return HashDictionary{I, eltype(values)}(indices, values)
+    
+    return HashDictionary{I, eltype(values)}(inds, values)
 end
 
-function HashDictionary(indices, values)
-    if Base.IteratorEltype(indices) === Base.EltypeUnknown()
-        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
-        indices = collect(indices)
+function HashDictionary{I, T}(inds, values) where {I, T}
+    return HashDictionary{I, T}(HashIndices{I}(inds), values)
+end
+
+function HashDictionary{I, T}(inds::HashIndices{I}, values) where {I, T}
+    if inds.holes != 0
+        inds = copy(inds)
     end
 
-    return HashDictionary{eltype(indices)}(indices, values)
+    iter_size = Base.IteratorSize(values)
+    if iter_size isa Union{Base.HasLength, Base.HasShape}
+        vs = Vector{T}(undef, length(values))
+        @inbounds for (i, v) in enumerate(values)
+            vs[i] = v
+        end
+        return HashDictionary{I, T}(inds, vs, nothing)
+    else
+        vs = Vector{T}()
+        for v in values
+            push!(vs, v)
+        end
+        return HashDictionary{I, T}(inds, vs, nothing)
+    end
 end
-
-"""
-    HashDictionary(dict::AbstractDictionary)
-    HashDictionary{I}(dict::AbstractDictionary)
-    HashDictionary{I, T}(dict::AbstractDictionary)
-
-Construct a copy of `dict` with the same keys and values.
-
-(For copying an `AbstractDict` or other iterable of `Pair`s, see `dictionary`).
-"""
-HashDictionary(dict::AbstractDictionary) = HashDictionary(keys(dict), dict)
-HashDictionary{I}(dict::AbstractDictionary) where {I} = HashDictionary{I}(keys(dict), dict)
-HashDictionary{I, T}(dict::AbstractDictionary) where {I, T} = HashDictionary{I, T}(keys(dict), dict)
 
 """
     dictionary(iter)
 
-Construct a new `AbstractDictionary` from an iterable `iter` of key-value `Pair`s. The
-default container type is `HashDictionary`.
+Construct a new `AbstractDictionary` from an iterable `iter` of key-value `Pair`s (or other
+iterables of two elements, such as a two-tuples). The default container type is
+`HashDictionary`. If duplicate keys are detected, the first encountered value is retained.
+
+See also the `index` function.
+
+# Examples
+
+```julia
+julia> dictionary(["a"=>1, "b"=>2, "c"=>3])
+3-element HashDictionary{String,Int64}
+ "a" │ 1
+ "b" │ 2
+ "c" │ 3
+
+julia> dictionary(["a"=>1, "b"=>2, "c"=>3, "a"=>4])
+3-element HashDictionary{String,Int64}
+ "a" │ 1
+ "b" │ 2
+ "c" │ 3
+
+julia> dictionary(zip(["a","b","c"], [1,2,3]))
+3-element HashDictionary{String,Int64}
+ "a" │ 1
+ "b" │ 2
+ "c" │ 3
+```
 """
 function dictionary(iter)
-    if Base.IteratorEltype(iter) === Base.EltypeUnknown()
-        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
-        iter = collect(iter)
+    return _dictionary(first, last, HashDictionary, iter)
+end
+
+# An auto-widening HashDictionary constructor
+function _dictionary(key, value, ::Type{HashDictionary}, iter)
+    tmp = iterate(iter)
+    if tmp === nothing
+        IT = Base.@default_eltype(iter)
+        I = Core.Compiler.return_type(first, Tuple{IT})
+        T = Core.Compiler.return_type(last, Tuple{IT})
+        return HashDictionary{I, T}()
     end
-    _dictionary(eltype(iter), iter)
+    (x, s) = tmp
+    i = key(x)
+    v = value(x)
+    dict = HashDictionary{typeof(i), typeof(v)}()
+    insert!(dict, i, v)
+    return __dictionary(key, value, dict, iter, s)
 end
 
-dictionary(p1::Pair, p2::Pair...) = dictionary((p1, p2...))
-
-function _dictionary(::Type{Pair{I, T}}, iter) where {I, T}
-    iter_size = Base.IteratorSize(iter)
-    if iter_size isa Union{Base.HasLength, Base.HasShape}
-        d = HashDictionary{I, T}(; sizehint = length(iter)*2)
-    else
-        d = HashDictionary{I, T}()
+# An auto-widening AbstractDictionary constructor
+function __dictionary(key, value, dict, iter, s)
+    I = keytype(dict)
+    T = eltype(dict)
+    tmp = iterate(iter, s)
+    while tmp !== nothing
+        (x, s) = tmp
+        i = key(x)
+        v = value(x)
+        if !(i isa I)
+            new_inds = copy(keys(dict), promote_type(I, typeof(i)))
+            new_dict = similar(new_inds, promote_type(T, typeof(v)))
+            (hadtoken, token) = gettoken!(new_dict, i)
+            if !hadtoken
+                @inbounds settokenvalue!(new_dict, token, v)
+            end
+            return __dictionary(key, value, new_dict, iter, s)
+        elseif !(v isa T)
+            new_dict = copy(dict, promote_type(T, typeof(v)))
+            (hadtoken, token) = gettoken!(new_dict, i)
+            if !hadtoken
+                @inbounds settokenvalue!(new_dict, token, v)
+            end
+            return __dictionary(key, value, new_dict, iter, s)
+        end
+        (hadtoken, token) = gettoken!(dict, i)
+        if !hadtoken
+            @inbounds settokenvalue!(dict, token, v)
+        end
+        tmp = iterate(iter, s)
     end
-
-    for (i, v) in iter
-        insert!(d, i, v)
-    end
-
-    return d
+    return dict
 end
 
-## Implementation
+"""
+    index(f, iter)
 
-Base.keys(d::HashDictionary) = d.indices
-isinsertable(d::HashDictionary) = true
-issettable(d::HashDictionary) = true
+Return a dictionary associating the values `x` of iterable collection `iter` with the key
+`f(x)`. If keys are repeated, only the first is kept. Somewhat similar to `unique(f, iter)`
 
-@propagate_inbounds function gettoken(d::HashDictionary{I}, i::I) where {I}
-    return gettoken(keys(d), i)
+See also the `dictionary` function.
+
+# Examples
+
+```julia
+julia> index(first, ["Alice", "Bob", "Charlie"])
+3-element HashDictionary{Char,String}
+ 'A' │ "Alice"
+ 'B' │ "Bob"
+ 'C' │ "Charlie"
+
+julia> index(iseven, 1:10)
+2-element HashDictionary{Bool,Int64}
+ false │ 1
+  true │ 2
+```
+"""
+function index(f, iter)
+    _dictionary(f, identity, HashDictionary, iter)
 end
 
-@inline function gettokenvalue(d::HashDictionary, token)
-    return @inbounds d.values[token]
+# indicesi
+
+Base.keys(dict::HashDictionary) = dict.indices
+
+# tokens
+
+tokenized(dict::HashDictionary) = dict.values
+
+# values
+
+function istokenassigned(dict::HashDictionary, (_slot, index))
+    return isassigned(dict.values, index)
 end
 
-function istokenassigned(d::HashDictionary, token)
-    return isassigned(d.values, token)
+@propagate_inbounds function gettokenvalue(dict::HashDictionary, (_slot, index))
+    return dict.values[index]
 end
 
-@inline function settokenvalue!(d::HashDictionary{I, T}, token, value::T) where {I, T}
-    @inbounds d.values[token] = value
-    return d
+issettable(::HashDictionary) = true
+
+@propagate_inbounds function settokenvalue!(dict::HashDictionary{<:Any, T}, (_slot, index), value::T) where {T}
+    dict.values[index] = value
+    return dict
 end
 
-function gettoken!(d::HashDictionary{T}, key::T) where {T}
+# insertion
+
+isinsertable(::HashDictionary) = true
+
+function gettoken!(dict::HashDictionary{I}, i::I) where {I}
+    (hadtoken, (slot, index)) = gettoken!(keys(dict), i, (dict.values,))
+    return (hadtoken, (slot, index))
+end
+
+function deletetoken!(dict::HashDictionary{I, T}, (slot, index)) where {I, T}
+    isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), dict.values, index-1)
+    deletetoken!(dict.indices, (slot, index), (dict.values,))
+    return dict
+end
+
+
+function Base.empty!(dict::HashDictionary{I, T}) where {I, T}
+    empty!(dict.values)
+    empty!(dict.indices)
+
+    return dict
+end
+
+function Base.filter!(pred, dict::HashDictionary)
+    indices = keys(dict)
+    _filter!(i -> pred(@inbounds dict.values[i]), indices.values, indices.hashes, (dict.values,))
+    indices.holes = 0
+    newsize = Base._tablesz(3*length(indices.values) >> 0x01)
+    rehash!(indices, newsize, (dict.values,))
+    return dict
+end
+
+function Base.filter!(pred, dict::PairDictionary{<:Any, <:Any, <:HashDictionary})
+    d = dict.d
     indices = keys(d)
-    (token, values) = _gettoken!(indices, d.values, key)
-    if token < 0
-        (token, values) = _insert!(indices, values, key, -token)
-        d.values = values
-        return (false, token)
-    else
-        d.values = values
-        return (true, token)
-    end 
+    _filter!(i -> pred(@inbounds indices.values[i] => d.values[i]), indices.values, indices.hashes, (d.values,))
+    indices.holes = 0
+    newsize = Base._tablesz(3*length(indices.values) >> 0x01)
+    rehash!(indices, newsize, (d.values,))
+    return dict
 end
 
-function Base.copy(d::HashDictionary{I, T}) where {I, T}
-    return HashDictionary{I, T}(d.indices, copy(d.values), nothing)
-end
+# Factories
 
-tokenized(d::HashDictionary) = d.values
-
-function Base.empty!(d::HashDictionary)
-    empty!(d.indices)
-    empty!(d.values)
-    resize!(d.values, length(keys(d).slots))
-    return d
-end
-
-function deletetoken!(d::HashDictionary{I, T}, token) where {I, T}
-    deletetoken!(keys(d), token)
-    isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), d.values, token-1)
-    return d
-end
-
-function Base.sizehint!(d::HashDictionary, sz::Int)
-    d.values = _sizehint!(d.indices, d.values, sz)
-    return d
-end
-
-function Base.rehash!(d::HashDictionary, newsz::Int = length(d.inds))
-    _rehash!(d.indices, d.values, newsz)
-    return d
-end
-
-Base.filter!(pred, d::HashDictionary) = Base.unsafe_filter!(pred, d)
-
-# `HashDictionary` is the default mutable AbstractDictionary
-# If given some other index type, create a new `HashIndices` copy of the indices
-function Base.similar(indices::AbstractIndices{I}, ::Type{T}) where {I, T}
-    return similar(HashIndices{I}(indices), T)
-end
-
-# For `HashIndices` we don't copy the indices, we allow the `keys` to remain identical (`===`)
 function Base.similar(indices::HashIndices{I}, ::Type{T}) where {I, T}
-    return HashDictionary{I, T}(indices, undef)
+    return HashDictionary{I, T}(indices, Vector{T}(undef, length(indices.values)), nothing)
 end
 
-# `HashDictionary` is the default insertable AbstractDictionary
-function Base.empty(::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T}
-    return HashDictionary{I, T}()
-end

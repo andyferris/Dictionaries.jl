@@ -232,9 +232,9 @@ end
 function Base.get!(d::AbstractDictionary{I, T}, i::I, default::T) where {I, T}
     (hadindex, token) = gettoken!(d, i)
     if hadindex
-        return gettokenvalue(d, token)
+        return @inbounds gettokenvalue(d, token)
     else
-        settokenvalue!(d, token, default)
+        @inbounds settokenvalue!(d, token, default)
         return default
     end
 end
@@ -257,10 +257,10 @@ end
 function Base.get!(f::Callable, d::AbstractDictionary{I}, i::I) where {I}
     (hadindex, token) = gettoken!(d, i)
     if hadindex
-        return gettokenvalue(d, token)
+        return @inbounds gettokenvalue(d, token)
     else
         default = f()
-        settokenvalue!(d, token, default)
+        @inbounds settokenvalue!(d, token, default)
         return default
     end
 end
@@ -290,7 +290,7 @@ function Base.delete!(d::AbstractDictionary{I}, i::I) where {I}
     if !hasindex
         throw(IndexError("Index doesn't exist: $i"))
     end
-    deletetoken!(d, token)
+    @inbounds deletetoken!(d, token)
     return d
 end
 
@@ -317,50 +317,31 @@ end
 function unset!(d::AbstractDictionary{I}, i::I) where {I}
     (hasindex, token) = gettoken(d, i)
     if hasindex
-        deletetoken!(d, token)
+        @inbounds deletetoken!(d, token)
     end
     return d
 end
 
 ### Non-scalar insertion/deletion
-
-Base.merge!(d::AbstractDictionary, ds::AbstractDictionary...) = merge!(last, d, ds...)
-
-function Base.merge!(combiner::Callable, d::AbstractDictionary, d2::AbstractDictionary)
-    for (i, v) in pairs(d2)
-        (hasindex, token) = gettoken!(d, i)
-        if hasindex
-            settokenvalue!(d, token, combiner(gettokenvalue(d, token), v))
-        else
-            settokenvalue!(d, token, v)
-        end
-    end
-    return d
-end
-
-# TODO `last` is incorrect, it should be `latter(x,y) = y`
-function Base.merge!(::typeof(last), d::AbstractDictionary, d2::AbstractDictionary)
+function Base.merge!(d::AbstractDictionary, d2::AbstractDictionary)
     for (i, v) in pairs(d2)
         set!(d, i, v)
     end
     return d
 end
 
-# TODO `first` is incorrect, it should be `former(x,y) = y`
-function Base.merge!(::typeof(first), d::AbstractDictionary, d2::AbstractDictionary)
-    for (i, v) in pairs(d2)
-        get!(d, i, v)
+if isdefined(Base, :mergewith) # Julia 1.5+
+    function Base.mergewith!(combiner::Callable, d::AbstractDictionary, d2::AbstractDictionary)
+        for (i, v) in pairs(d2)
+            (hasindex, token) = gettoken!(d, i)
+            if hasindex
+                @inbounds settokenvalue!(d, token, combiner(gettokenvalue(d, token), v))
+            else
+                @inbounds settokenvalue!(d, token, v)
+            end
+        end
+        return d
     end
-    return d
-end
-
-function Base.merge!(combiner::Callable, d::AbstractDictionary, d2::AbstractDictionary, ds::AbstractDictionary...)
-    merge!(combiner, merge!(combiner, d, d2), ds...)
-end
-
-function Base.merge!(combiner::Callable, d::AbstractIndices, d2::AbstractIndices)
-    # Hopefully no-one provides a bad combiner
-    union!(d, d2)
 end
 
 # TODO some kind of exclusive merge (throw on key clash like `insert!`)
@@ -369,9 +350,20 @@ end
 
 ### Indices ("sets") versions of above
 
-function Base.union!(s1::AbstractIndices, s2::AbstractIndices)
-    for i in s2
-        set!(s1, i)
+function Base.union!(s1::AbstractIndices, itr)
+    # Optimized to handle repeated values in `itr` - e.g. if `itr` is already sorted
+    x = iterate(itr)
+    if x === nothing
+        return s1
+    end
+    (i, s) = x
+    set!(s1, i)
+    i_old = i
+    while x !== nothing
+        (i, s) = x
+        !isequal(i, i_old) && set!(s1, i)
+        i_old = i
+        x = iterate(itr, s)
     end
     return s1
 end
@@ -391,7 +383,7 @@ function Base.symdiff!(s1::AbstractIndices, s2::AbstractIndices)
     for i in s2
         (hastoken, token) = gettoken!(s1, i)
         if hastoken
-            deletetoken!(s1, token)
+            @inbounds deletetoken!(s1, token)
         end
     end
     return s1
@@ -399,25 +391,27 @@ end
 
 ## Filtering
 
-# `filter!` is basically a programmatic version of `intersect!`. 
-function Base.filter!(pred, indices::AbstractIndices)
-    for i in indices
-        if !pred(i)
-            delete!(indices, i)
-        end
-    end
-    return indices
-end
+# These generic implementations are gimped.
 
-# Dictionary version is similar
-function Base.filter!(pred, dict::AbstractDictionary)
-    for (i, v) in pairs(dict)
-        if !pred(v)
-            delete!(dict, i)
-        end
-    end
-    return dict
-end
+# # `filter!` is basically a programmatic version of `intersect!`. 
+# function Base.filter!(pred, indices::AbstractIndices)
+#     for i in copy(indices)
+#         if !pred(i)
+#             delete!(indices, i)
+#         end
+#     end
+#     return indices
+# end
+
+# # Dictionary version is similar
+# function Base.filter!(pred, dict::AbstractDictionary)
+#     for (i, v) in pairs(copy(dict))
+#         if !pred(v)
+#             delete!(dict, i)
+#         end
+#     end
+#     return dict
+# end
 
 # This implementation is faster when deleting indices does not invalidate tokens/iteration,
 # and is opt-in only. Works for both dictionaries and indices
@@ -458,4 +452,8 @@ of type `T` (even when the first argument is are indices). The default container
 Return an empty, insertable `AbstractDictionary` with indices of type `keytype(dict)` and
 elements of type `eltype(inds)`.
 """
-Base.empty(d::AbstractDictionary) = empty(d, keytype(d), eltype(d))
+Base.empty(d::AbstractDictionary) = empty(keys(d), keytype(d), eltype(d))
+
+Base.empty(d::AbstractDictionary, ::Type{I}) where {I} = empty(keys(d), I)
+
+Base.empty(::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T} = HashDictionary{I, T}()
