@@ -159,23 +159,37 @@ function Base.isequal(i1::AbstractIndices, i2::AbstractIndices)
     return true
 end
 
-# Use `issetequal` semantics
+# The indices must be isequal and the values ==, same ordering
 function Base.:(==)(i1::AbstractIndices, i2::AbstractIndices)
+    out = true
+
     if sharetokens(i1, i2)
-        return true
+        # TODO - can we get rid of this loop for reflexive == element types?
+        @inbounds for t in tokens(i1)
+            # make sure it works for `missing`
+            out &= gettokenvalue(i1, t) == gettokenvalue(i2, t)
+            if out === false
+                return false
+            end
+        end
+        return out
     end
 
     if length(i1) != length(i2)
         return false
     end
 
-    for i in i1
-        if !(i in i2)
+    for (j1, j2) in zip(i1, i2)
+        if !isequal(j1, j2)
+            return false
+        end
+        out &= j1 == j2 # make sure it works for `missing`
+        if out === false
             return false
         end
     end
 
-    return true
+    return out
 end
 
 # Lexical ordering based on iteration

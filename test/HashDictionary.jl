@@ -109,8 +109,12 @@
     @test get!(() -> 16, d, 10) == 15
 
     d = HashDictionary([:a, :b], [1, 2])
+    @test isequal(d, d)
+    @test d == d
+    @test !isless(d, d)
     d2 = HashDictionary((a=1, b=2))
     @test isequal(d, d2)
+    @test d == d
     d3 = dictionary([:a=>1, :b=>2])
     @test isequal(d, d3)
     d4 = dictionary(zip([:a, :b], [1, 2]))
@@ -118,6 +122,19 @@
     @test !isless(d, d4)
     @test !isless(d4, d)
     @test hash(d) == hash(d4)
+
+    @test isdictequal(d, copy(d))
+    @test isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','a'],[2,1]))
+    @test !isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','c'],[2,1]))
+    @test !isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['a','b','c'],[1,2,3]))
+    @test !isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','a'],[2,3]))
+    
+    d5 = HashDictionary(['a','b'],[1,missing])
+    @test isdictequal(d5, d5) === missing
+    @test (d5 == d5) === missing
+    d6 = HashDictionary(['a','b'],[1,missing])
+    @test isdictequal(d5, d5) === missing
+    @test (d5 == d5) === missing
 
     @test isequal(merge(d, d), d)
     @test isequal(merge(d, d2), d)

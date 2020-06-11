@@ -94,41 +94,85 @@ function Base.isequal(d1::AbstractDictionary, d2::AbstractDictionary)
     return true
 end
 
-# `==` doesn't care about the iteration order. Keys must be `isequal` and values `==`
+# The indices must be isequal and the values ==, same ordering
 function Base.:(==)(d1::AbstractDictionary, d2::AbstractDictionary)
-    if d1 === d2
-        return true
-    end
+    out = true
 
     if sharetokens(d1, d2)
         @inbounds for t in tokens(d1)
-            if gettokenvalue(d1, t) != gettokenvalue(d2, t)
+            out &= gettokenvalue(d1, t) == gettokenvalue(d2, t)
+            if out === false
                 return false
             end
         end
-        return true
+        return out
     end
 
     if length(d1) != length(d2)
         return false
     end
 
-    if istokenizable(d2)
-        for (i,v) in pairs(d1)
-            (hastoken, token) = gettoken(d2, i)
-            if !hastoken || v != gettokenvalue(d2, token)
-                return false
-            end
+    for ((i1,x1), (i2,x2)) in zip(pairs(d1), pairs(d2))
+        if !isequal(i1, i2)
+            return false
         end
-    else
-        for (i,v) in pairs(d1)
-            if !haskey(d2, i) || v != d2[i]
-                return false
-            end
+        out &= x1 == x2 # make sure it works for `missing`
+        if out === false
+            return false
         end
     end
 
-    return true
+    return out
+end
+
+"""
+    isdictequal(d1, d2)
+
+Determine if two dictionaries are equivalent. Dictionaries `d1` and `d2` are equivalent if
+`issetequal(keys(d1), keys(d2))` and for each key `i`, `d1[i] == d2[i]`.
+
+Example
+
+```julia
+julia> isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','a'],[2,1]))
+true
+
+julia> isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','a'],[2,3]))
+false
+
+julia> isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','a'],[2,missing]))
+missing
+```
+"""
+function isdictequal(d1::AbstractDictionary, d2::AbstractDictionary)
+    out = true
+
+    if sharetokens(d1, d2)
+        @inbounds for t in tokens(d1)
+            out &= gettokenvalue(d1, t) == gettokenvalue(d2, t)
+            if out === false
+                return false
+            end
+        end
+        return out
+    end
+
+    if length(d1) != length(d2)
+        return false
+    end
+
+    for (i,x1) in pairs(d1)
+        (hastoken, t) = gettoken(d2, i)
+        if !hastoken
+            return false
+        end
+        out &= x1 == gettokenvalue(d2, t) # make sure it works for `missing`
+        if out === false
+            return false
+        end
+    end
+
+    return out
 end
 
 # Lexical ordering based on iteration (of pairs - lesser key takes priority over lesser value, as implmeneted in `cmp(::Pair)`)

@@ -77,6 +77,12 @@
         @test isless(i1, i4)
         @test !isless(i4, i1)
         @test !isequal(i1, i4)
+
+        i5 = HashIndices([1,2,missing])
+        @test isequal(i5, i5)
+        @test !isless(i5, i5)
+        @test (i5 == i5) === missing
+        @test (i5 == HashIndices([1,2,missing])) === missing
     end
 
     @testset "Adapated from Dict tests from Base" begin
