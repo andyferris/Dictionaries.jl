@@ -26,7 +26,13 @@ Indices{I}(iter) where {I} = Indices{I, typeof(iter)}(iter) # There is a corner 
 end
 
 Base.in(i::I, inds::Indices{I}) where {I} = in(i, inds.inds)
-Base.IteratorSize(i::Indices) = Base.IteratorSize(i.inds)
+function Base.IteratorSize(i::Indices)
+    out = Base.IteratorSize(i.inds)
+    if out isa Base.HasShape
+        return Base.HasLength()
+    end
+    return out
+end
 Base.length(i::Indices) = length(i.inds)
 
 # Specialize for `Vector` elements. Satisfy the tokenization and insertion interface
