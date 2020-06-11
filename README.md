@@ -516,8 +516,9 @@ julia> @btime map(+, d1, d2);
   25.712 ms (20 allocations: 76.29 MiB)
 ```
 
-The `copy` below makes `keys(d1) !== keys(d2)`, disabling token co-iteration (requiring
-mulitple hash-table lookups per element).
+The `copy` below makes `keys(d1) !== keys(d2)`, disabling token co-iteration. It still uses
+an iterative approach rather than using mulitple hash-table lookups per element, so it's
+relatively snappy.
 
 ```julia
 julia> @btime map(+, d1, $(Dictionary(copy(keys(d2)), d2)));
