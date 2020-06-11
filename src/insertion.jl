@@ -323,44 +323,25 @@ function unset!(d::AbstractDictionary{I}, i::I) where {I}
 end
 
 ### Non-scalar insertion/deletion
-
-Base.merge!(d::AbstractDictionary, ds::AbstractDictionary...) = merge!(last, d, ds...)
-
-function Base.merge!(combiner::Callable, d::AbstractDictionary, d2::AbstractDictionary)
-    for (i, v) in pairs(d2)
-        (hasindex, token) = gettoken!(d, i)
-        if hasindex
-            @inbounds settokenvalue!(d, token, combiner(gettokenvalue(d, token), v))
-        else
-            @inbounds settokenvalue!(d, token, v)
-        end
-    end
-    return d
-end
-
-# TODO `last` is incorrect, it should be `latter(x,y) = y`
-function Base.merge!(::typeof(last), d::AbstractDictionary, d2::AbstractDictionary)
+function Base.merge!(d::AbstractDictionary, d2::AbstractDictionary)
     for (i, v) in pairs(d2)
         set!(d, i, v)
     end
     return d
 end
 
-# TODO `first` is incorrect, it should be `former(x,y) = y`
-function Base.merge!(::typeof(first), d::AbstractDictionary, d2::AbstractDictionary)
-    for (i, v) in pairs(d2)
-        get!(d, i, v)
+if isdefined(Base, :mergewith) # Julia 1.5+
+    function Base.mergewith!(combiner::Callable, d::AbstractDictionary, d2::AbstractDictionary)
+        for (i, v) in pairs(d2)
+            (hasindex, token) = gettoken!(d, i)
+            if hasindex
+                @inbounds settokenvalue!(d, token, combiner(gettokenvalue(d, token), v))
+            else
+                @inbounds settokenvalue!(d, token, v)
+            end
+        end
+        return d
     end
-    return d
-end
-
-function Base.merge!(combiner::Callable, d::AbstractDictionary, d2::AbstractDictionary, ds::AbstractDictionary...)
-    merge!(combiner, merge!(combiner, d, d2), ds...)
-end
-
-function Base.merge!(combiner::Callable, d::AbstractIndices, d2::AbstractIndices)
-    # Hopefully no-one provides a bad combiner
-    union!(d, d2)
 end
 
 # TODO some kind of exclusive merge (throw on key clash like `insert!`)

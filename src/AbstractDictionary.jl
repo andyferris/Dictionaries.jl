@@ -347,6 +347,16 @@ function Base.merge(d1::AbstractDictionary, d2::AbstractDictionary)
     return out
 end
 
+if isdefined(Base, :mergewith) # Julia 1.5+
+    function Base.mergewith(combner, d1::AbstractDictionary, d2::AbstractDictionary)
+        # Note: need to copy the keys
+        out = similar(copy(keys(d1)), eltype(d1))
+        copyto!(out, d1)
+        mergewith!(combner, out, d2)
+        return out
+    end
+end
+
 # fill! and fill
 
 function Base.fill!(d::AbstractDictionary, value)
