@@ -198,7 +198,11 @@ end
     return isassigned(d, token)
 end
 
-@propagate_inbounds function settokenvalue!(d::AbstractDictionary, i, value)
+@propagate_inbounds function settokenvalue!(d::AbstractDictionary{<:Any,T}, t, value::T) where {T}
+    return settokenvalue!(d, t, convert(T, value))
+end
+
+@propagate_inbounds function settokenvalue!(d::AbstractDictionary{<:Any,T}, i, value::T) where {T}
     if !issettable(d)
         error("Cannot mutate values of dictionary: $(typeof(d))")
     end
