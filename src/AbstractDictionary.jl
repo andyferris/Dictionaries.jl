@@ -134,13 +134,13 @@ Determine if two dictionaries are equivalent. Dictionaries `d1` and `d2` are equ
 Example
 
 ```julia
-julia> isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','a'],[2,1]))
+julia> isdictequal(Dictionary(['a','b'],[1,2]), Dictionary(['b','a'],[2,1]))
 true
 
-julia> isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','a'],[2,3]))
+julia> isdictequal(Dictionary(['a','b'],[1,2]), Dictionary(['b','a'],[2,3]))
 false
 
-julia> isdictequal(HashDictionary(['a','b'],[1,2]), HashDictionary(['b','a'],[2,missing]))
+julia> isdictequal(Dictionary(['a','b'],[1,2]), Dictionary(['b','a'],[2,missing]))
 missing
 ```
 """
@@ -283,29 +283,29 @@ end
 # be an abstract factory method, like `distinct(BTreeIndices{Int}, itr)`.
 #=
 """
-    distinct(f, itr; to=HashDictionary)
+    distinct(f, itr; to=Dictionary)
 
 Collect the first element of iterator `itr` for each unique value produced by `f` applied to
-elements of `itr` into a new collection, defaulting to `HashDictionary`. Similar to
+elements of `itr` into a new collection, defaulting to `Dictionary`. Similar to
 `Base.unique`, except returning a dictionary instead of an array.
 
 # Example
 
 ```julia
 julia> distinct(first, ["Alice", "Bob", "Charlie"])
-3-element HashDictionary{Char,String}
+3-element Dictionary{Char,String}
  'A' │ "Alice"
  'B' │ "Bob"
  'C' │ "Charlie"
 
 julia> distinct(first, ["Alice", "Bob", "Charlie", "Chaz"])
-3-element HashDictionary{Char,String}
+3-element Dictionary{Char,String}
  'A' │ "Alice"
  'B' │ "Bob"
  'C' │ "Charlie" 
 ```
 """
-distinct(f, itr) = _distinct(f, HashDictionary, itr)
+distinct(f, itr) = _distinct(f, Dictionary, itr)
 =#
 
 function _distinct(f, ::Type{T}, itr) where T
@@ -380,7 +380,7 @@ Base.similar(d::AbstractDictionary) = similar(keys(d), eltype(d))
 Base.similar(d::AbstractDictionary, ::Type{T}) where {T} = similar(keys(d), T)
 
 function Base.similar(indices::AbstractIndices{I}, ::Type{T}) where {I, T}
-    return similar(convert(HashIndices{I}, indices), T)
+    return similar(convert(Indices{I}, indices), T)
 end
 
 function Base.merge(d1::AbstractDictionary, d2::AbstractDictionary)

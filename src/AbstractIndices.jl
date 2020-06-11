@@ -96,25 +96,25 @@ function Base.copy(inds::AbstractIndices, ::Type{I}) where I
     return out
 end
 
-Base.empty(::AbstractIndices, ::Type{I}) where {I} = HashIndices{I}()
+Base.empty(::AbstractIndices, ::Type{I}) where {I} = Indices{I}()
 
 """
     distinct(itr)
 
 Collect the distinct elements of iterator `itr` into a new collection. Similar to
-`Base.unique`, except returning a set (`HashIndices`) instead of an array.
+`Base.unique`, except returning a set (`Indices`) instead of an array.
 
 # Example
 
 ```julia
 julia> distinct([1,2,3,3])
-3-element HashIndices{Int64}
+3-element Indices{Int64}
  1
  2
  3
 ```
 """
-distinct(itr) = _distinct(HashIndices, itr)
+distinct(itr) = _distinct(Indices, itr)
 distinct(inds::AbstractIndices) = inds
 
 function _distinct(::Type{T}, itr) where T

@@ -1,115 +1,318 @@
-"""
-    Dictionary(indices, values)
+struct Dictionary{I, T} <: AbstractDictionary{I, T}
+    indices::Indices{I}
+    values::Vector{T}
 
-Construct a `Dictionary <: AbstractDictionary` from two arbitrary Julia iterables, one
-specifying the `indices` and one specifying the `values`. Lookup uses naive iteration.
-
-If `indices` and `values` are `Vector`s, then the result is `isinsertable` and
-`istokenizable`, making simple and flexible dictionaries using naive search that may be
-optimal for small collections.
-"""
-struct Dictionary{I, T, Indices, Values} <: AbstractDictionary{I, T}
-	indices::Indices
-    values::Values
-    
-    @inline function Dictionary{I, T, Indices, Values}(indices, values) where {I, T, Indices, Values}
-        @boundscheck if length(indices) != length(values)
-            error("Dictinary indices and values inputs have different lengths")
-        end
-        return new(indices, values)
+    function Dictionary{I, T}(inds::Indices{I}, values::Vector{T}, ::Nothing) where {I, T}
+       @assert length(values) == length(inds.values)
+       return new{I,T}(inds, values)
     end
 end
 
-Dictionary() = Dictionary{Any, Any}()
-Dictionary{I}() where {I} = Dictionary{I, Any}()
-Dictionary{I, T}() where {I, T} = Dictionary{I, T}(I[], T[])
-
-Dictionary(inds, vals) = Dictionary{eltype(inds), eltype(vals), typeof(inds), typeof(vals)}(inds, vals)
-Dictionary{I}(inds, vals) where {I} = Dictionary{I, eltype(vals), typeof(inds), typeof(vals)}(inds, vals)
-Dictionary{I, T}(inds, vals) where {I, T} = Dictionary{I, T, typeof(inds), typeof(vals)}(inds, vals)
-
-
 """
-    Dictionary(indices, undef::UndefInitializer)
+    Dictionary{I,T}(;sizehint = 8)
 
-Construct a `Dictionary` from an iterable of `indices`, where the values are
-undefined/unitialized.
+Construct an empty hash-based dictionary. `I` and `T` default to `Any` if not specified. A
+`sizehint` may be specified to set the initial size of the hash table, which may speed up
+subsequent `insert!` operations.
+
+# Example
+
+```julia
+julia> d = Dictionary{Int, Int}()
+0-element Dictionary{Int64,Int64}
+```
 """
-Dictionary{I, T}(inds, ::UndefInitializer) where {I, T} = Dictionary{I, T}(inds, Vector{T}(undef, length(inds)))
+Dictionary(; sizehint = 8) = Dictionary{Any, Any}(; sizehint = sizehint)
+Dictionary{I}(; sizehint = 8) where {I} = Dictionary{I, Any}(; sizehint = sizehint)
+
+function Dictionary{I, T}(; sizehint = 8) where {I, T}
+    Dictionary{I, T}(Indices{I}(; sizehint = sizehint), Vector{T}(), nothing)
+end
 
 """
     Dictionary(indexable)
+    Dictionary{I}(indexable)
+    Dictionary{I,T}(indexable)
 
-Construct a `Dictionary` from an indexable container `indexable` with the same `keys` and
-`values`, equivalent to `Dictionary(keys(indexable), values(indexable))`. Note that
-`indexable` may not be copied.
+Construct a hash-based dictionary from an indexable input `indexable`, equivalent to
+`Dictionary(keys(indexable), values(indexable))`. The input might not be copied.
+
+Note: to construct a dictionary from `Pair`s use the `dictionary` function. See also the
+`index` function.
+
+# Examples
+
+```julia
+julia> Dictionary(Dict(:a=>1, :b=>2))
+2-element Dictionary{Symbol,Int64}
+ :a │ 1
+ :b │ 2
+
+julia> Dictionary(3:-1:1)
+3-element Dictionary{Int64,Int64}
+ 1 │ 3
+ 2 │ 2
+ 3 │ 1 
+```
 """
 Dictionary(indexable) = Dictionary(keys(indexable), values(indexable))
 Dictionary{I}(indexable) where {I} = Dictionary{I}(keys(indexable), values(indexable))
 Dictionary{I, T}(indexable) where {I, T} = Dictionary{I, T}(keys(indexable), values(indexable))
 
+"""
+    Dictionary(inds, values)
+    Dictionary{I}(inds, values)
+    Dictionary{I, T}(inds, values)
 
-function Base.keys(d::Dictionary{I}) where {I}
-    return Indices{I}(d.indices)
+Construct a hash-based dictionary from two iterable inputs `inds` and `values`. The first
+value of `inds` will be the index for the first value of `values`. The input might not be
+copied.
+
+Note: the values of `inds` must be distinct. Consider using `dictionary(zip(inds, values))`
+if they are not. See also the `index` function.
+
+# Example
+
+julia> Dictionary(["a", "b", "c"], [1, 2, 3])
+3-element Dictionary{String,Int64}
+ "a" │ 1
+ "b" │ 2
+ "c" │ 3
+
+julia> Dictionary{String, Float64}(["a", "b", "c"], [1, 2, 3])
+3-element Dictionary{String,Float6464}
+ "a" │ 1.0
+ "b" │ 2.0
+ "c" │ 3.0
+"""
+function Dictionary(inds, values)
+    return Dictionary(Indices(inds), values)
 end
 
-@propagate_inbounds function Base.getindex(d::Dictionary{I, T}, i::I) where {I, T}
-    for (k, v) in zip(d.indices, d.values)
-        if isequal(k, i)
-            return v::T
+function Dictionary(inds::Indices{I}, values) where {I}
+    return Dictionary{I}(inds, values)
+end
+
+function Dictionary{I}(inds, values) where {I}
+    return Dictionary{I}(Indices{I}(inds), values)
+end
+
+function Dictionary{I}(inds::Indices{I}, values) where {I}
+    if Base.IteratorEltype(values) === Base.EltypeUnknown()
+        values = collect(values)
+    end
+    
+    return Dictionary{I, eltype(values)}(inds, values)
+end
+
+function Dictionary{I, T}(inds, values) where {I, T}
+    return Dictionary{I, T}(Indices{I}(inds), values)
+end
+
+function Dictionary{I, T}(inds::Indices{I}, values) where {I, T}
+    if inds.holes != 0
+        inds = copy(inds)
+    end
+
+    iter_size = Base.IteratorSize(values)
+    if iter_size isa Union{Base.HasLength, Base.HasShape}
+        vs = Vector{T}(undef, length(values))
+        @inbounds for (i, v) in enumerate(values)
+            vs[i] = v
         end
+        return Dictionary{I, T}(inds, vs, nothing)
+    else
+        vs = Vector{T}()
+        for v in values
+            push!(vs, v)
+        end
+        return Dictionary{I, T}(inds, vs, nothing)
     end
-    throw(IndexError("Dictionary does not contain index: $i"))
 end
 
-## With Vectors they become settable, insertable and tokenizable
-const VectorDictionary{I, T} = Dictionary{I, T, Vector{I}, Vector{T}}
+"""
+    dictionary(iter)
 
-# token interface
-istokenizable(::VectorDictionary) = true
+Construct a new `AbstractDictionary` from an iterable `iter` of key-value `Pair`s (or other
+iterables of two elements, such as a two-tuples). The default container type is
+`Dictionary`. If duplicate keys are detected, the first encountered value is retained.
 
-istokenassigned(d::VectorDictionary, t) = isassigned(d.values, t)
-@propagate_inbounds gettokenvalue(d::VectorDictionary{<:Any, T}, t::Int) where {T} = d.values[t]::T
+See also the `index` function.
 
-# settable interface
-issettable(::VectorDictionary) = true
+# Examples
 
-@propagate_inbounds function settokenvalue!(d::VectorDictionary{<:Any, T}, t::Int, value::T) where {T}
-    d.values[t] = value
-    return d
+```julia
+julia> dictionary(["a"=>1, "b"=>2, "c"=>3])
+3-element Dictionary{String,Int64}
+ "a" │ 1
+ "b" │ 2
+ "c" │ 3
+
+julia> dictionary(["a"=>1, "b"=>2, "c"=>3, "a"=>4])
+3-element Dictionary{String,Int64}
+ "a" │ 1
+ "b" │ 2
+ "c" │ 3
+
+julia> dictionary(zip(["a","b","c"], [1,2,3]))
+3-element Dictionary{String,Int64}
+ "a" │ 1
+ "b" │ 2
+ "c" │ 3
+```
+"""
+function dictionary(iter)
+    return _dictionary(first, last, Dictionary, iter)
 end
 
-function Base.similar(inds::VectorIndices, ::Type{T}) where {T}
-    return Dictionary(inds.inds, Vector{T}(undef, length(inds)))
-end
-
-# insertable interface
-isinsertable(::VectorDictionary) = true
-
-@propagate_inbounds function gettoken!(d::VectorDictionary{I}, i::I) where {I}
-    (hadtoken, token) = gettoken!(Indices(d.indices), i)
-    if !hadtoken
-        resize!(d.values, length(d.values) + 1)
+# An auto-widening Dictionary constructor
+function _dictionary(key, value, ::Type{Dictionary}, iter)
+    tmp = iterate(iter)
+    if tmp === nothing
+        IT = Base.@default_eltype(iter)
+        I = Core.Compiler.return_type(first, Tuple{IT})
+        T = Core.Compiler.return_type(last, Tuple{IT})
+        return Dictionary{I, T}()
     end
-    return (hadtoken, token)
+    (x, s) = tmp
+    i = key(x)
+    v = value(x)
+    dict = Dictionary{typeof(i), typeof(v)}()
+    insert!(dict, i, v)
+    return __dictionary(key, value, dict, iter, s)
 end
 
-@propagate_inbounds function deletetoken!(d::VectorDictionary, t::Int)
-    deleteat!(d.indices, t)
-    deleteat!(d.values, t)
-    return d
+# An auto-widening AbstractDictionary constructor
+function __dictionary(key, value, dict, iter, s)
+    I = keytype(dict)
+    T = eltype(dict)
+    tmp = iterate(iter, s)
+    while tmp !== nothing
+        (x, s) = tmp
+        i = key(x)
+        v = value(x)
+        if !(i isa I)
+            new_inds = copy(keys(dict), promote_type(I, typeof(i)))
+            new_dict = similar(new_inds, promote_type(T, typeof(v)))
+            (hadtoken, token) = gettoken!(new_dict, i)
+            if !hadtoken
+                @inbounds settokenvalue!(new_dict, token, v)
+            end
+            return __dictionary(key, value, new_dict, iter, s)
+        elseif !(v isa T)
+            new_dict = copy(dict, promote_type(T, typeof(v)))
+            (hadtoken, token) = gettoken!(new_dict, i)
+            if !hadtoken
+                @inbounds settokenvalue!(new_dict, token, v)
+            end
+            return __dictionary(key, value, new_dict, iter, s)
+        end
+        (hadtoken, token) = gettoken!(dict, i)
+        if !hadtoken
+            @inbounds settokenvalue!(dict, token, v)
+        end
+        tmp = iterate(iter, s)
+    end
+    return dict
 end
 
-function Base.empty!(d::VectorDictionary)
-    empty!(d.indices)
-    empty!(d.values)
-    return d
+"""
+    index(f, iter)
+
+Return a dictionary associating the values `x` of iterable collection `iter` with the key
+`f(x)`. If keys are repeated, only the first is kept. Somewhat similar to `unique(f, iter)`
+
+See also the `dictionary` function.
+
+# Examples
+
+```julia
+julia> index(first, ["Alice", "Bob", "Charlie"])
+3-element Dictionary{Char,String}
+ 'A' │ "Alice"
+ 'B' │ "Bob"
+ 'C' │ "Charlie"
+
+julia> index(iseven, 1:10)
+2-element Dictionary{Bool,Int64}
+ false │ 1
+  true │ 2
+```
+"""
+function index(f, iter)
+    _dictionary(f, identity, Dictionary, iter)
 end
 
-function Base.empty(::VectorDictionary, ::Type{I}, ::Type{T}) where {I, T}
-    return Dictionary(Vector{I}(), Vector{T}())
+# indicesi
+
+Base.keys(dict::Dictionary) = dict.indices
+
+# tokens
+
+tokenized(dict::Dictionary) = dict.values
+
+# values
+
+function istokenassigned(dict::Dictionary, (_slot, index))
+    return isassigned(dict.values, index)
 end
 
-function Base.empty(::VectorDictionary, ::Type{I}) where {I}
-    return Indices(Vector{I}())
+@propagate_inbounds function gettokenvalue(dict::Dictionary, (_slot, index))
+    return dict.values[index]
 end
+
+issettable(::Dictionary) = true
+
+@propagate_inbounds function settokenvalue!(dict::Dictionary{<:Any, T}, (_slot, index), value::T) where {T}
+    dict.values[index] = value
+    return dict
+end
+
+# insertion
+
+isinsertable(::Dictionary) = true
+
+function gettoken!(dict::Dictionary{I}, i::I) where {I}
+    (hadtoken, (slot, index)) = gettoken!(keys(dict), i, (dict.values,))
+    return (hadtoken, (slot, index))
+end
+
+function deletetoken!(dict::Dictionary{I, T}, (slot, index)) where {I, T}
+    isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), dict.values, index-1)
+    deletetoken!(dict.indices, (slot, index), (dict.values,))
+    return dict
+end
+
+
+function Base.empty!(dict::Dictionary{I, T}) where {I, T}
+    empty!(dict.values)
+    empty!(dict.indices)
+
+    return dict
+end
+
+function Base.filter!(pred, dict::Dictionary)
+    indices = keys(dict)
+    _filter!(i -> pred(@inbounds dict.values[i]), indices.values, indices.hashes, (dict.values,))
+    indices.holes = 0
+    newsize = Base._tablesz(3*length(indices.values) >> 0x01)
+    rehash!(indices, newsize, (dict.values,))
+    return dict
+end
+
+function Base.filter!(pred, dict::PairDictionary{<:Any, <:Any, <:Dictionary})
+    d = dict.d
+    indices = keys(d)
+    _filter!(i -> pred(@inbounds indices.values[i] => d.values[i]), indices.values, indices.hashes, (d.values,))
+    indices.holes = 0
+    newsize = Base._tablesz(3*length(indices.values) >> 0x01)
+    rehash!(indices, newsize, (d.values,))
+    return dict
+end
+
+# Factories
+
+function Base.similar(indices::Indices{I}, ::Type{T}) where {I, T}
+    return Dictionary{I, T}(indices, Vector{T}(undef, length(indices.values)), nothing)
+end
+

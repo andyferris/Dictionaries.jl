@@ -6,7 +6,7 @@ using Base: @propagate_inbounds, Callable
 
 export getindices, setindices!
 
-export AbstractDictionary, AbstractIndices, IndexError, Indices, HashIndices, HashDictionary, Dictionary, MappedDictionary, DictionaryView, FilteredDictionary, FilteredIndices, BroadcastedDictionary
+export AbstractDictionary, AbstractIndices, IndexError, ArrayIndices, Indices, Dictionary, ArrayDictionary, MappedDictionary, DictionaryView, FilteredDictionary, FilteredIndices, BroadcastedDictionary
 
 export dictionary, index, distinct, disjoint, isdictequal, filterview
 export issettable, isinsertable, set!, unset!
@@ -26,10 +26,10 @@ include("find.jl")
 include("show.jl")
 
 include("PairDictionary.jl")
+include("ArrayIndices.jl")
+include("ArrayDictionary.jl")
 include("Indices.jl")
 include("Dictionary.jl")
-include("HashIndices.jl")
-include("HashDictionary.jl")
 include("MappedDictionary.jl")
 
 end # module

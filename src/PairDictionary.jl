@@ -12,14 +12,14 @@ key-value pairs.
 # Example
 
 ```julia
-julia> dict = HashDictionary(["a", "b", "c"], [1, 2, 3])
-3-element HashDictionary{String,Int64}
+julia> dict = Dictionary(["a", "b", "c"], [1, 2, 3])
+3-element Dictionary{String,Int64}
  "c" │ 3
  "b" │ 2
  "a" │ 1
 
 julia> pairs(dict)
-3-element Dictionaries.PairDictionary{String,Int64,HashDictionary{String,Int64}}
+3-element Dictionaries.PairDictionary{String,Int64,Dictionary{String,Int64}}
  "c" │ "c" => 3
  "b" │ "b" => 2
  "a" │ "a" => 1
