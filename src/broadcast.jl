@@ -7,7 +7,7 @@ struct BroadcastedDictionary{I, T, F, Data <: Tuple} <: AbstractDictionary{I, T}
     sharetokens::Bool
 end
 
-function BroadcastedDictionary(f, data)
+@propagate_inbounds function BroadcastedDictionary(f, data)
     dicts = _dicts(data...)
     sharetokens = _sharetokens(dicts...)
     I = keytype(dicts[1])
@@ -20,7 +20,12 @@ end
 @inline Base.keys(d::BroadcastedDictionary) = _keys(d.data...)
 
 @propagate_inbounds function Base.getindex(d::BroadcastedDictionary{I}, i::I) where {I}
-    return d.f(_getindex(i, d.data...)...)
+    if d.sharetokens
+        t = gettoken(d, i)
+        return d.f(_gettokenvalue(t, d.data...)...)
+    else
+        return d.f(_getindex(i, d.data...)...)
+    end
 end
 
 function Base.isassigned(d::BroadcastedDictionary{I}, i::I) where {I}
@@ -28,7 +33,9 @@ function Base.isassigned(d::BroadcastedDictionary{I}, i::I) where {I}
 end
 
 istokenizable(d::BroadcastedDictionary) = d.sharetokens
-tokens(d::BroadcastedDictionary) = _tokens(d.data...)
+function tokens(d::BroadcastedDictionary)
+    _tokens(d.data...)
+end
 
 @propagate_inbounds function gettoken(d::BroadcastedDictionary{I}, i::I) where {I}
     return gettoken(_tokens(d.data...), i)
@@ -53,10 +60,13 @@ _dicts() = ()
 @inline _keys(d, ds...) = _keys(ds...)
 
 _sharetokens(d) = true
-@inline function _sharetokens(d, d2, ds...)
+@propagate_inbounds function _sharetokens(d, d2, ds...)
     if sharetokens(d, d2)
         return _sharetokens(d, ds...)
     else
+        @boundscheck if !isequal(keys(d), keys(d2))
+            throw(IndexError("Indices do not match"))
+        end
         return false
     end
 end
@@ -72,7 +82,7 @@ _gettokenvalue(t) = ()
 @propagate_inbounds _gettokenvalue(t, d, ds...) = (d[CartesianIndex()], _gettokenvalue(t, ds...)...)
 
 _isassigned(i) = true
-_isassigned(i, d, ds...) = _istokenassigned(i, ds...)
+_isassigned(i, d, ds...) = _isassigned(i, ds...)
 function _isassigned(i, d::AbstractDictionary, ds...)
     if isassigned(d, i)
         return _isassigned(i, ds...)
