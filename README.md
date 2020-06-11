@@ -5,7 +5,7 @@
 ![Test Status](https://github.com/andyferris/Dictionaries.jl/workflows/Test/badge.svg)
 [![Codecov](https://codecov.io/gh/andyferris/Dictionaries.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/andyferris/Dictionaries.jl)
 
-This package is still quite young - new features are being added and some (low-level) interfaces may be tweaked in the future, but things should be stable enough for general usage. Contributions welcome - please submit an issue or PR!
+This package is somewhat young - new features are being added and some (low-level) interfaces may be tweaked in the future, but things should be stable enough for general usage. Contributions welcome - please submit an issue or PR!
 
 ## Motivation
 

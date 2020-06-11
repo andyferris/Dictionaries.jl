@@ -475,4 +475,4 @@ Base.empty(d::AbstractDictionary) = empty(keys(d), keytype(d), eltype(d))
 
 Base.empty(d::AbstractDictionary, ::Type{I}) where {I} = empty(keys(d), I)
 
-Base.empty(::AbstractIndices, ::Type{I}, ::Type{T}) where {I, T} = HashDictionary{I, T}()
+Base.empty(::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T} = HashDictionary{I, T}()

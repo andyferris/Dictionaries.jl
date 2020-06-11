@@ -276,38 +276,6 @@ function _distinct(f, ::Type{T}, itr) where T
     return out
 end
 
-# An auto-widening AbstractDictionary constructor
-function __distinct(f, dict, itr, s)
-    I = keytype(dict)
-    T = eltype(dict)
-    tmp = iterate(itr, s)
-    while tmp !== nothing
-        (x, s) = tmp
-        i = f(x)
-        if !(i isa I)
-            new_inds = copy(keys(dict), promote_type(I, typeof(i)))
-            new_dict = similar(new_inds, promote_type(T, typeof(x)))
-            (hadtoken, token) = gettoken!(new_dict, i)
-            if !hadtoken
-                @inbounds settokenvalue!(new_dict, token, x)
-            end
-            return __distinct(f, new_dict, itr, s)
-        elseif !(x isa T)
-            new_dict = copy(dict, promote_type(T, typeof(x)))
-            (hadtoken, token) = gettoken!(new_dict, i)
-            if !hadtoken
-                @inbounds settokenvalue!(new_dict, token, x)
-            end
-            return __distinct(f, new_dict, itr, s)
-        end
-        (hadtoken, token) = gettoken!(dict, i)
-        if !hadtoken
-            @inbounds settokenvalue!(dict, token, x)
-        end
-        tmp = iterate(itr, s)
-    end
-    return dict
-end
 
 ### Settable interface
 
@@ -362,13 +330,21 @@ end
     similar(d::AbstractDictionary, [T=eltype(d)])
 
 Construct a new `issettable` dictionary with identical `keys` as `d` and an element type of
-`T`. The initial values are unitialized/undefined.
+`T`. The initial values are3unitialized/undefined.
 """
 Base.similar(d::AbstractDictionary) = similar(keys(d), eltype(d))
 Base.similar(d::AbstractDictionary, ::Type{T}) where {T} = similar(keys(d), T)
 
 function Base.similar(indices::AbstractIndices{I}, ::Type{T}) where {I, T}
     return similar(convert(HashIndices{I}, indices), T)
+end
+
+function Base.merge(d1::AbstractDictionary, d2::AbstractDictionary)
+    # Note: need to copy the keys
+    out = similar(copy(keys(d1)), eltype(d1))
+    copyto!(out, d1)
+    merge!(out, d2)
+    return out
 end
 
 # fill! and fill

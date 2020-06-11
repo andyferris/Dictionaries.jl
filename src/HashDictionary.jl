@@ -293,8 +293,8 @@ end
 
 function Base.filter!(pred, dict::HashDictionary)
     indices = keys(dict)
-    _filter!(i -> pred(@inbounds dict.values[i]), keys(indices.values), indices.values, indices.hashes, (dict.values,))
-    indices.deleted = 0
+    _filter!(i -> pred(@inbounds dict.values[i]), indices.values, indices.hashes, (dict.values,))
+    indices.holes = 0
     newsize = Base._tablesz(3*length(indices.values) >> 0x01)
     rehash!(indices, newsize, (dict.values,))
     return dict
@@ -303,8 +303,8 @@ end
 function Base.filter!(pred, dict::PairDictionary{<:Any, <:Any, <:HashDictionary})
     d = dict.d
     indices = keys(d)
-    _filter!(i -> pred(@inbounds indices.values[i] => d.values[i]), keys(indices.values), indices.values, indices.hashes, (d.values,))
-    indices.deleted = 0
+    _filter!(i -> pred(@inbounds indices.values[i] => d.values[i]), indices.values, indices.hashes, (d.values,))
+    indices.holes = 0
     newsize = Base._tablesz(3*length(indices.values) >> 0x01)
     rehash!(indices, newsize, (d.values,))
     return dict
