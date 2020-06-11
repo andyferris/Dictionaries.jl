@@ -226,6 +226,6 @@ performed quickly (e.g. O(1) rather than O(N)). Return `false` otherwise.
 
 Note: the test may not be precise, this defaults to `tokens(dict1) === tokens(dict2)`.
 """
-sharetokens(i1::AbstractIndices, i2::AbstractIndices) = istokenizable(i1) && istokenizable(i2) && i1 === i2
+sharetokens(i1::AbstractIndices, i2::AbstractIndices) = istokenizable(i1) && i1 === i2
 sharetokens(d1, d2) = sharetokens(keys(d1), keys(d2))
 sharetokens(d1, d2, ds...) = sharetokens(d1, d2) && sharetokens(d1, ds...)
