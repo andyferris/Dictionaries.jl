@@ -131,6 +131,27 @@ function Dictionary{I, T}(inds::Indices{I}, values) where {I, T}
 end
 
 """
+    Dictionary(indices, undef::UndefInitializer)
+
+Construct a `Dictionary` from an iterable of `indices`, where the values are
+undefined/uninitialized.
+
+# Example
+
+```julia
+julia> Dictionary{Int, Float64}([1,2,3], undef)
+3-element Dictionary{Int64,Float64}
+ 1 │ 6.9220016379355e-310
+ 2 │ 6.9220016379426e-310
+ 3 │ 6.92200163794736e-310
+```
+"""
+function Dictionary{I, T}(inds::Indices{I}, ::UndefInitializer) where {I, T}
+    vs = Vector{T}(undef, length(inds.values))
+    return Dictionary{I, T}(inds, vs, nothing)
+end
+
+"""
     dictionary(iter)
 
 Construct a new `AbstractDictionary` from an iterable `iter` of key-value `Pair`s (or other

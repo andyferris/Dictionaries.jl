@@ -46,8 +46,8 @@ Construct an `ArrayDictionary` from empty `Vector`s, with `I` and `T` default to
 """
     ArrayDictionary(indices, undef::UndefInitializer)
 
-Construct a `Dictionary` from an iterable of `indices`, where the values are
-undefined/unitialized.
+Construct a `ArrayDictionary` from an iterable of `indices`, where the values are
+undefined/uninitialized.
 """
 @propagate_inbounds ArrayDictionary{I, T}(inds, ::UndefInitializer) where {I, T} = ArrayDictionary{I, T}(ArrayIndices{I}(inds), undef)
 @propagate_inbounds ArrayDictionary{I, T}(inds::ArrayIndices{I}, ::UndefInitializer) where {I, T} = ArrayDictionary{I, T}(inds, similar(parent(inds), T))
@@ -55,8 +55,8 @@ undefined/unitialized.
 """
     ArrayDictionary(indexable)
 
-Construct a `Dictionary` from an indexable container `indexable` with the same `keys` and
-`values`, equivalent to `Dictionary(keys(indexable), values(indexable))`. Note that
+Construct a `ArrayDictionary` from an indexable container `indexable` with the same `keys` and
+`values`, equivalent to `ArrayDictionary(keys(indexable), values(indexable))`. Note that
 `indexable` may not be copied.
 """
 ArrayDictionary(indexable) = ArrayDictionary(keys(indexable), values(indexable))

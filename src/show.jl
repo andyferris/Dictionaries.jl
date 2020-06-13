@@ -1,6 +1,6 @@
 # Simple "print"-like rendering, use "{ ... }" brackets for compactness
 function Base.show(io::IO, inds::AbstractIndices)
-    limit = get(io, :limit, false) ? Int64(10) : typemax(Int64)       
+    limit = get(io, :limit, false) ? Int64(10) : typemax(Int64)
     comma = false
     print(io, "{")
     for i in inds
@@ -40,18 +40,42 @@ function Base.show(io::IO, d::AbstractDictionary)
 end
 
 # The "display"-like rendering
-function Base.show(io::IO, ::MIME"text/plain", i::AbstractIndices)
-    print(io, "$(length(i))-element $(typeof(i))")
-    n_lines = get(io, :limit, false) ? Int64(displaysize(io)[1] - 5) : typemax(Int64)
+function Base.show(io::IO, ::MIME"text/plain", d::AbstractIndices)
+    n_inds = length(d)
+    print(io, "$n_inds-element $(typeof(d))")
+    if n_inds == 0
+        return
+    end
+    n_lines = max(3, get(io, :limit, false) ? Int64(displaysize(io)[1] - 5) : typemax(Int64))
+    n_cols = max(2, get(io, :limit, false) ? Int64(displaysize(io)[2] - 1) : typemax(Int64))
     lines = 1
-    for k in i
-        print(io, "\n ")
-        show(io, k)
+
+    # First we collect strings of all the relevant elements
+    ind_strs = Vector{String}()
+
+    lines = 1
+    too_many_lines = false
+    for i in keys(d)
+        push!(ind_strs, sprint(show, i, context = io, sizehint = 0))
         lines += 1
-        if lines > n_lines
-            print(io, "\n ⋮")
+        if lines > n_lines && lines < n_inds
+            too_many_lines = true
             break
         end
+    end
+
+    # Now find padding sizes
+    max_ind_width = maximum(textwidth, ind_strs)
+    if max_ind_width + 1 > n_cols
+        shrink_to!(ind_strs, n_cols)
+    end
+
+    for ind_str in ind_strs
+        print(io, "\n ")
+        print(io, ind_str)
+    end
+    if too_many_lines
+        print(io, "\n ⋮")
     end
 end
 
@@ -61,8 +85,8 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
     if n_inds == 0
         return
     end
-    n_lines = get(io, :limit, false) ? Int64(displaysize(io)[1] - 5) : typemax(Int64)
-    n_cols = get(io, :limit, false) ? Int64(displaysize(io)[2] - 4) : typemax(Int64)
+    n_lines = max(3, get(io, :limit, false) ? Int64(displaysize(io)[1] - 5) : typemax(Int64))
+    n_cols = max(8, get(io, :limit, false) ? Int64(displaysize(io)[2] - 4) : typemax(Int64))
     lines = 1
 
     # First we collect strings of all the relevant elements
@@ -88,17 +112,22 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
     # Now find padding sizes
     max_ind_width = maximum(textwidth, ind_strs)
     max_val_width = maximum(textwidth, val_strs)
-    if max_ind_width + max_val_width + 4 > n_cols
-        if max_val_width > (n_cols - 2) ÷ 2
-            # In this case we share 50-50
-            val_width = (n_cols - 2) ÷ 2
-            shrink_to!(val_strs, val_width)
-        else
-            # In this case we allow the indices to take as much space as possible
-            val_width = max_val_width
+    if max_ind_width + max_val_width > n_cols
+        val_width = max_val_width
+        ind_width = max_ind_width
+        while ind_width + val_width > n_cols
+            if ind_width > val_width 
+                ind_width -= 1
+            else 
+                val_width -= 1
+            end
         end
-        ind_width = n_cols - val_width - 4
-        shrink_to!(ind_strs, ind_width)
+        if ind_width != max_ind_width
+            shrink_to!(ind_strs, ind_width)
+        end
+        if val_width != max_val_width
+            shrink_to!(val_strs, val_width)
+        end
     else
         ind_width = max_ind_width
     end

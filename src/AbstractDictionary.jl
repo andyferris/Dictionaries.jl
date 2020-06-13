@@ -279,35 +279,6 @@ function Base.unique(d::AbstractDictionary)
     return out
 end
 
-# TODO think of a name for this. This matches Base.unique but ideally `distinct` could be
-# be an abstract factory method, like `distinct(BTreeIndices{Int}, itr)`.
-#=
-"""
-    distinct(f, itr; to=Dictionary)
-
-Collect the first element of iterator `itr` for each unique value produced by `f` applied to
-elements of `itr` into a new collection, defaulting to `Dictionary`. Similar to
-`Base.unique`, except returning a dictionary instead of an array.
-
-# Example
-
-```julia
-julia> distinct(first, ["Alice", "Bob", "Charlie"])
-3-element Dictionary{Char,String}
- 'A' │ "Alice"
- 'B' │ "Bob"
- 'C' │ "Charlie"
-
-julia> distinct(first, ["Alice", "Bob", "Charlie", "Chaz"])
-3-element Dictionary{Char,String}
- 'A' │ "Alice"
- 'B' │ "Bob"
- 'C' │ "Charlie" 
-```
-"""
-distinct(f, itr) = _distinct(f, Dictionary, itr)
-=#
-
 function _distinct(f, ::Type{T}, itr) where T
     out = T()
     for x in itr
