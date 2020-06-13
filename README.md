@@ -234,7 +234,7 @@ julia> inds["b"]
 "b"
 ```
 
-Thus, if you iterate an `AbstractIndices` you are guaranteed never to get the same value twice, and the collection is a set. All the usual set operations like `union`, `intersect`, `setdiff` and `symdiff` are defined, as well as a newly exported predicate function `disjoint(set1, set2)` which returns `true` if `set1` and `set2` do not intersect/overlap according to an elementwise `isequal` check, and `false` otherwise.
+Thus, if you iterate an `AbstractIndices` you are guaranteed never to get the same value twice, and the collection is a set. All the usual set operations like `union`, `intersect`, `setdiff` and `symdiff` are defined, as well as a newly exported predicate function `disjoint(set1, set2)` which returns `true` if `set1` and `set2` do not intersect/overlap according to an elementwise `isequal` check, and `false` otherwise (note that `Dictionaries.disjoint` is deprecated in favour of `Base.isdisjoint` in Julia 1.5 onwards).
 
 Since all dictionaries have `keys`, even indices must have `keys` - and in this case `keys(inds::AbstractIndices) === inds`.
 

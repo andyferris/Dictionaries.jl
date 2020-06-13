@@ -32,6 +32,9 @@ include("Indices.jl")
 include("Dictionary.jl")
 include("MappedDictionary.jl")
 
+Base.@deprecate_binding HashIndices Indices true
+Base.@deprecate_binding HashDictionary Dictionary true
+
 end # module
 
 # # TODO

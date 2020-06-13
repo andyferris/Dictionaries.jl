@@ -315,18 +315,22 @@ end
 
 # issetequal and issubset(equal) should work already
 
-"""
-    disjoint(set1, set2)
+@static if VERSION < v"1.5-"
+    """
+        disjoint(set1, set2)
 
-Return `true` if `set1` and `set2` are disjoint or `false`. Two sets are disjoint if no
-elements of `set1` is in `set2`, and vice-versa. Somewhat equivalent to, but faster than,
-`isempty(intersect(set1, set2))`.
-"""
-function disjoint(set1, set2)
-    for i in set1
-        if i in set2
-            return false
+    Return `true` if `set1` and `set2` are disjoint or `false`. Two sets are disjoint if no
+    elements of `set1` is in `set2`, and vice-versa. Somewhat equivalent to, but faster than,
+    `isempty(intersect(set1, set2))`.
+    """
+    function disjoint(set1, set2)
+        for i in set1
+            if i in set2
+                return false
+            end
         end
+        return true
     end
-    return true
+else
+    @deprecate disjoint(set1, set2) isdisjoint(set1, set2)
 end
