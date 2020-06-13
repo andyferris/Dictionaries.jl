@@ -111,6 +111,7 @@ end
 
 function Dictionary{I, T}(inds::Indices{I}, values) where {I, T}
     if inds.holes != 0
+        # TODO instead constructor a vector with holes in it...
         inds = copy(inds)
     end
 
