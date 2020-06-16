@@ -95,9 +95,10 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractIndices)
                 # We check the next element to see if this one should be a ⋮
             end
         end
+        ind_strs = vcat(top_ind_strs, reverse(bottom_ind_strs))
+    else
+        ind_strs = top_ind_strs
     end
-
-    ind_strs = vcat(top_ind_strs, reverse(bottom_ind_strs))
 
     if Base.IteratorSize(d) === Base.SizeUnknown()
         if bottom_full
