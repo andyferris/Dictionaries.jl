@@ -33,6 +33,21 @@ end
 @propagate_inbounds ArrayIndices(a::AbstractArray{I}) where {I} = ArrayIndices{I}(a)
 @propagate_inbounds ArrayIndices{I}(a::AbstractArray{I}) where {I} = ArrayIndices{I, typeof(a)}(a)
 
+Base.convert(::Type{AbstractIndices{I}}, inds::ArrayIndices) where {I} = convert(ArrayIndices{I}, inds)
+Base.convert(::Type{ArrayIndices}, inds::AbstractIndices{I}) where {I} = convert(ArrayIndices{I}, inds)
+Base.convert(::Type{ArrayIndices{I}}, inds::ArrayIndices{I}) where {I} = inds
+Base.convert(::Type{ArrayIndices{I}}, inds::ArrayIndices{<:Any,Inds}) where {I, Inds <: AbstractArray{I}} = convert(ArrayIndices{I, Inds}, inds)
+function Base.convert(::Type{ArrayIndices{I, Inds}}, inds::ArrayIndices) where {I, Inds <: AbstractArray{I}}
+    a = convert(Inds, parent(inds))
+    return @inbounds ArrayIndices{I, Inds}(a)
+end
+
+Base.convert(::Type{ArrayIndices{I}}, inds::AbstractIndices) where {I} = convert(ArrayIndices{I, Vector{I}}, inds)
+function Base.convert(::Type{ArrayIndices{I, Inds}}, inds::AbstractIndices) where {I, Inds <: AbstractArray{I}}
+    a = convert(Inds, collect(I, inds))
+    return @inbounds ArrayIndices{I, typeof(a)}(a)
+end
+
 Base.parent(inds::ArrayIndices) = getfield(inds, :inds)
 
 # Basic interface
@@ -47,6 +62,25 @@ Base.length(inds::ArrayIndices) = length(parent(inds))
 istokenizable(i::ArrayIndices) = true
 tokentype(::ArrayIndices) = Int
 @inline iteratetoken(inds::ArrayIndices, s...) = iterate(LinearIndices(parent(inds)), s...)
+@inline function iteratetoken_reverse(inds::ArrayIndices)
+    li = LinearIndices(parent(inds))
+    if isempty(li)
+        return nothing
+    else
+        t = last(li)
+        return (t, t)
+    end
+end
+@inline function iteratetoken_reverse(inds::ArrayIndices, t)
+    li = LinearIndices(parent(inds))
+    t -= 1
+    if t < first(li)
+        return nothing
+    else
+        return (t, t)
+    end
+end
+
 @inline function gettoken(inds::ArrayIndices{I}, i::I) where {I}
     a = parent(inds)
     @inbounds for x in LinearIndices(a)

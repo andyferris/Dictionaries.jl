@@ -52,6 +52,14 @@
     @test length(set!(h, 3.0, 3.0)) == 3
     @test_throws ErrorException set!(h, 4, 5)
 
+    @test first(h) == 1
+    @test firstindex(h) == 1
+    @test last(h) == 3
+    @test lastindex(h) == 3
+
+    @test reverse(h)::Indices == Indices([3, 2, 1])
+    @test Iterators.reverse(h)::ReverseIndices == Indices([3, 2, 1])
+
     @testset "Comparison" begin
         i1 = Indices([1,2,3])
         i2 = Indices([1,2])

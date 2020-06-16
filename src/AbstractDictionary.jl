@@ -478,3 +478,7 @@ end
 function Base.copyto!(out::AbstractDictionary, d::AbstractDictionary)
     map!(identity, out, d)
 end
+
+Base.last(d::AbstractDictionary) = first(Iterators.reverse(d))
+Base.firstindex(d::AbstractDictionary) = first(keys(d))
+Base.lastindex(d::AbstractDictionary) = first(Iterators.reverse(keys(d)))

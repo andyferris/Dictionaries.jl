@@ -23,7 +23,8 @@ struct FilteredIndices{I, Parent <: AbstractIndices{I}, Pred} <: AbstractIndices
     pred::Pred
 end
 
-Base.IteratorSize(::FilteredIndices) = Base.SizeUnknown # You can still call `length`, but it is slower
+Base.parent(inds::FilteredIndices) = getfield(inds, :parent)
+Base.IteratorSize(::FilteredIndices) = Base.SizeUnknown() # You can still call `length`, but it is slower
 Base.length(inds::FilteredIndices) = count(inds.pred, inds.parent)
 
 function Base.in(i::I, inds::FilteredIndices{I}) where {I}
@@ -45,6 +46,7 @@ function filterview(pred, inds::AbstractIndices{I}) where {I}
     return FilteredIndices{I, typeof(inds), typeof(pred)}(inds, pred)
 end
 
+Iterators.reverse(inds::FilteredIndices) = filterview(inds.pred, Iterators.reverse(parent(inds)))
 
 ## Dictionaries
 
