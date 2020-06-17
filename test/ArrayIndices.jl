@@ -40,4 +40,18 @@
     @test issetequal(inds, Indices(2:2:100))
     @test all(in(i, inds) == iseven(i) for i in 2:100)
     @test isempty(empty!(inds))
+
+    @testset "covert" begin
+        i = Indices{Int32}([1,2,3])
+        ai = ArrayIndices{Int32}([1,2,3])
+
+        @test convert(AbstractIndices{Int32}, ai) === ai
+        @test convert(AbstractIndices{Int64}, ai)::ArrayIndices{Int64} == i
+
+        @test convert(ArrayIndices{Int32}, ai) === ai
+        @test convert(ArrayIndices{Int64}, ai)::ArrayIndices{Int64} == i
+        
+        @test convert(ArrayIndices{Int32}, i)::ArrayIndices{Int32} == i
+        @test convert(ArrayIndices{Int64}, i)::ArrayIndices{Int64} == i
+    end
 end

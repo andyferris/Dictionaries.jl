@@ -35,18 +35,18 @@ end
 
 Base.convert(::Type{AbstractIndices{I}}, inds::ArrayIndices) where {I} = convert(ArrayIndices{I}, inds)
 Base.convert(::Type{ArrayIndices}, inds::AbstractIndices{I}) where {I} = convert(ArrayIndices{I}, inds)
+Base.convert(::Type{ArrayIndices{I}}, inds::AbstractIndices) where {I} = convert(ArrayIndices{I, Vector{I}}, inds)
+function Base.convert(::Type{ArrayIndices{I, Inds}}, inds::AbstractIndices) where {I, Inds <: AbstractArray{I}}
+    a = convert(Inds, collect(I, inds))
+    return @inbounds ArrayIndices{I, typeof(a)}(a)
+end
+
 Base.convert(::Type{ArrayIndices{I}}, inds::ArrayIndices{I}) where {I} = inds
 Base.convert(::Type{ArrayIndices{I}}, inds::ArrayIndices{<:Any,Inds}) where {I, Inds <: AbstractArray{I}} = convert(ArrayIndices{I, Inds}, inds)
 Base.convert(::Type{ArrayIndices{I, Inds}}, inds::ArrayIndices{I, Inds}) where {I, Inds <: AbstractArray{I}} = inds
 function Base.convert(::Type{ArrayIndices{I, Inds}}, inds::ArrayIndices) where {I, Inds <: AbstractArray{I}}
     a = convert(Inds, parent(inds))
     return @inbounds ArrayIndices{I, Inds}(a)
-end
-
-Base.convert(::Type{ArrayIndices{I}}, inds::AbstractIndices) where {I} = convert(ArrayIndices{I, Vector{I}}, inds)
-function Base.convert(::Type{ArrayIndices{I, Inds}}, inds::AbstractIndices) where {I, Inds <: AbstractArray{I}}
-    a = convert(Inds, collect(I, inds))
-    return @inbounds ArrayIndices{I, typeof(a)}(a)
 end
 
 Base.parent(inds::ArrayIndices) = getfield(inds, :inds)
