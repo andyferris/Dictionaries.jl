@@ -37,6 +37,7 @@ Base.convert(::Type{AbstractIndices{I}}, inds::ArrayIndices) where {I} = convert
 Base.convert(::Type{ArrayIndices}, inds::AbstractIndices{I}) where {I} = convert(ArrayIndices{I}, inds)
 Base.convert(::Type{ArrayIndices{I}}, inds::ArrayIndices{I}) where {I} = inds
 Base.convert(::Type{ArrayIndices{I}}, inds::ArrayIndices{<:Any,Inds}) where {I, Inds <: AbstractArray{I}} = convert(ArrayIndices{I, Inds}, inds)
+Base.convert(::Type{ArrayIndices{I, Inds}}, inds::ArrayIndices{I, Inds}) where {I, Inds <: AbstractArray{I}} = inds
 function Base.convert(::Type{ArrayIndices{I, Inds}}, inds::ArrayIndices) where {I, Inds <: AbstractArray{I}}
     a = convert(Inds, parent(inds))
     return @inbounds ArrayIndices{I, Inds}(a)
