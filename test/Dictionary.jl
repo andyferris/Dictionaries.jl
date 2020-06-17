@@ -145,6 +145,16 @@
     @test isequal(index(first, ["Alice", "Bob", "Charlie"]), Dictionary(['A', 'B', 'C'], ["Alice", "Bob", "Charlie"]))
     @test isequal(index(first, ["Alice", "Bob", "Charlie", "Conner"]), Dictionary(['A', 'B', 'C'], ["Alice", "Bob", "Charlie"]))
 
+    rd = Dictionary([:b, :a], [2, 1])
+    @test reverse(d)::Dictionary == rd
+    @test Iterators.reverse(d)::ReverseDictionary == rd
+    @test first(d) == 1
+    @test last(d) == 2
+    @test firstindex(d) == :a
+    @test lastindex(d) == :b
+    #@test d[begin] == 1 # Parsing issues on earlier versions of Julia...
+    @test d[end] == 2
+
     # TODO token interface
 
     @testset "Dict tests from Base" begin

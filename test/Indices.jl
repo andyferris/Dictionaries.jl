@@ -172,5 +172,19 @@
         @test isequal(symdiff(i1, i2), Indices([1, 3]))
         @test isequal(symdiff(i1, i3), Indices([1, 2, 3, 4]))
     end
+
+    @testset "covert" begin
+        i = Indices{Int32}([1,2,3])
+        ai = ArrayIndices{Int32}([1,2,3])
+
+        @test convert(AbstractIndices{Int32}, i) === i
+        @test convert(AbstractIndices{Int64}, i)::Indices{Int64} == i
+
+        @test convert(Indices{Int32}, i) === i
+        @test convert(Indices{Int64}, i)::Indices{Int64} == i
+        
+        @test convert(Indices{Int32}, ai)::Indices{Int32} == i
+        @test convert(Indices{Int64}, ai)::Indices{Int64} == i
+    end
     # TODO: token interface
 end

@@ -23,28 +23,80 @@ struct FilteredIndices{I, Parent <: AbstractIndices{I}, Pred} <: AbstractIndices
     pred::Pred
 end
 
-Base.IteratorSize(::FilteredIndices) = Base.SizeUnknown # You can still call `length`, but it is slower
-Base.length(inds::FilteredIndices) = count(inds.pred, inds.parent)
+Base.parent(inds::FilteredIndices) = getfield(inds, :parent)
+_pred(inds::FilteredIndices) = getfield(inds, :pred)
+Base.IteratorSize(::FilteredIndices) = Base.SizeUnknown() # You can still call `length`, but it is slower
+Base.length(inds::FilteredIndices) = count(_pred(inds), parent(inds))
 
 function Base.in(i::I, inds::FilteredIndices{I}) where {I}
-    return i in inds.parent && inds.pred(i)
+    return i in parent(inds) && _pred(inds)(i)
 end
 
 function Base.iterate(inds::FilteredIndices{I}, s...) where {I}
-    tmp = iterate(inds.parent, s...)
+    tmp = iterate(parent(inds), s...)
     tmp === nothing && return nothing
     (i::I, s2) = tmp
-    if inds.pred(i)
+    if _pred(inds)(i)
         return (i, s2)
     else
         return iterate(inds, s2)
     end
+    return nothing
 end
+
+function Base.iterate(inds::ReverseIndices{I,<:FilteredIndices}, s...) where {I}
+    tmp = iterate(Iterators.reverse(parent(inds)), s...)
+    tmp === nothing && return nothing
+    (i::I, s2) = tmp
+    if _pred(inds)(i)
+        return (i, s2)
+    else
+        return iterate(inds, s2)
+    end
+    return nothing
+end
+
+istokenizable(inds::FilteredIndices) = istokenizable(parent(inds))
+@propagate_inbounds function iteratetoken(inds::FilteredIndices{I}, s...) where {I}
+    p = parent(inds)
+    tmp = iteratetoken(p, s...)
+    while (tmp !== nothing)
+        (token, state) = tmp
+        i = gettokenvalue(p, token)
+        if _pred(inds)(i)
+            return tmp
+        end
+        tmp = iteratetoken(p, state)
+    end
+    return nothing
+end
+@propagate_inbounds function iteratetoken_reverse(inds::FilteredIndices{I}, s...) where {I}
+    p = parent(inds)
+    tmp = iteratetoken_reverse(p, s...)
+    while (tmp !== nothing)
+        (token, state) = tmp
+        i = gettokenvalue(p, token)
+        if _pred(inds)(i)
+            return tmp
+        end
+        tmp = iteratetoken_reverse(p, state)
+    end
+    return nothing
+end
+@propagate_inbounds function gettoken(inds::FilteredIndices{I}, i::I) where {I}
+    (hastoken, token) = gettoken(parent(inds), i)
+    @boundscheck if hastoken
+        return (_pred(inds)(@inbounds gettokenvalue(parent, token)), token)
+    end
+    return (hastoken, token)
+end
+@propagate_inbounds gettokenvalue(inds::FilteredIndices, t) = gettokenvalue(parent(inds), t)
 
 function filterview(pred, inds::AbstractIndices{I}) where {I}
     return FilteredIndices{I, typeof(inds), typeof(pred)}(inds, pred)
 end
 
+Iterators.reverse(inds::FilteredIndices) = filterview(_pred(inds), Iterators.reverse(parent(inds)))
 
 ## Dictionaries
 
@@ -71,28 +123,52 @@ struct FilteredDictionary{I, V, Parent <: AbstractDictionary{I, V}, Pred} <: Abs
     pred::Pred
 end
 
-Base.IteratorSize(::FilteredDictionary) = Base.SizeUnknown # You can still call `length`, but it is slower
+Base.parent(dict::FilteredDictionary) = getfield(dict, :parent)
+_pred(dict::FilteredDictionary) = getfield(dict, :pred)
+Base.IteratorSize(::FilteredDictionary) = Base.SizeUnknown() # You can still call `length`, but it is slower
 
 @inline function Base.keys(dict::FilteredDictionary)
-    return filterview(i -> dict.pred(dict.parent[i]), keys(dict.parent))
+    return filterview(i -> _pred(dict)(parent(dict)[i]), keys(parent(dict)))
+end
+
+function Base.isassigned(dict::FilteredDictionary{I}, i::I) where {I}
+    p = parent(dict)
+    if !isassigned(p, i)
+        return false
+    end
+    @inbounds v = p[i]
+    return _pred(dict)(v)
 end
 
 @propagate_inbounds function Base.getindex(dict::FilteredDictionary{I}, i::I) where {I}
-    parent = dict.parent
-    (hastoken, token) = gettoken(parent, i)
+    p = parent(dict)
+    (hastoken, token) = gettoken(p, i)
     @boundscheck if !hastoken
         throw(IndexError("Dictionary does not contain index: $i"))
     end
-    out = gettokenvalue(parent, token)
-    @boundscheck if !dict.pred(out)
+    out = gettokenvalue(p, token)
+    @boundscheck if !_pred(dict)(out)
         throw(IndexError("Dictionary does not contain index: $i"))
     end
     return out
 end
 
+# These dictionaries are not settable - changing the values can change the keys
+
+istokenizable(dict::FilteredDictionary) = istokenizable(parent(dict))
+@propagate_inbounds function gettoken(dict::FilteredDictionary{I}, i::I) where {I}
+    (hastoken, token) = gettoken(parent(dict), i)
+    @boundscheck if hastoken
+        return (_pred(dict)(@inbounds gettokenvalue(parent, token)), token)
+    end
+    return (hastoken, token)
+end
+@propagate_inbounds gettokenvalue(dict::FilteredDictionary, t) = gettokenvalue(parent(dict), t)
+@propagate_inbounds istokenassigned(dict::FilteredDictionary, t) = istokenassigned(parent(dict), t)
+
 function filterview(pred, inds::AbstractDictionary{I, T}) where {I, T}
     return FilteredDictionary{I, T, typeof(inds), typeof(pred)}(inds, pred)
 end
 
-Base.similar(dict::FilteredDictionary, ::Type{T}, indices) where {T} = similar(dict.parent, T, indices)
-Base.empty(dict::FilteredDictionary, ::Type{T}) where {T} = similar(dict.parent, T)
+Base.similar(dict::FilteredDictionary, ::Type{T}, indices) where {T} = similar(parent(dict), T, indices)
+Base.empty(dict::FilteredDictionary, ::Type{T}) where {T} = similar(parent(dict), T)

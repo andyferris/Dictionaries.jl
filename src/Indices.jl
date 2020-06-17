@@ -104,8 +104,13 @@ function Indices{I}(values::Vector{I}) where {I}
     return Indices{I}(slots, hashes, values, 0)
 end
 
+Base.convert(::Type{AbstractIndices{I}}, inds::AbstractIndices) where {I} = convert(Indices{I}, inds) # the default AbstractIndices type
+Base.convert(::Type{AbstractIndices{I}}, inds::AbstractIndices{I}) where {I} = inds
+
+Base.convert(::Type{AbstractIndices{I}}, inds::Indices) where {I} = convert(Indices{I}, inds)
 Base.convert(::Type{Indices}, inds::AbstractIndices{I}) where {I} = convert(Indices{I}, inds)
 
+Base.convert(::Type{Indices{I}}, inds::Indices{I}) where {I} = inds
 function Base.convert(::Type{Indices{I}}, inds::AbstractIndices) where {I}
     # Fast path
     if inds isa Indices && inds.holes == 0
@@ -116,7 +121,7 @@ function Base.convert(::Type{Indices{I}}, inds::AbstractIndices) where {I}
     # The input is already unique
     values = collect(I, inds)
     hashes = map(v -> hash(v) & hash_mask, values)
-    
+
     # Incrementally build the hashmap
     newsize = Base._tablesz(3*length(values) >> 0x01)
     bit_mask = newsize - 1 # newsize is a power of two
@@ -150,15 +155,24 @@ Create a shallow copy of the indices, optionally changing the element type.
 
 (Note that `copy` on a dictionary does not copy its indices).
 """
-function Base.copy(indices::Indices, ::Type{I}) where {I}
-    _copy = I === eltype(indices) ? copy : identity # the constructor will call `convert`
-    if indices.holes == 0
-        return Indices{I}(_copy(indices.slots), _copy(indices.hashes), _copy(indices.values), 0)
-    else
-        out = Indices{I}(Vector{Int}(), _copy(indices.hashes), _copy(indices.values), indices.holes)
-        newsize = Base._tablesz(3*length(indices) >> 0x01)
-        rehash!(out, newsize)
+function Base.copy(indices::Indices{I}, ::Type{I2}) where {I, I2}
+    return Indices{I}(copy(indices.slots), copy(indices.hashes), collect(I2, indices.values), indices.holes)
+end
+
+function Base.copy(indices::ReverseIndices{I,Indices{I}}, ::Type{I2}) where {I, I2}
+    p = parent(indices)
+    l = length(p.values) + 1
+    old_slots = p.slots
+    new_slots = similar(old_slots)
+    @inbounds for i in keys(p.slots)
+        index = old_slots[i]
+        if index > 0
+            new_slots[i] = l - index
+        else
+            new_slots[i] = index
+        end
     end
+    return Indices{I2}(new_slots, reverse(p.hashes), collect(I2, Iterators.reverse(p.values)), p.holes)
 end
 
 # private (note that newsize must be power of two)
@@ -258,6 +272,34 @@ end
             return ((0, index), index)
         end
         index += 1
+    end
+    return nothing
+end
+
+@propagate_inbounds function iteratetoken_reverse(indices::Indices)
+    index = length(indices)
+    if indices.holes == 0
+        return index > 0 ? ((0, index), index) : nothing
+    end
+    @inbounds while index > 0
+        if indices.hashes[index] & deletion_mask === zero(UInt)
+            return ((0, index), index)
+        end
+        index -= 1
+    end
+    return nothing
+end
+
+@propagate_inbounds function iteratetoken_reverse(indices::Indices, index::Int)
+    index -= 1
+    if indices.holes == 0 # apparently this is enough to make it iterate as fast as `Vector`
+        return index > 0 ? ((0, index), index) : nothing
+    end
+    @inbounds while index > 0
+        if indices.hashes[index] & deletion_mask === zero(UInt)
+            return ((0, index), index)
+        end
+        index -= 1
     end
     return nothing
 end
