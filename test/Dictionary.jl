@@ -152,7 +152,7 @@
     @test last(d) == 2
     @test firstindex(d) == :a
     @test lastindex(d) == :b
-    @test d[begin] == 1
+    #@test d[begin] == 1 # Parsing issues on earlier versions of Julia...
     @test d[end] == 2
 
     # TODO token interface
