@@ -27,7 +27,7 @@ julia> pairs(dict)
 """
 Base.pairs(d::AbstractDictionary) = PairDictionary{keytype(d), eltype(d), typeof(d)}(d)
 
-Base.parent(d::PairDictionary) = d.d
+Base.parent(d::PairDictionary) = getfield(d, :d)
 Base.keys(d::PairDictionary) = keys(parent(d))
 
 # Length

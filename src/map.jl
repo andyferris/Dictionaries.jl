@@ -106,38 +106,48 @@ struct MappedDictionary{I, T, F, Maps <: Tuple{AbstractDictionary{<:I}, Vararg{A
     dicts::Maps
 end
 
-Base.keys(d::MappedDictionary{I}) where {I} = keys(d.dicts[1])::AbstractIndices{I}
+Base.keys(d::MappedDictionary{I}) where {I} = keys(_dicts(d)[1])::AbstractIndices{I}
+_dicts(d::MappedDictionary{I}) where {I} = getfield(d, :dicts)
+_f(d::MappedDictionary{I}) where {I} = getfield(d, :f)
 
 function Base.isassigned(d::MappedDictionary{I}, i::I) where {I}
-    return all(Base.Fix2(isassigned, i), d.dicts)
+    return all(Base.Fix2(isassigned, i), _dicts(d))
 end
 
 function Base.isassigned(d::MappedDictionary{I, T, <:Any, <:Tuple{AbstractDictionary{<:I}}}, i::I) where {I, T}
-    return isassigned(d.dicts[1], i)
+    return isassigned(_dicts(d)[1], i)
 end
 
 @propagate_inbounds function Base.getindex(d::MappedDictionary{I, T, <:Any, <:Tuple{AbstractDictionary{<:I}}}, i::I) where {I, T}
-    return d.f(d.dicts[1][i])::T
+    return _f(d)(_dicts(d)[1][i])::T
 end
 
 @inline function Base.getindex(d::MappedDictionary{I, T}, i::I) where {I, T}
-    @boundscheck checkindex(d.dicts[1], i)
-    return d.f(map(x -> @inbounds(x[i]), d.dicts)...)::T
+    @boundscheck checkindex(_dicts(d)[1], i)
+    return _f(d)(map(x -> @inbounds(x[i]), _dicts(d))...)::T
 end
 
 # TODO FIXME what do about tokens when there is more than one mapped dictioanry? For now, we disable them...
 istokenizable(d::MappedDictionary) = false
 function istokenizable(d::MappedDictionary{I, T, <:Any, <:Tuple{AbstractDictionary{<:I}}}) where {I, T}
-    return istokenizable(d.dicts[1])
+    return istokenizable(_dicts(d)[1])
 end
 
 @propagate_inbounds function gettokenvalue(d::MappedDictionary{I, T, <:Any, <:Tuple{AbstractDictionary{<:I}}}, t) where {I, T}
-    return d.f(gettokenvalue(d.dicts[1], t))
+    return _f(d)(gettokenvalue(_dicts(d)[1], t))
 end
 
 function istokenassigned(d::MappedDictionary{I, T, <:Any, <:Tuple{AbstractDictionary{<:I}}}, t) where {I, T}
-    return istokenassigned(d.dicts[1], t)
+    return istokenassigned(_dicts(d)[1], t)
 end
 
 Base.similar(dict::MappedDictionary, ::Type{T}, indices) where {T} = similar(parent(dict), T, indices)
 Base.empty(dict::MappedDictionary, ::Type{I}, ::Type{T}) where {I, T} = similar(parent(dict), I, T)
+
+if VERSION > v"1.6-"
+    function Iterators.map(f, d::AbstractDictionary)
+        I = keytype(d)
+        T = Core.Compiler.return_type(f, Tuple{eltype(d)}) # Base normally wouldn't invoke inference for something like this...
+        return MappedDictionary{I, T, typeof(f), Tuple{typeof(d)}}(f, (d,))
+    end
+end

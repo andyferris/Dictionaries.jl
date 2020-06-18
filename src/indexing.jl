@@ -15,8 +15,7 @@ end
     return setindex!(d, convert(T, v), i)
 end
 
-
-## get helper function
+## `get` helper function
 @propagate_inbounds function Base.get(d::AbstractDictionary{I, T}, i, default) where {I, T}
     get(d, convert(I, i), default)
 end
@@ -31,6 +30,19 @@ end
         return gettokenvalue(d, t)
     else
         return default
+    end
+end
+
+@propagate_inbounds function Base.get(f::Base.Callable, d::AbstractDictionary{I}, i) where {I}
+    get(f, d, convert(I, i))
+end
+
+@propagate_inbounds function Base.get(f::Base.Callable, d::AbstractDictionary{I, T}, i::I) where {I, T}
+    (hasindex, t) = gettoken(d, i)
+    if hasindex
+        return gettokenvalue(d, t)
+    else
+        return convert(T, f())
     end
 end
 
@@ -60,45 +72,45 @@ struct DictionaryView{I, V, Inds <: AbstractDictionary{I}, Vals <: AbstractDicti
     vals::Vals
 end
 
-Base.parent(d::DictionaryView) = d.vals
+Base.parent(d::DictionaryView) = getfield(d, :vals)
+_inds(d::DictionaryView) = getfield(d, :inds)
 
-Base.keys(d::DictionaryView) = keys(d.inds)
+Base.keys(d::DictionaryView) = keys(_inds(d))
 
 function Base.isassigned(d::DictionaryView{I}, i::I) where {I}
-    i2 = @inbounds d.inds[i]
-    return isassigned(d.vals, i2)
+    i2 = @inbounds _inds(d)[i]
+    return isassigned(parent(d), i2)
 end
 
 @propagate_inbounds function Base.getindex(d::DictionaryView{I}, i::I) where {I}
-    i2 = @inbounds d.inds[i]
-    return d.vals[i2]
+    i2 = _inds(d)[i]
+    return @inbounds parent(d)[i2]
 end
 
 @propagate_inbounds function Base.setindex!(d::DictionaryView{I, T}, value::T, i::I) where {I, T}
-    i2 = @inbounds d.inds[i]
-    return d.vals[i2] = value
+    i2 = _inds(d)[i]
+    return @inbounds parent(d)[i2] = value
 end
 
 # `DictionaryView` shares tokens with it's `keys` (and can co-iterate quickly with other dictionaries with those keys)
 @propagate_inbounds function gettoken(d::DictionaryView{I}, i::I) where {I}
-    return gettoken(d.inds, i)
+    return gettoken(_inds(d), i)
 end
 
 @propagate_inbounds function istokenassigned(d::DictionaryView, t)
-    i2 = gettokenvalue(d.inds, t)
-    return isassigned(d.vals, i2)
+    i2 = gettokenvalue(_inds(d), t)
+    return isassigned(parent(d), i2)
 end
 
 @propagate_inbounds function gettokenvalue(d::DictionaryView, t)
-    i2 = gettokenvalue(d.inds, t)
-    return d.vals[i2]
+    i2 = gettokenvalue(_inds(d), t)
+    return @inbounds parent(d)[i2]
 end
 
 @propagate_inbounds function settokenvalue!(d::DictionaryView{<:Any, T}, t, value::T) where {T}
-    i2 = gettokenvalue(d.inds, t)
-    return d.vals[i2] = value
+    i2 = gettokenvalue(_inds(d), t)
+    return @inbounds parent(d)[i2] = value
 end
-
 
 @inline function Base.view(vals::AbstractDictionary, inds::AbstractDictionary)
     @boundscheck checkindices(keys(vals), inds)
@@ -110,3 +122,6 @@ end
     @boundscheck checkindices(inds1, inds2)
     return inds2
 end
+
+# TODO accelerate view(::Union{Dictionary, Indices}, ::Indices) to fetch not compute the intermediate `hash`
+# (similary a sort-based index could take advantage of sort-merge algorithms on iteration?)
