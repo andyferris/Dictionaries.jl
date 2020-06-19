@@ -73,7 +73,7 @@ end
 IndicesTokens(indices::AbstractIndices{I}) where {I} = IndicesTokens{I}(indices)
 IndicesTokens{I}(indices::AbstractIndices{I}) where {I} = IndicesTokens{I, tokentype(indices)}(indices)
 
-Base.parent(ts::IndicesTokens) = ts.parent
+Base.parent(ts::IndicesTokens) = getfield(ts, :parent)
 
 Base.keys(ts::IndicesTokens) = parent(ts)
 
@@ -116,7 +116,7 @@ struct Tokenized{Parent <: AbstractDictionary}
     parent::Parent
 end
 
-Base.parent(dict::Tokenized) = dict.parent
+Base.parent(dict::Tokenized) = getfield(dict, :parent)
 
 @propagate_inbounds function Base.getindex(d::Tokenized, t)
     return gettoken(parent(d), t)

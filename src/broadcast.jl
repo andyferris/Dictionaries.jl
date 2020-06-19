@@ -7,6 +7,9 @@ struct BroadcastedDictionary{I, T, F, Data <: Tuple} <: AbstractDictionary{I, T}
     sharetokens::Bool
 end
 
+_f(d::BroadcastedDictionary) = getfield(d, :f)
+_data(d::BroadcastedDictionary) = getfield(d, :data)
+
 @propagate_inbounds function BroadcastedDictionary(f, data)
     dicts = _dicts(data...)
     sharetokens = _sharetokens(dicts...)
@@ -17,36 +20,36 @@ end
     return BroadcastedDictionary{I, T, typeof(f), typeof(data)}(f, data, sharetokens)
 end
 
-@inline Base.keys(d::BroadcastedDictionary) = _keys(d.data...)
+@inline Base.keys(d::BroadcastedDictionary) = _keys(_data(d)...)
 
 @propagate_inbounds function Base.getindex(d::BroadcastedDictionary{I}, i::I) where {I}
-    if d.sharetokens
+    if istokenizable(d)
         t = gettoken(d, i)
-        return d.f(_gettokenvalue(t, d.data...)...)
+        return _f(d)(_gettokenvalue(t, _data(d)...)...)
     else
-        return d.f(_getindex(i, d.data...)...)
+        return _f(d)(_getindex(i, _data(d)...)...)
     end
 end
 
 function Base.isassigned(d::BroadcastedDictionary{I}, i::I) where {I}
-    return _isassigned(i, d.data...)
+    return _isassigned(i, _data(d)...)
 end
 
-istokenizable(d::BroadcastedDictionary) = d.sharetokens
+istokenizable(d::BroadcastedDictionary) = getfield(d, :sharetokens)
 function tokens(d::BroadcastedDictionary)
-    _tokens(d.data...)
+    _tokens(_data(d)...)
 end
 
 @propagate_inbounds function gettoken(d::BroadcastedDictionary{I}, i::I) where {I}
-    return gettoken(_tokens(d.data...), i)
+    return gettoken(_tokens(_data(d)...), i)
 end
 
 function istokenassigned(d::BroadcastedDictionary, t)
-    return _istokenassigned(t, d.data...)
+    return _istokenassigned(t, _data(d)...)
 end
 
 @propagate_inbounds function gettokenvalue(d::BroadcastedDictionary, t)
-    return d.f(_gettokenvalue(t, d.data...)...)
+    return _f(d)(_gettokenvalue(t, _data(d)...)...)
 end
 
 @inline _dicts(d::AbstractDictionary, ds...) = (d, _dicts(ds...)...)

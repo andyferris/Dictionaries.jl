@@ -3,7 +3,7 @@ struct Dictionary{I, T} <: AbstractDictionary{I, T}
     values::Vector{T}
 
     function Dictionary{I, T}(inds::Indices{I}, values::Vector{T}, ::Nothing) where {I, T}
-       @assert length(values) == length(inds.values)
+       @assert length(values) == length(_values(inds))
        return new{I,T}(inds, values)
     end
 end
@@ -110,7 +110,7 @@ function Dictionary{I, T}(inds, values) where {I, T}
 end
 
 function Dictionary{I, T}(inds::Indices{I}, values) where {I, T}
-    if inds.holes != 0
+    if _holes(inds) != 0
         # TODO instead constructor a vector with holes in it...
         inds = copy(inds)
     end
@@ -148,7 +148,7 @@ julia> Dictionary{Int, Float64}([1,2,3], undef)
 ```
 """
 function Dictionary{I, T}(inds::Indices{I}, ::UndefInitializer) where {I, T}
-    vs = Vector{T}(undef, length(inds.values))
+    vs = Vector{T}(undef, length(_values(inds)))
     return Dictionary{I, T}(inds, vs, nothing)
 end
 
@@ -265,28 +265,29 @@ function index(f, iter)
     _dictionary(f, identity, Dictionary, iter)
 end
 
-# indicesi
+# indices
 
-Base.keys(dict::Dictionary) = dict.indices
+Base.keys(dict::Dictionary) = getfield(dict, :indices)
+_values(dict::Dictionary) = getfield(dict, :values)
 
 # tokens
 
-tokenized(dict::Dictionary) = dict.values
+tokenized(dict::Dictionary) = _values(dict)
 
 # values
 
 function istokenassigned(dict::Dictionary, (_slot, index))
-    return isassigned(dict.values, index)
+    return isassigned(_values(dict), index)
 end
 
 @propagate_inbounds function gettokenvalue(dict::Dictionary, (_slot, index))
-    return dict.values[index]
+    return _values(dict)[index]
 end
 
 issettable(::Dictionary) = true
 
 @propagate_inbounds function settokenvalue!(dict::Dictionary{<:Any, T}, (_slot, index), value::T) where {T}
-    dict.values[index] = value
+    _values(dict)[index] = value
     return dict
 end
 
@@ -295,46 +296,46 @@ end
 isinsertable(::Dictionary) = true
 
 function gettoken!(dict::Dictionary{I}, i::I) where {I}
-    (hadtoken, (slot, index)) = gettoken!(keys(dict), i, (dict.values,))
+    (hadtoken, (slot, index)) = gettoken!(keys(dict), i, (_values(dict),))
     return (hadtoken, (slot, index))
 end
 
 function deletetoken!(dict::Dictionary{I, T}, (slot, index)) where {I, T}
-    isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), dict.values, index-1)
-    deletetoken!(dict.indices, (slot, index), (dict.values,))
+    isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), _values(dict), index-1)
+    deletetoken!(keys(dict), (slot, index), (_values(dict),))
     return dict
 end
 
 
 function Base.empty!(dict::Dictionary{I, T}) where {I, T}
-    empty!(dict.values)
-    empty!(dict.indices)
+    empty!(_values(dict))
+    empty!(keys(dict))
 
     return dict
 end
 
 function Base.filter!(pred, dict::Dictionary)
     indices = keys(dict)
-    _filter!(i -> pred(@inbounds dict.values[i]), indices.values, indices.hashes, (dict.values,))
-    indices.holes = 0
-    newsize = Base._tablesz(3*length(indices.values) >> 0x01)
-    rehash!(indices, newsize, (dict.values,))
+    _filter!(i -> pred(@inbounds _values(dict)[i]), _values(indices), _hashes(indices), (_values(dict),))
+    _holes(indices) = 0
+    newsize = Base._tablesz(3*length(_values(indices)) >> 0x01)
+    rehash!(indices, newsize, (_values(dict),))
     return dict
 end
 
 function Base.filter!(pred, dict::PairDictionary{<:Any, <:Any, <:Dictionary})
     d = dict.d
     indices = keys(d)
-    _filter!(i -> pred(@inbounds indices.values[i] => d.values[i]), indices.values, indices.hashes, (d.values,))
-    indices.holes = 0
-    newsize = Base._tablesz(3*length(indices.values) >> 0x01)
-    rehash!(indices, newsize, (d.values,))
+    _filter!(i -> pred(@inbounds _values(indices)[i] => _values(d)[i]), _values(indices), _hashes(indices), (_values(d),))
+    _holes(indices) = 0
+    newsize = Base._tablesz(3*length(_values(indices)) >> 0x01)
+    rehash!(indices, newsize, (_values(d),))
     return dict
 end
 
 # Factories
 
 function Base.similar(indices::Indices{I}, ::Type{T}) where {I, T}
-    return Dictionary{I, T}(indices, Vector{T}(undef, length(indices.values)), nothing)
+    return Dictionary{I, T}(indices, Vector{T}(undef, length(_values(indices))), nothing)
 end
 

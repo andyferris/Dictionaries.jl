@@ -12,6 +12,11 @@ mutable struct Indices{I} <: AbstractIndices{I}
     holes::Int # Number of "vacant" slots in hashes and values
 end
 
+_slots(inds::Indices) = getfield(inds, :slots)
+_hashes(inds::Indices) = getfield(inds, :hashes)
+_values(inds::Indices) = getfield(inds, :values)
+_holes(inds::Indices) = getfield(inds, :holes)
+
 Indices(; sizehint = 8) = Indices{Any}(; sizehint = sizehint)
 
 function Indices{I}(; sizehint = 8) where {I}
@@ -113,9 +118,9 @@ Base.convert(::Type{Indices}, inds::AbstractIndices{I}) where {I} = convert(Indi
 Base.convert(::Type{Indices{I}}, inds::Indices{I}) where {I} = inds
 function Base.convert(::Type{Indices{I}}, inds::AbstractIndices) where {I}
     # Fast path
-    if inds isa Indices && inds.holes == 0
+    if inds isa Indices && _holes(inds) == 0
         # Note: `convert` doesn't have copy semantics
-        return Indices{I}(inds.slots, inds.hashes, convert(Vector{I}, inds.values), 0)
+        return Indices{I}(_slots(inds), _hashes(inds), convert(Vector{I}, _values(inds)), 0)
     end
 
     # The input is already unique
@@ -156,15 +161,15 @@ Create a shallow copy of the indices, optionally changing the element type.
 (Note that `copy` on a dictionary does not copy its indices).
 """
 function Base.copy(indices::Indices{I}, ::Type{I2}) where {I, I2}
-    return Indices{I}(copy(indices.slots), copy(indices.hashes), collect(I2, indices.values), indices.holes)
+    return Indices{I}(copy(_slots(indices)), copy(_hashes(indices)), collect(I2, _values(indices)), _holes(indices))
 end
 
 function Base.copy(indices::ReverseIndices{I,Indices{I}}, ::Type{I2}) where {I, I2}
     p = parent(indices)
-    l = length(p.values) + 1
-    old_slots = p.slots
+    l = length(_values(p)) + 1
+    old_slots = _slots(p)
     new_slots = similar(old_slots)
-    @inbounds for i in keys(p.slots)
+    @inbounds for i in keys(_slots(p))
         index = old_slots[i]
         if index > 0
             new_slots[i] = l - index
@@ -172,17 +177,17 @@ function Base.copy(indices::ReverseIndices{I,Indices{I}}, ::Type{I2}) where {I, 
             new_slots[i] = index
         end
     end
-    return Indices{I2}(new_slots, reverse(p.hashes), collect(I2, Iterators.reverse(p.values)), p.holes)
+    return Indices{I2}(new_slots, reverse(_hashes(p)), collect(I2, Iterators.reverse(_values(p))), _holes(p))
 end
 
 # private (note that newsize must be power of two)
 function rehash!(indices::Indices{I}, newsize::Int, values = (), include_last_values::Bool = true) where {I}
-    slots = resize!(indices.slots, newsize)
+    slots = resize!(_slots(indices), newsize)
     fill!(slots, 0)
     bit_mask = newsize - 1 # newsize is a power of two
     
-    if indices.holes == 0
-        for (index, full_hash) in enumerate(indices.hashes)
+    if _holes(indices) == 0
+        for (index, full_hash) in enumerate(_hashes(indices))
             trial_slot = reinterpret(Int, full_hash) & bit_mask
             @inbounds while true
                 trial_slot = (trial_slot + 1)
@@ -196,20 +201,20 @@ function rehash!(indices::Indices{I}, newsize::Int, values = (), include_last_va
             end
         end
     else
-        # Compactify indices.values, indices.hashes and the values while we are at it
+        # Compactify _values(indices), _hashes(indices) and the values while we are at it
         to_index = Ref(1) # Reassigning to to_index/from_index gives the closure capture boxing issue, so mutate a reference instead
         from_index = Ref(1)
-        n_values = length(indices.values)
+        n_values = length(_values(indices))
         @inbounds while from_index[] <= n_values
-            full_hash = indices.hashes[from_index[]]
+            full_hash = _hashes(indices)[from_index[]]
             if full_hash & deletion_mask === zero(UInt)
                 trial_slot = reinterpret(Int, full_hash) & bit_mask
                 @inbounds while true
                     trial_slot = trial_slot + 1
                     if slots[trial_slot] == 0
                         slots[trial_slot] = to_index[]
-                        indices.hashes[to_index[]] = indices.hashes[from_index[]]
-                        indices.values[to_index[]] = indices.values[from_index[]]
+                        _hashes(indices)[to_index[]] = _hashes(indices)[from_index[]]
+                        _values(indices)[to_index[]] = _values(indices)[from_index[]]
                         if include_last_values || from_index[] < n_values
                             # Note - the last slot might end up with a random value (or
                             # GC'd reference). It's the callers responsibility to ensure the
@@ -229,18 +234,18 @@ function rehash!(indices::Indices{I}, newsize::Int, values = (), include_last_va
             from_index[] += 1
         end
     
-        new_size = n_values - indices.holes
-        resize!(indices.values, new_size)
-        resize!(indices.hashes, new_size)
+        new_size = n_values - _holes(indices)
+        resize!(_values(indices), new_size)
+        resize!(_hashes(indices), new_size)
         map(values) do (vals)
             resize!(vals, new_size)
         end
-        indices.holes = 0
+        setfield!(indices, :holes, 0)
     end
     return indices
 end
 
-Base.length(indices::Indices) = length(indices.values) - indices.holes
+Base.length(indices::Indices) = length(_values(indices)) - _holes(indices)
 
 # Token interface
 istokenizable(::Indices) = true
@@ -249,12 +254,12 @@ tokentype(::Indices) = Int
 
 # Duration iteration the token cannot be used for deletion - we do not worry about the slots
 @propagate_inbounds function iteratetoken(indices::Indices)
-    if indices.holes == 0
+    if _holes(indices) == 0
         return length(indices) > 0 ? ((0, 1), 1) : nothing
     end
     index = 1
-    @inbounds while index <= length(indices.hashes)
-        if indices.hashes[index] & deletion_mask === zero(UInt)
+    @inbounds while index <= length(_hashes(indices))
+        if _hashes(indices)[index] & deletion_mask === zero(UInt)
             return ((0, index), index)
         end
         index += 1
@@ -264,11 +269,11 @@ end
 
 @propagate_inbounds function iteratetoken(indices::Indices, index::Int)
     index += 1
-    if indices.holes == 0 # apparently this is enough to make it iterate as fast as `Vector`
-        return index <= length(indices.values) ? ((0, index), index) : nothing
+    if _holes(indices) == 0 # apparently this is enough to make it iterate as fast as `Vector`
+        return index <= length(_values(indices)) ? ((0, index), index) : nothing
     end
-    @inbounds while index <= length(indices.hashes)
-        if indices.hashes[index] & deletion_mask === zero(UInt)
+    @inbounds while index <= length(_hashes(indices))
+        if _hashes(indices)[index] & deletion_mask === zero(UInt)
             return ((0, index), index)
         end
         index += 1
@@ -278,11 +283,11 @@ end
 
 @propagate_inbounds function iteratetoken_reverse(indices::Indices)
     index = length(indices)
-    if indices.holes == 0
+    if _holes(indices) == 0
         return index > 0 ? ((0, index), index) : nothing
     end
     @inbounds while index > 0
-        if indices.hashes[index] & deletion_mask === zero(UInt)
+        if _hashes(indices)[index] & deletion_mask === zero(UInt)
             return ((0, index), index)
         end
         index -= 1
@@ -292,11 +297,11 @@ end
 
 @propagate_inbounds function iteratetoken_reverse(indices::Indices, index::Int)
     index -= 1
-    if indices.holes == 0 # apparently this is enough to make it iterate as fast as `Vector`
+    if _holes(indices) == 0 # apparently this is enough to make it iterate as fast as `Vector`
         return index > 0 ? ((0, index), index) : nothing
     end
     @inbounds while index > 0
-        if indices.hashes[index] & deletion_mask === zero(UInt)
+        if _hashes(indices)[index] & deletion_mask === zero(UInt)
             return ((0, index), index)
         end
         index -= 1
@@ -306,15 +311,15 @@ end
 
 function gettoken(indices::Indices{I}, i::I) where {I}
     full_hash = hash(i) & hash_mask
-    n_slots = length(indices.slots)
+    n_slots = length(_slots(indices))
     bit_mask = n_slots - 1 # n_slots is always a power of two
 
     trial_slot = reinterpret(Int, full_hash) & bit_mask
     @inbounds while true
         trial_slot = (trial_slot + 1)
-        trial_index = indices.slots[trial_slot]
+        trial_index = _slots(indices)[trial_slot]
         if trial_index > 0
-            value = indices.values[trial_index]
+            value = _values(indices)[trial_index]
             if i === value || isequal(i, value)
                 return (true, (trial_slot, trial_index))
             end    
@@ -329,7 +334,7 @@ function gettoken(indices::Indices{I}, i::I) where {I}
 end
 
 @propagate_inbounds function gettokenvalue(indices::Indices, (_slot, index))
-    return indices.values[index]
+    return _values(indices)[index]
 end
 
 # Insertion interface
@@ -337,16 +342,16 @@ isinsertable(::Indices) = true
 
 function gettoken!(indices::Indices{I}, i::I, values = ()) where {I}
     full_hash = hash(i) & hash_mask
-    n_slots = length(indices.slots)
+    n_slots = length(_slots(indices))
     bit_mask = n_slots - 1 # n_slots is always a power of two
-    n_values = length(indices.values)
+    n_values = length(_values(indices))
 
     trial_slot = reinterpret(Int, full_hash) & bit_mask
     trial_index = 0
     deleted_slot = 0
     @inbounds while true
         trial_slot = (trial_slot + 1)
-        trial_index = indices.slots[trial_slot]
+        trial_index = _slots(indices)[trial_slot]
         if trial_index == 0
             break
         elseif trial_index < 0
@@ -354,7 +359,7 @@ function gettoken!(indices::Indices{I}, i::I, values = ()) where {I}
                 deleted_slot = trial_slot
             end
         else
-            value = indices.values[trial_index]            
+            value = _values(indices)[trial_index]            
             if i === value || isequal(i, value)
                 return (true, (trial_slot, trial_index))
             end
@@ -368,13 +373,13 @@ function gettoken!(indices::Indices{I}, i::I, values = ()) where {I}
     new_index = n_values + 1
     if deleted_slot == 0
         # Use the trail slot
-        indices.slots[trial_slot] = new_index
+        _slots(indices)[trial_slot] = new_index
     else
         # Use the deleted slot
-        indices.slots[deleted_slot] = new_index
+        _slots(indices)[deleted_slot] = new_index
     end
-    push!(indices.hashes, full_hash)
-    push!(indices.values, i)
+    push!(_hashes(indices), full_hash)
+    push!(_values(indices), i)
     map(values) do (vals)
         resize!(vals, length(vals) + 1)
     end
@@ -386,14 +391,14 @@ function gettoken!(indices::Indices{I}, i::I, values = ()) where {I}
         rehash!(indices, newsize, values, false)
 
         # The index has changed
-        new_index = length(indices.values)
+        new_index = length(_values(indices))
 
         # The slot also has changed
         bit_mask = newsize - 1
         trial_slot = reinterpret(Int, full_hash) & bit_mask
         @inbounds while true
             trial_slot = (trial_slot + 1)
-            if indices.slots[trial_slot] == new_index
+            if _slots(indices)[trial_slot] == new_index
                 break
             end
             trial_slot = trial_slot & bit_mask
@@ -407,16 +412,16 @@ end
     @boundscheck if slot == 0
         error("Cannot use iteration token for deletion")
     end
-    indices.slots[slot] = -index
-    indices.hashes[index] = deletion_mask
-    isbitstype(I) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), indices.values, index-1)
-    indices.holes += 1
+    _slots(indices)[slot] = -index
+    _hashes(indices)[index] = deletion_mask
+    isbitstype(I) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), _values(indices), index-1)
+    setfield!(indices, :holes, _holes(indices) + 1)
 
     # Recreate the hash map when 1/3rd of the values are deletions
-    n_values = length(indices.values) - indices.holes
-    if 3 * indices.holes > n_values
+    n_values = length(_values(indices)) - _holes(indices)
+    if 3 * _holes(indices) > n_values
         # Halve if necessary
-        n_slots = length(indices.slots)
+        n_slots = length(_slots(indices))
         halve = 4 * n_values < n_slots && n_slots > 8
         rehash!(indices, halve ? n_slots >> 0x01 : n_slots, values)
     end
@@ -425,10 +430,10 @@ end
 end
 
 function Base.empty!(indices::Indices{I}) where {I} 
-    indices.hashes = Vector{UInt}()
-    indices.values = Vector{I}()
-    indices.slots = fill(0, 8)
-    indices.holes = 0
+    setfield!(indices, :hashes, Vector{UInt}())
+    setfield!(indices, :values, Vector{I}())
+    setfield!(indices, :slots, fill(0, 8))
+    setfield!(indices, :holes, 0)
     
     return indices
 end
@@ -436,9 +441,9 @@ end
 # Accelerated filtering
 
 function Base.filter!(pred, indices::Indices)
-    _filter!(i -> pred(@inbounds indices.values[i]), indices.values, indices.hashes, ())
-    indices.holes = 0
-    newsize = Base._tablesz(3*length(indices.values) >> 0x01)
+    _filter!(i -> pred(@inbounds _values(indices)[i]), _values(indices), _hashes(indices), ())
+    setfield!(indices, :holes, 0)
+    newsize = Base._tablesz(3*length(_values(indices)) >> 0x01)
     rehash!(indices, newsize)
 end
 
@@ -498,7 +503,3 @@ function __distinct!(indices::AbstractIndices, itr, s, x_old)
     end
     return indices
 end
-
-# CAUTION: I have observed Julia 1.4.2 fail to preserve the object identity of Indices
-# (or perhaps there is a coding error I don't understand that causes it to be recreated)
-sharetokens(i1::Indices, i2::Indices) = i1.slots === i2.slots
