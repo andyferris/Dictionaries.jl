@@ -250,31 +250,32 @@ Base.length(indices::Indices) = length(_values(indices)) - _holes(indices)
 # Token interface
 istokenizable(::Indices) = true
 
-tokentype(::Indices) = Int
+tokentype(::Indices) = Tuple{Int,Int}
 
 # Duration iteration the token cannot be used for deletion - we do not worry about the slots
 @propagate_inbounds function iteratetoken(indices::Indices)
     if _holes(indices) == 0
-        return length(indices) > 0 ? ((0, 1), 1) : nothing
+        return length(indices) > 0 ? ((0, 1), (0, 1)) : nothing
     end
     index = 1
     @inbounds while index <= length(_hashes(indices))
         if _hashes(indices)[index] & deletion_mask === zero(UInt)
-            return ((0, index), index)
+            return ((0, index), (0, index))
         end
         index += 1
     end
     return nothing
 end
 
-@propagate_inbounds function iteratetoken(indices::Indices, index::Int)
+@propagate_inbounds function iteratetoken(indices::Indices, token::Tuple{Int, Int})
+    (_, index) = token
     index += 1
     if _holes(indices) == 0 # apparently this is enough to make it iterate as fast as `Vector`
-        return index <= length(_values(indices)) ? ((0, index), index) : nothing
+        return index <= length(_values(indices)) ? ((0, index), (0, index)) : nothing
     end
     @inbounds while index <= length(_hashes(indices))
         if _hashes(indices)[index] & deletion_mask === zero(UInt)
-            return ((0, index), index)
+            return ((0, index), (0, index))
         end
         index += 1
     end
@@ -284,29 +285,50 @@ end
 @propagate_inbounds function iteratetoken_reverse(indices::Indices)
     index = length(indices)
     if _holes(indices) == 0
-        return index > 0 ? ((0, index), index) : nothing
+        return index > 0 ? ((0, index), (0, index)) : nothing
     end
     @inbounds while index > 0
         if _hashes(indices)[index] & deletion_mask === zero(UInt)
-            return ((0, index), index)
+            return ((0, index), (0, index))
         end
         index -= 1
     end
     return nothing
 end
 
-@propagate_inbounds function iteratetoken_reverse(indices::Indices, index::Int)
+@propagate_inbounds function iteratetoken_reverse(indices::Indices, token::Tuple{Int, Int})
+    (_, index) = token
     index -= 1
     if _holes(indices) == 0 # apparently this is enough to make it iterate as fast as `Vector`
-        return index > 0 ? ((0, index), index) : nothing
+        return index > 0 ? ((0, index), (0, index)) : nothing
     end
     @inbounds while index > 0
         if _hashes(indices)[index] & deletion_mask === zero(UInt)
-            return ((0, index), index)
+            return ((0, index), (0, index))
         end
         index -= 1
     end
     return nothing
+end
+
+@inline function midtoken(indices::Indices, t1::Tuple{Int, Int}, t2::Tuple{Int, Int})
+    (_, i1) = t1
+    (_, i2) = t2
+    i1′ = (i1 + i2) >> 0x1 # rounds downwards
+    i2′ = i1′ + 1
+
+    if _holes(indices) > 0
+        hashes = _hashes(indices)
+        while i1′ > i1 && @inbounds hashes[i1′] < deletion_mask
+            i1′ -= 1
+        end
+
+        while i2′ < i2 && @inbounds hashes[i2′] < deletion_mask
+            i2′ += 1
+        end
+    end
+
+    return ((0,i1′), (0,i2′))
 end
 
 function gettoken(indices::Indices{I}, i::I) where {I}

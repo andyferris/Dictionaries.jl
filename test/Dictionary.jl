@@ -5,7 +5,7 @@
 
     @test eltype(d) === Int64
     @test keytype(d) === Int64
-    @test tokentype(d) === Int
+    @test tokentype(d) === Tuple{Int, Int}
     @test Base.IteratorSize(d) === Base.HasLength()
     @test isinsertable(d)
     @test length(d) == 0

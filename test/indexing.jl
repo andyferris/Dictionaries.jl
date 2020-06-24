@@ -30,4 +30,6 @@
     setindices!(d, 2, d2)
     
     @test issetequal(pairs(d), [1=>1, 2=>2, 3=>2, 4=>2, 5=>0])
+
+    @test gettokenvalues(i, gettokens(i, i2)::Dictionary) == i2
 end

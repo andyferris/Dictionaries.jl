@@ -1,4 +1,4 @@
-@testset "pairs()" begin
+@testset "pairs" begin
     h = Indices{Int64}([3,6,9])
     p = pairs(h)
     @test p isa AbstractDictionary{Int64, Pair{Int64, Int64}}
