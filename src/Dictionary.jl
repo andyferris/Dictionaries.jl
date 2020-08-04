@@ -296,8 +296,9 @@ end
 isinsertable(::Dictionary) = true
 
 function gettoken!(dict::Dictionary{I}, i::I) where {I}
-    (hadtoken, (slot, index)) = gettoken!(keys(dict), i, (_values(dict),))
-    return (hadtoken, (slot, index))
+    return gettoken!(keys(dict), i, (_values(dict),))
+    #(hadtoken, (slot, index)) = gettoken!(keys(dict), i, (_values(dict),))
+    #return (hadtoken, (slot, index))
 end
 
 function deletetoken!(dict::Dictionary{I, T}, (slot, index)) where {I, T}
