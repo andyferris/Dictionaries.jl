@@ -54,4 +54,11 @@
         @test convert(ArrayIndices{Int32}, i)::ArrayIndices{Int32} == i
         @test convert(ArrayIndices{Int64}, i)::ArrayIndices{Int64} == i
     end
+
+    @testset "rand" begin
+        inds = ArrayIndices(["a", "b", "c", "d", "e"])
+        for i = 1:100
+            @test rand(inds) in ["a", "b", "c", "d", "e"]
+        end
+    end
 end
