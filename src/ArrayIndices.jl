@@ -129,3 +129,7 @@ function Base.filter!(pred, inds::ArrayIndices)
     filter!(pred, parent(inds))
     return inds
 end
+
+function randtoken(rng::Random.AbstractRNG, inds::ArrayIndices)
+    return rand(rng, keys(parent(inds)))
+end

@@ -55,4 +55,11 @@
     @test all(in(i, d) == !iseven(i) for i in 2:2:100)
     @test all(in(i, keys(d)) == iseven(i) for i in 2:2:100)
     @test isempty(empty!(d))
+
+    @testset "rand" begin
+        dict = ArrayDictionary(["a", "b", "c", "d", "e"], 1:5)
+        for i = 1:100
+            @test rand(dict) in 1:5
+        end
+    end
 end

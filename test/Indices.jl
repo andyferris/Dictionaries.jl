@@ -186,5 +186,18 @@
         @test convert(Indices{Int32}, ai)::Indices{Int32} == i
         @test convert(Indices{Int64}, ai)::Indices{Int64} == i
     end
+
+    @testset "rand" begin
+        inds = Indices(["a", "b", "c", "d", "e"])
+        for i = 1:100
+            @test rand(inds) in ["a", "b", "c", "d", "e"]
+        end
+
+        delete!(inds, "b") # Test handling of deleted slots
+        for i = 1:100
+            @test rand(inds) in ["a", "c", "d", "e"]
+        end
+    end
+
     # TODO: token interface
 end

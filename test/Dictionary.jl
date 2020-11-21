@@ -252,4 +252,16 @@
         @test isequal(keys(rand(1:10, d)::Dictionary{Char, Int}), Indices(['a','b','c']))
         @test isequal(keys(randn(d)::Dictionary{Char, Float64}), Indices(['a','b','c']))
     end
+
+    @testset "rand" begin
+        dict = Dictionary(["a", "b", "c", "d", "e"], 1:5)
+        for i = 1:100
+            @test rand(dict) in 1:5
+        end
+
+        delete!(dict, "b") # Test handling of deleted slots
+        for i = 1:100
+            @test rand(dict) in [1, 3, 4, 5]
+        end
+    end
 end

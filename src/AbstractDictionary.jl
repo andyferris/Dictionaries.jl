@@ -413,9 +413,16 @@ Base.trues(::Type{T}, d::AbstractDictionary) where {T} = fill(true, d, T) # T co
 # rand
 
 # Drawing FROM a dictionary requires is to create a `Sampler(rng, dict, Val(1/Inf))` and overload `rand(rng, S)`
-# We need to think about how this might happen efficiently. `randtoken`?
-# This should resolve an ambiguity with another convenience method below...
-Random.rand(rng::AbstractRNG, dict::AbstractDictionary) = error("Sampling from dictionaries is not yet implemented. You can create a random dictionary with `rand([rng], sampler, dict)`, e.g. `rand(1:10, dict)`")
+function Random.rand(rng::AbstractRNG, dict::AbstractDictionary)
+    Random.rand(rng::AbstractRNG, Random.Sampler(rng, dict, Val(Inf)))
+end
+
+function Random.rand(rng::AbstractRNG, s::Random.SamplerTrivial{<:AbstractDictionary})
+    dict = s[]
+    inds = keys(dict)
+    t = randtoken(rng, inds)
+    return @inbounds gettokenvalue(dict, t)
+end
 
 # Creating a random dictionary
 

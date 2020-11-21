@@ -315,6 +315,14 @@ end
 
 # issetequal and issubset(equal) should work already
 
+function randtoken(i::AbstractIndices)
+    return randtoken(Random.GLOBAL_RNG, i)
+end
+
+function randtoken(::Random.AbstractRNG, i::AbstractIndices)
+    error("randtoken is not implemented for $(typeof(i))")
+end
+
 @static if VERSION < v"1.5-"
     """
         disjoint(set1, set2)
