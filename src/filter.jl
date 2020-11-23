@@ -193,4 +193,4 @@ function filterview(pred, inds::AbstractDictionary{I, T}) where {I, T}
 end
 
 Base.similar(dict::FilteredDictionary, ::Type{T}, indices) where {T} = similar(parent(dict), T, indices)
-Base.empty(dict::FilteredDictionary, ::Type{T}) where {T} = similar(parent(dict), T)
+Base.empty(dict::FilteredDictionary, ::Type{T}) where {T} = empty(parent(dict), T)
