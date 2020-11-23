@@ -98,6 +98,28 @@ end
 
 Iterators.reverse(inds::FilteredIndices) = filterview(_pred(inds), Iterators.reverse(parent(inds)))
 
+
+function Base.isempty(inds::FilteredIndices)
+    for _ in inds
+        return false
+    end
+    return true
+end
+
+function randtoken(rng::Random.AbstractRNG, inds::FilteredIndices)
+    if isempty(inds)
+        throw(ArgumentError("range must be non-empty"))
+    end
+    p = parent(inds)
+    while true
+        # Rejection sampling
+        token = randtoken(rng, p)
+        if _pred(inds)(@inbounds gettokenvalue(p, token))
+            return token
+        end
+    end
+end
+
 ## Dictionaries
 
 function Base.filter(pred, dict::AbstractDictionary)

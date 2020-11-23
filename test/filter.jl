@@ -20,4 +20,9 @@
 
     filter!(iseven, d)
     @test isequal(d, Dictionary([3,4],[2,4]))
+
+    for _ in 1:100
+        @test rand(filterview(iseven, d)) in [2,4]
+    end
+    @test_throws ArgumentError rand(filterview(x -> false, d))
 end
