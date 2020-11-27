@@ -21,7 +21,7 @@ Indices(; sizehint = 8) = Indices{Any}(; sizehint = sizehint)
 
 function Indices{I}(; sizehint = 8) where {I}
     newsize = Base._tablesz((3 * sizehint) >> 0x01);
-    Indices{I}(fill(0, sizehint), Vector{UInt}(), Vector{I}(), 0)
+    Indices{I}(fill(0, newsize), Vector{UInt}(), Vector{I}(), 0)
 end
 
 """
