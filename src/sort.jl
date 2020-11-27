@@ -68,3 +68,32 @@ function searchsortedlasttoken(d::AbstractDictionary, x)
     end
 end
 
+function Base.sort(dict::AbstractDictionary; by = identity, kwargs...)
+    x = collect(tokens(dict))
+    sort!(x; by = t -> by(@inbounds gettokenvalue(dict, t)), kwargs...)
+    return @inbounds permutetokens(dict, x)
+end
+
+function Base.sortperm(dict::AbstractDictionary; by = identity, kwargs...)
+    x = collect(tokens(dict))
+    sort!(x; by = t -> by(@inbounds gettokenvalue(dict, t)), kwargs...)
+    return @inbounds permutetokens(keys(dict), x)
+end
+
+function permutetokens(dict::AbstractDictionary, perm)
+    out = empty(dict)
+    p = pairs(dict)
+    for t in perm
+        (i, v) = @inbounds gettokenvalue(p, t)
+        insert!(out, i, v)
+    end
+    return out
+end
+
+function permutetokens(inds::AbstractIndices, perm)
+    out = empty(inds)
+    for t in perm
+        insert!(out, @inbounds gettokenvalue(inds, t))
+    end
+    return out
+end
