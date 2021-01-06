@@ -213,7 +213,7 @@ function __dictionary(key, value, dict, iter, s)
         (x, s) = tmp
         i = key(x)
         v = value(x)
-        if !(i isa I)
+        if !(i isa I) && promote_type(typeof(i), I) != I
             new_inds = copy(keys(dict), promote_type(I, typeof(i)))
             new_dict = similar(new_inds, promote_type(T, typeof(v)))
             (hadtoken, token) = gettoken!(new_dict, i)
@@ -221,7 +221,7 @@ function __dictionary(key, value, dict, iter, s)
                 @inbounds settokenvalue!(new_dict, token, v)
             end
             return __dictionary(key, value, new_dict, iter, s)
-        elseif !(v isa T)
+        elseif !(v isa T) && promote_type(typeof(v), T) != T
             new_dict = copy(dict, promote_type(T, typeof(v)))
             (hadtoken, token) = gettoken!(new_dict, i)
             if !hadtoken
