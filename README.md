@@ -323,6 +323,8 @@ julia> getindices(dict, findall(isodd.(dict)))
 
 The `ArrayDictionary` container is a simple, iteration-based dictionary that may be faster for smaller collections. It's `keys` are the corresponding `ArrayIndices` type. By default these contain `Vector`s which support mutation, insertion and tokenization, but they can contain other arrays such as [`SVector`](https://github.com/JuliaArrays/StaticArrays.jl)s (which make for good statically-sized dictionaries, with similarities with `Base.ImmutableDict`).
 
+There is a `FillDictionary` container which lazily maps every key to the same value (only keeping a single copy of the value).
+
 Indices that are based on sort ordering instead of hashing (both in a dense sorted form and as a B-tree or similar) are also planned.
 
 ### Factories for dictionary creation
