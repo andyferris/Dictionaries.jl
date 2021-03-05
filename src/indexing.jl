@@ -48,11 +48,11 @@ end
 
 ## getproperty is equivalent to indexing with a `Symbol`
 
-@propagate_inbounds Base.getproperty(d::AbstractDictionary, s::Symbol) = d[s]
-@propagate_inbounds function Base.setproperty!(d::AbstractDictionary, s::Symbol, x)
-    d[s] = x
-    return x
-end
+# @propagate_inbounds Base.getproperty(d::AbstractDictionary, s::Symbol) = d[s]
+# @propagate_inbounds function Base.setproperty!(d::AbstractDictionary, s::Symbol, x)
+#     d[s] = x
+#     return x
+# end
 
 ## Non-scalar indexing
 
