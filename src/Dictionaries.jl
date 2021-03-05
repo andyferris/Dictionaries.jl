@@ -11,6 +11,7 @@ export AbstractDictionary, AbstractIndices, IndexError, ArrayIndices, Indices, D
 export dictionary, index, distinct, disjoint, isdictequal, filterview
 export issettable, isinsertable, set!, unset!
 export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, settokenvalue!, gettoken!, deletetoken!, sharetokens, gettokens, gettokenvalues, midtoken
+export sortkeys, sortpairs
 
 include("AbstractDictionary.jl")
 include("AbstractIndices.jl")

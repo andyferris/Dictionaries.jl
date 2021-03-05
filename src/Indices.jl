@@ -527,7 +527,7 @@ function __distinct!(indices::AbstractIndices, itr, s, x_old)
 end
 
 function randtoken(rng::Random.AbstractRNG, inds::Indices)
-    if inds.holes === 0
+    if _holes(inds) === 0
         return (0, rand(rng, Base.OneTo(length(inds))))
     end
 
@@ -535,8 +535,38 @@ function randtoken(rng::Random.AbstractRNG, inds::Indices)
     range = Base.OneTo(length(_hashes(inds)))
     while true
         i = rand(rng, range)
-        if inds.hashes[i] !== deletion_mask
+        if _hashes(inds)[i] !== deletion_mask
             return (0, i)
         end
     end
+end
+
+function Base.sort!(inds::Indices; by = identity, kwargs...)
+    p = sortpermtokens!(inds; by = t -> by(@inbounds(gettokenvalue(inds, (0, t)))), kwargs...)
+    permutetokens!(inds, p)
+    return inds
+end
+
+function sortpermtokens!(inds::Indices, values = (); by = t -> @inbounds(gettokenvalue(inds, (0, t))), kwargs...)
+    # Ideally we wouldn't do this... but `Base.permute!` doesn't like holes
+    if _holes(inds) > 0
+        rehash!(inds, Base._tablesz(3*length(inds) >> 0x01), values)
+    end
+    return sortperm(Base.OneTo(length(inds)); by = by, kwargs...)
+end
+
+function permutetokens!(inds::Indices, p, values = ())
+    ip = invperm(p)
+    permute!(_values(inds), p)
+    permute!(_hashes(inds), p)
+    slots = _slots(inds)
+    @inbounds for i in 1:length(slots)
+        if slots[i] > 0
+            slots[i] = ip[slots[i]] # Check if this is the right way around
+        end
+    end
+    foreach(values) do v
+        permute!(v, p)
+    end
+    return inds
 end

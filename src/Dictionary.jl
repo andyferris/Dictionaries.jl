@@ -297,8 +297,6 @@ isinsertable(::Dictionary) = true
 
 function gettoken!(dict::Dictionary{I}, i::I) where {I}
     return gettoken!(keys(dict), i, (_values(dict),))
-    #(hadtoken, (slot, index)) = gettoken!(keys(dict), i, (_values(dict),))
-    #return (hadtoken, (slot, index))
 end
 
 function deletetoken!(dict::Dictionary{I, T}, (slot, index)) where {I, T}
@@ -340,3 +338,23 @@ function Base.similar(indices::Indices{I}, ::Type{T}) where {I, T}
     return Dictionary{I, T}(indices, Vector{T}(undef, length(_values(indices))), nothing)
 end
 
+function Base.sort!(d::Dictionary; by = identity, kwargs...)
+    inds = keys(d)
+    p = sortpermtokens!(inds, (_values(d),); by = t -> by(@inbounds gettokenvalue(d, (0, t))), kwargs...)
+    permutetokens!(inds, p, (_values(d),))
+    return d
+end
+
+function sortkeys!(d::Dictionary; by = identity, kwargs...)
+    inds = keys(d)
+    p = sortpermtokens!(inds, (_values(d),); by = t -> by(@inbounds gettokenvalue(inds, (0, t))), kwargs...)
+    permutetokens!(inds, p, (_values(d),))
+    return d
+end
+
+function sortpairs!(d::Dictionary; by = first, kwargs...)
+    inds = keys(d)
+    p = sortpermtokens!(inds, (_values(d),); by = t -> by(@inbounds(gettokenvalue(inds, (0, t))) => @inbounds(gettokenvalue(d, (0, t)))), kwargs...)
+    permutetokens!(inds, p, (_values(d),))
+    return d
+end

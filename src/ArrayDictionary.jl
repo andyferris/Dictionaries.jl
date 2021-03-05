@@ -112,3 +112,25 @@ end
 function Base.empty(d::ArrayDictionary, ::Type{I}, ::Type{T}) where {I, T}
     return ArrayDictionary(empty(keys(d), I), empty(parent(d), T))
 end
+
+function Base.sort!(d::ArrayDictionary; kwargs...)
+    p = sortperm(parent(d), kwargs...)
+    permute!(parent(keys(d)), p)
+    permute!(parent(d), p)
+    return d
+end
+
+function sortkeys!(d::ArrayDictionary; kwargs...)
+    p = sortperm(parent(keys(d)), kwargs...)
+    permute!(parent(keys(d)), p)
+    permute!(parent(d), p)
+    return d
+end
+
+function sortpairs!(d::ArrayDictionary; by = first, kwargs...)
+    inds = keys(d)
+    p = sortperm(Base.OneTo(length(d)); by = by(@inbounds(gettokenvalue(inds, t)) => @inbounds(gettokenvalue(d, t))), kwargs...)
+    permute!(parent(keys(d)), p)
+    permute!(parent(d), p)
+    return d
+end
