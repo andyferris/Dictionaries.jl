@@ -11,7 +11,9 @@ help avoid multiple index lookups for a single operation.
 A tokenizable indices must implement:
 
  * `tokentype(indices) --> T::Type`
- * `iteratetoken(indices, s...)` iterates the tokens of `indices`, like `iterate`
+ * `iteratetoken(indices, s...)` iterates the tokens of `indices`, like `iterate` (with the requirement that the iterator state is also the token)
+ * `iteratetoken_reverse(indices, s...)` iterates the tokens of `indices` in reverse
+ * `midtokens(indices, t1, t2)` return two new tokens `(t1′, t2′)` approximately midway between valid tokens `t1` and `t2`, such that `t1..t1′` and `t2′..t2` cover all tokens between `t1` and `t2`.
  * `gettoken(indices, i) --> (hasindex::Bool, token)`
  * `gettokenvalue(indices, token)` returning the value of the index at `token`
 
@@ -81,10 +83,11 @@ Base.keys(ts::IndicesTokens) = parent(ts)
 istokenizable(::IndicesTokens) = true
 tokentype(::IndicesTokens{<:Any, T}) where {T} = T
 tokens(ts::IndicesTokens) = ts
-istokenassigned(ts::IndicesTokens, t) = istokenassigned(parent(ts), t)
+istokenassigned(ts::IndicesTokens, t) = true # it belongs to an AbstractIndices
 @propagate_inbounds iteratetoken(ts::IndicesTokens, s...) = iteratetoken(parent(ts), s...)
+@propagate_inbounds iteratetoken_reverse(ts::IndicesTokens, s...) = iteratetoken_reverse(parent(ts), s...)
 @propagate_inbounds gettoken(ts::IndicesTokens{I}, i::I) where {I} = gettoken(parent(ts), i)
-gettokenvalue(ts::IndicesTokens, t) = t
+gettokenvalue(::IndicesTokens, t) = t
 
 Base.IteratorSize(ts::IndicesTokens) = Base.IteratorSize(parent(ts))
 Base.length(ts::IndicesTokens) = Base.length(parent(ts))
@@ -229,3 +232,24 @@ Note: the test may not be precise, this defaults to `tokens(dict1) === tokens(di
 sharetokens(i1::AbstractIndices, i2::AbstractIndices) = istokenizable(i1) && i1 === i2
 sharetokens(d1, d2) = sharetokens(keys(d1), keys(d2))
 sharetokens(d1, d2, ds...) = sharetokens(d1, d2) && sharetokens(d1, ds...)
+
+# gettokens and gettokenvalues - like getindices
+
+"""
+    gettokens(dict::AbstractDictionary, inds)
+
+Get a colleciton of tokens of `dict` corresponding to each index in `inds`.
+"""
+@inline function gettokens(d::AbstractDictionary, inds)
+    @boundscheck checkindices(keys(d), inds) 
+    return map(i -> @inbounds(gettoken(d, i)[2]), inds)
+end
+
+"""
+    gettokenvalues(dict::AbstractDictionary, inds)
+
+Get a collection of values of `dict` corresponding to each token in `tokens`.
+"""
+@inline function gettokenvalues(d::AbstractDictionary, tokens)
+    return map(t -> @inbounds(gettokenvalue(d, t)), tokens)
+end

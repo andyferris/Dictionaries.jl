@@ -82,6 +82,13 @@ end
     end
 end
 
+@inline function midtoken(::ArrayIndices, i1, i2)
+    i1′ = (i1 + i2) >> 0x1 # rounds downwards
+    i2′ = i1′ + 1
+
+    return (i1′, i2′)
+end
+
 @inline function gettoken(inds::ArrayIndices{I}, i::I) where {I}
     a = parent(inds)
     @inbounds for x in LinearIndices(a)
@@ -132,4 +139,9 @@ end
 
 function randtoken(rng::Random.AbstractRNG, inds::ArrayIndices)
     return rand(rng, keys(parent(inds)))
+end
+
+function Base.sort!(inds::ArrayIndices; kwargs...)
+    sort!(parent(inds), kwargs...)
+    return inds
 end

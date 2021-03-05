@@ -10,7 +10,7 @@ export AbstractDictionary, AbstractIndices, IndexError, ArrayIndices, Indices, D
 
 export dictionary, index, distinct, disjoint, isdictequal, filterview
 export issettable, isinsertable, set!, unset!
-export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, settokenvalue!, gettoken!, deletetoken!, sharetokens
+export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, settokenvalue!, gettoken!, deletetoken!, sharetokens, gettokens, gettokenvalues, midtoken
 
 include("AbstractDictionary.jl")
 include("AbstractIndices.jl")
@@ -26,6 +26,7 @@ include("broadcast.jl")
 include("find.jl")
 include("show.jl")
 include("pairs.jl")
+include("sort.jl")
 
 include("ArrayIndices.jl")
 include("ArrayDictionary.jl")

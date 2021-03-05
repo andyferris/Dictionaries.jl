@@ -250,31 +250,32 @@ Base.length(indices::Indices) = length(_values(indices)) - _holes(indices)
 # Token interface
 istokenizable(::Indices) = true
 
-tokentype(::Indices) = Int
+tokentype(::Indices) = Tuple{Int,Int}
 
 # Duration iteration the token cannot be used for deletion - we do not worry about the slots
 @propagate_inbounds function iteratetoken(indices::Indices)
     if _holes(indices) == 0
-        return length(indices) > 0 ? ((0, 1), 1) : nothing
+        return length(indices) > 0 ? ((0, 1), (0, 1)) : nothing
     end
     index = 1
     @inbounds while index <= length(_hashes(indices))
         if _hashes(indices)[index] & deletion_mask === zero(UInt)
-            return ((0, index), index)
+            return ((0, index), (0, index))
         end
         index += 1
     end
     return nothing
 end
 
-@propagate_inbounds function iteratetoken(indices::Indices, index::Int)
+@propagate_inbounds function iteratetoken(indices::Indices, token::Tuple{Int, Int})
+    (_, index) = token
     index += 1
     if _holes(indices) == 0 # apparently this is enough to make it iterate as fast as `Vector`
-        return index <= length(_values(indices)) ? ((0, index), index) : nothing
+        return index <= length(_values(indices)) ? ((0, index), (0, index)) : nothing
     end
     @inbounds while index <= length(_hashes(indices))
         if _hashes(indices)[index] & deletion_mask === zero(UInt)
-            return ((0, index), index)
+            return ((0, index), (0, index))
         end
         index += 1
     end
@@ -284,29 +285,50 @@ end
 @propagate_inbounds function iteratetoken_reverse(indices::Indices)
     index = length(indices)
     if _holes(indices) == 0
-        return index > 0 ? ((0, index), index) : nothing
+        return index > 0 ? ((0, index), (0, index)) : nothing
     end
     @inbounds while index > 0
         if _hashes(indices)[index] & deletion_mask === zero(UInt)
-            return ((0, index), index)
+            return ((0, index), (0, index))
         end
         index -= 1
     end
     return nothing
 end
 
-@propagate_inbounds function iteratetoken_reverse(indices::Indices, index::Int)
+@propagate_inbounds function iteratetoken_reverse(indices::Indices, token::Tuple{Int, Int})
+    (_, index) = token
     index -= 1
     if _holes(indices) == 0 # apparently this is enough to make it iterate as fast as `Vector`
-        return index > 0 ? ((0, index), index) : nothing
+        return index > 0 ? ((0, index), (0, index)) : nothing
     end
     @inbounds while index > 0
         if _hashes(indices)[index] & deletion_mask === zero(UInt)
-            return ((0, index), index)
+            return ((0, index), (0, index))
         end
         index -= 1
     end
     return nothing
+end
+
+@inline function midtoken(indices::Indices, t1::Tuple{Int, Int}, t2::Tuple{Int, Int})
+    (_, i1) = t1
+    (_, i2) = t2
+    i1′ = (i1 + i2) >> 0x1 # rounds downwards
+    i2′ = i1′ + 1
+
+    if _holes(indices) > 0
+        hashes = _hashes(indices)
+        while i1′ > i1 && @inbounds hashes[i1′] < deletion_mask
+            i1′ -= 1
+        end
+
+        while i2′ < i2 && @inbounds hashes[i2′] < deletion_mask
+            i2′ += 1
+        end
+    end
+
+    return ((0,i1′), (0,i2′))
 end
 
 function gettoken(indices::Indices{I}, i::I) where {I}
@@ -505,7 +527,7 @@ function __distinct!(indices::AbstractIndices, itr, s, x_old)
 end
 
 function randtoken(rng::Random.AbstractRNG, inds::Indices)
-    if inds.holes === 0
+    if _holes(inds) === 0
         return (0, rand(rng, Base.OneTo(length(inds))))
     end
 
@@ -513,8 +535,38 @@ function randtoken(rng::Random.AbstractRNG, inds::Indices)
     range = Base.OneTo(length(_hashes(inds)))
     while true
         i = rand(rng, range)
-        if inds.hashes[i] !== deletion_mask
+        if _hashes(inds)[i] !== deletion_mask
             return (0, i)
         end
     end
+end
+
+function Base.sort!(inds::Indices; kwargs...)
+    p = sortpermtokens!(inds; kwargs)
+    permutetokens!(inds, p)
+    return inds
+end
+
+function sortpermtokens!(inds::Indices, values = (); by = t -> @inbounds(gettokenvalue(inds, t)), kwargs...)
+    # Ideally we wouldn't do this... but `Base.permute!` doesn't like holes
+    if _holes(inds) > 0
+        rehash!(inds, Base._tablesz(3*length(inds) >> 0x01), values)
+    end
+    return sortperm(Base.OneTo(length(inds)); kwargs...)
+end
+
+function permutetokens!(inds::Indices, p, values = ())
+    ip = invperm(p)
+    permute!(_values(inds), p)
+    permute!(_hashes(inds), p)
+    slots = _slots(inds)
+    @inbounds for i in 1:length(slots)
+        if slots[i] > 0
+            slots[i] = ip[slots[i]] # Check if this is the right way around
+        end
+    end
+    foreach(values) do v
+        permute!(v, p)
+    end
+    return inds
 end
