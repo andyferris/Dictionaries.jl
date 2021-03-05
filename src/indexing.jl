@@ -20,11 +20,7 @@ end
     get(d, convert(I, i), default)
 end
 
-@propagate_inbounds function Base.get(d::AbstractDictionary{I, T}, i::I, default) where {I, T}
-    get(d, i, convert(T, default))
-end
-
-@propagate_inbounds function Base.get(d::AbstractDictionary{I, T}, i::I, default::T) where {I, T}
+@propagate_inbounds function Base.get(d::AbstractDictionary{I}, i::I, default) where {I}
     (hasindex, t) = gettoken(d, i)
     if hasindex
         return gettokenvalue(d, t)
@@ -42,7 +38,7 @@ end
     if hasindex
         return gettokenvalue(d, t)
     else
-        return convert(T, f())
+        return f()
     end
 end
 

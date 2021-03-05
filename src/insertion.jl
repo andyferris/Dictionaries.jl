@@ -254,12 +254,12 @@ function Base.get!(f::Callable, d::AbstractDictionary{I}, i) where {I}
 end
 
 
-function Base.get!(f::Callable, d::AbstractDictionary{I}, i::I) where {I}
+function Base.get!(f::Callable, d::AbstractDictionary{I, T}, i::I) where {I, T}
     (hadindex, token) = gettoken!(d, i)
     if hadindex
         return @inbounds gettokenvalue(d, token)
     else
-        default = f()
+        default = convert(T, f())
         @inbounds settokenvalue!(d, token, default)
         return default
     end
