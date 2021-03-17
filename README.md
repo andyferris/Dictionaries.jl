@@ -145,8 +145,6 @@ julia> dict .+ 1
  "c" │ 4
 ```
 
-There is a `mapview` function, which is the lazy version of the above.
-
 Filtering a dictionary also preserves the keys, dropping the remainder.
 
 ```julia
