@@ -409,7 +409,7 @@ Indexable containers in Julia have `keys`, which form a "set" in the mathematic 
  * `in`, such that `in(i, indices)` implies there is an element of `indices` which `isequal` to `i`.
  * Either `length`, or override `IteratorSize` to `SizeUnknown`.
 
-Indices themselves are also dictionaries (much like the indices of `AbstractArray`s are also `AbstractArray`s), and we have the subtyping relationship `AbstractIndices{I} <: AbstractDictionary{I, I}`. Indexing an `AbstractIndices` is always *idempotent*, such that `indices[i] === i`. The `keys` function is also idempotent: `keys(indices::AbstractIndices) === indices` (and therefore `keys(keys(dict::AbstractDictionary)) === keys(dict)`). 
+Indices themselves are also dictionaries (much like the indices of `AbstractArray`s are also `AbstractArray`s), and we have the subtyping relationship `AbstractIndices{I} <: AbstractDictionary{I, I}`. Indexing an `AbstractIndices` is always an identity operation, such that `indices[i] === i`. The `keys` function is also idempotent: `keys(indices::AbstractIndices) === indices` (and therefore `keys(keys(dict::AbstractDictionary)) === keys(dict)`). 
 
 ### Non-scalar indexing
 
