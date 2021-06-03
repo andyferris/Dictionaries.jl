@@ -105,6 +105,29 @@ julia> delete!(dict, "d")
 
 Note that `insert!` and `delete!` are precise in the sense that `insert!` will error if the index already exists, and `delete!` will error if the index does not. The `set!` function provides "upsert" functionality ("update or insert") and `unset!` is useful for removing an index that may or may not exist.
 
+#### Dictionaries with `Symbol` keys
+
+If the keys of a dictionary are `Symbol`s, then it is possible to use Julia's `getproperty` syntax sugar to access elements.
+
+```julia
+julia> dict = Dictionary([:a, :b, :c], [1, 2, 3])
+3-element Dictionary{Symbol,Int64}
+ :a │ 1
+ :b │ 2
+ :c │ 3
+
+julia> dict.b
+2
+
+julia> dict.a = 100; dict
+3-element Dictionary{Symbol,Int64}
+ :a │ 100
+ :b │ 2
+ :c │ 3
+```
+
+This property makes them good substitutes for `NamedTuple`s, or for storing and accessing the rows or columns of a table.
+
 ### Working with dictionaries
 
 Dictionaries can be manipulated and transformed using a similar interface to Julia's built-in arrays. The first thing to note is that dictionaries iterate values, so it easy to perform simple analytics on the dictionary values.
