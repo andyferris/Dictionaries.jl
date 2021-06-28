@@ -127,22 +127,21 @@ end
     return _f(d)(map(x -> @inbounds(x[i]), _dicts(d))...)::T
 end
 
-# TODO FIXME what do about tokens when there is more than one mapped dictioanry? For now, we disable them...
+# TODO FIXME what do about tokens when there is more than one mapped dictionary? For now, we disable them...
 istokenizable(d::MappedDictionary) = false
 function istokenizable(d::MappedDictionary{I, T, <:Any, <:Tuple{AbstractDictionary{<:I}}}) where {I, T}
     return istokenizable(_dicts(d)[1])
 end
 
 @propagate_inbounds function gettokenvalue(d::MappedDictionary{I, T, <:Any, <:Tuple{AbstractDictionary{<:I}}}, t) where {I, T}
-    return _f(d)(gettokenvalue(_dicts(d)[1], t))
+    return _f(d)(gettokenvalue(_dicts(d)[1], t))::T
 end
 
 function istokenassigned(d::MappedDictionary{I, T, <:Any, <:Tuple{AbstractDictionary{<:I}}}, t) where {I, T}
     return istokenassigned(_dicts(d)[1], t)
 end
 
-Base.similar(dict::MappedDictionary, ::Type{T}, indices) where {T} = similar(parent(dict), T, indices)
-Base.empty(dict::MappedDictionary, ::Type{I}, ::Type{T}) where {I, T} = similar(parent(dict), I, T)
+empty_type(::Type{<:MappedDictionary{<:Any, <:Any, <:Any, <:Tuple{D, Vararg{AbstractDictionary}}}}, ::Type{I}, ::Type{T}) where {I, T, D} = empty_type(D, I, T)
 
 if VERSION > v"1.6-"
     function Iterators.map(f, d::AbstractDictionary)

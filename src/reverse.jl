@@ -21,8 +21,8 @@ Iterators.reverse(inds::ReverseIndices) = parent(inds)
 
 Base.reverse(inds::AbstractIndices) = copy(Iterators.reverse(inds))
 
-Base.empty(inds::ReverseIndices, ::Type{I}) where {I} = empty(parent(inds), I)
-Base.empty(inds::ReverseIndices, ::Type{I}, ::Type{T}) where {I, T} = empty(parent(inds), I, T)
+empty_type(::Type{<:ReverseIndices{<:Any, Inds}}, ::Type{I}) where {I, Inds} = empty_type(Inds, I)
+empty_type(::Type{<:ReverseIndices{<:Any, Inds}}, ::Type{I}, ::Type{T}) where {I, T, Inds} = empty_type(Inds, I, T)
 
 Base.similar(inds::ReverseIndices, ::Type{T}) where {T} = Iterators.reverse(similar(parent(inds), T))
 
@@ -56,5 +56,5 @@ function Base.reverse(dict::AbstractDictionary)
     return out
 end
 
-Base.empty(inds::ReverseDictionary, ::Type{I}) where {I} = empty(parent(inds), I)
-Base.empty(inds::ReverseDictionary, ::Type{I}, ::Type{T}) where {I, T} = empty(parent(inds), I, T)
+empty_type(::Type{<:ReverseDictionary{<:Any, <:Any, D}}, ::Type{I}) where {I, D} = empty_type(D, I)
+empty_type(::Type{<:ReverseDictionary{<:Any, <:Any, D}}, ::Type{I}, ::Type{T}) where {I, T, D} = empty_type(D, I, T)

@@ -94,7 +94,7 @@ end
 @propagate_inbounds gettokenvalue(inds::ArrayIndices, x::Int) = parent(inds)[x]
 
 isinsertable(i::ArrayIndices) = true # Need an array trait here...
-@inline function gettoken!(inds::ArrayIndices{I}, i::I) where {I}
+@inline function gettoken!(inds::ArrayIndices{I}, i::I, values = ()) where {I}
     a = parent(inds)
     @inbounds for x in LinearIndices(a)
         if isequal(i, a[x])
@@ -102,20 +102,23 @@ isinsertable(i::ArrayIndices) = true # Need an array trait here...
         end
     end
     push!(a, i)
+    foreach(v -> resize!(v, length(v) + 1), values)
     return (false, last(LinearIndices(a)))
 end
 
-@inline function deletetoken!(inds::ArrayIndices, x::Int)
+@inline function deletetoken!(inds::ArrayIndices, x::Int, values = ())
     deleteat!(parent(inds), x)
+    foreach(v -> deleteat!(v, x), values)
     return inds
 end
 
-function Base.empty!(inds::ArrayIndices)
+function Base.empty!(inds::ArrayIndices, values = ())
     empty!(parent(inds))
+    foreach(empty!, values)
     return inds
 end
 
-Base.empty(inds::ArrayIndices, ::Type{I}) where {I} = ArrayIndices{I}(empty(parent(inds), I))
+empty_type(::Type{<:ArrayIndices}, ::Type{I}) where {I} = ArrayIndices{I, Vector{I}}
 
 function Base.copy(inds::ArrayIndices, ::Type{I}) where {I}
     if I === eltype(inds)

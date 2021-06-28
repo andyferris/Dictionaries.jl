@@ -87,7 +87,7 @@ istokenassigned(ts::IndicesTokens, t) = istokenassigned(parent(ts), t)
 gettokenvalue(ts::IndicesTokens, t) = t
 
 Base.IteratorSize(ts::IndicesTokens) = Base.IteratorSize(parent(ts))
-Base.length(ts::IndicesTokens) = Base.length(parent(ts))
+Base.length(ts::IndicesTokens) = length(parent(ts))
 
 """
     tokens(dict::AbstractDictionary)
@@ -196,6 +196,10 @@ end
     end
 
     return isassigned(d, token)
+end
+
+function istokenassigned(::AbstractIndices, token)
+    return true  # We are checking that given a valid token a value exists
 end
 
 @propagate_inbounds function settokenvalue!(d::AbstractDictionary{<:Any,T}, t, value) where {T}
