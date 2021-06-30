@@ -193,5 +193,5 @@ function filterview(pred, inds::AbstractDictionary{I, T}) where {I, T}
     return FilteredDictionary{I, T, typeof(inds), typeof(pred)}(inds, pred)
 end
 
-Base.similar(dict::FilteredDictionary, ::Type{T}) where {T} = similar(parent(dict), T)
+Base.similar(dict::FilteredDictionary, ::Type{T}) where {T} = similar(keys(dict), T)
 empty_type(::Type{<:FilteredDictionary{<:Any, <:Any, D}}, ::Type{I}, ::Type{T}) where {I, T, D} = empty_type(D, I, T)
