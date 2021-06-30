@@ -2,6 +2,7 @@
     @test ArrayIndices() isa ArrayIndices{Any}
 
     inds = ArrayIndices{Int64}()
+    @test ArrayIndices{Int64, Vector{Int64}}() == inds
 
     @test isinsertable(inds)
     @test length(inds) == 0
@@ -41,7 +42,10 @@
     delete!(inds, 10)
 
     @test isequal(inds, ArrayIndices{Int64}())
+    @test union!(inds, Indices([1,2,3,4])) == Indices([1, 2, 3, 4])
+    @test filter!(iseven, inds) == Indices([2, 4])
 
+    empty!(inds)
     for i = 2:2:100
         insert!(inds, i)
     end
