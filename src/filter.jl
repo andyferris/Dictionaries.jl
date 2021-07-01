@@ -98,6 +98,7 @@ end
 
 Iterators.reverse(inds::FilteredIndices) = filterview(_pred(inds), Iterators.reverse(parent(inds)))
 
+empty_type(::Type{<:FilteredIndices{<:Any, Inds}}, ::Type{I}) where {I, Inds} = empty_type(Inds, I)
 
 function Base.isempty(inds::FilteredIndices)
     for _ in inds
@@ -192,5 +193,5 @@ function filterview(pred, inds::AbstractDictionary{I, T}) where {I, T}
     return FilteredDictionary{I, T, typeof(inds), typeof(pred)}(inds, pred)
 end
 
-Base.similar(dict::FilteredDictionary, ::Type{T}, indices) where {T} = similar(parent(dict), T, indices)
-Base.empty(dict::FilteredDictionary, ::Type{T}) where {T} = empty(parent(dict), T)
+Base.similar(dict::FilteredDictionary, ::Type{T}) where {T} = similar(keys(dict), T)
+empty_type(::Type{<:FilteredDictionary{<:Any, <:Any, D}}, ::Type{I}, ::Type{T}) where {I, T, D} = empty_type(D, I, T)

@@ -52,6 +52,10 @@ end
     return _f(d)(_gettokenvalue(t, _data(d)...)...)
 end
 
+@inline function Base.similar(d::BroadcastedDictionary, ::Type{T}) where {T}
+    return similar(_dicts(d.data...)[1], T)
+end
+
 @inline _dicts(d::AbstractDictionary, ds...) = (d, _dicts(ds...)...)
 @inline _dicts(d, ds...) = (_dicts(ds...)...,)
 _dicts() = ()

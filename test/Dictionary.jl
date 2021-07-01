@@ -165,6 +165,12 @@
 
     # TODO token interface
 
+    @testset "filter!" begin
+        d = Dictionary([1,2,3,4,5], [1,3,2,4,5])
+        filter!(iseven, d)
+        @test d == Dictionary([3,4], [2,4])
+    end
+
     @testset "Dict tests from Base" begin
         h = Dictionary{Int, Int}()
 

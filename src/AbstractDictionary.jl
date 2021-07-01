@@ -354,6 +354,10 @@ function Base.similar(indices::AbstractIndices{I}, ::Type{T}) where {I, T}
     return similar(convert(Indices{I}, indices), T)
 end
 
+# empty
+empty_type(::Type{<:AbstractDictionary}, ::Type{I}, ::Type{T}) where {I, T} = Dictionary{I, T}
+Base.empty(dict::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T} = empty_type(typeof(dict), I, T)()
+
 function Base.merge(d1::AbstractDictionary, d2::AbstractDictionary)
     # Note: need to copy the keys
     out = similar(copy(keys(d1)), eltype(d1))

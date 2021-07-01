@@ -1,5 +1,8 @@
 @testset "Indices" begin
     @test Indices() isa Indices{Any}
+    @test_throws IndexError Indices([1, 1])
+    @test @inferred(Indices(2*x for x in 1:10))::Indices == Indices(2:2:20)
+    @test @inferred(distinct(mod(x, 5) for x in 0:9))::Indices == Indices(0:4)
 
     h = Indices{Int64}()
 
@@ -77,6 +80,14 @@
         @test isless(i1, i4)
         @test !isless(i4, i1)
         @test !isequal(i1, i4)
+
+        @test cmp(i1, i1) == 0
+        @test cmp(i2, i1) == -1
+        @test cmp(i1, i2) == 1
+        @test cmp(i3, i1) == 1
+        @test cmp(i1, i3) == -1
+        @test cmp(i4, i1) == 1
+        @test cmp(i1, i4) == -1
 
         i5 = Indices([1,2,missing])
         @test isequal(i5, i5)

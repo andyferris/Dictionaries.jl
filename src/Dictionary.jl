@@ -280,13 +280,26 @@ function istokenassigned(dict::Dictionary, (_slot, index))
     return isassigned(_values(dict), index)
 end
 
+function istokenassigned(dict::Dictionary, index::Int)
+    return isassigned(_values(dict), index)
+end
+
 @propagate_inbounds function gettokenvalue(dict::Dictionary, (_slot, index))
+    return _values(dict)[index]
+end
+
+@propagate_inbounds function gettokenvalue(dict::Dictionary, index::Int)
     return _values(dict)[index]
 end
 
 issettable(::Dictionary) = true
 
 @propagate_inbounds function settokenvalue!(dict::Dictionary{<:Any, T}, (_slot, index), value::T) where {T}
+    _values(dict)[index] = value
+    return dict
+end
+
+@propagate_inbounds function settokenvalue!(dict::Dictionary{<:Any, T}, index::Int, value::T) where {T}
     _values(dict)[index] = value
     return dict
 end
@@ -316,20 +329,14 @@ end
 
 function Base.filter!(pred, dict::Dictionary)
     indices = keys(dict)
-    _filter!(i -> pred(@inbounds _values(dict)[i]), _values(indices), _hashes(indices), (_values(dict),))
-    _holes(indices) = 0
-    newsize = Base._tablesz(3*length(_values(indices)) >> 0x01)
-    rehash!(indices, newsize, (_values(dict),))
+    _filter!(token -> pred(@inbounds gettokenvalue(dict, token)), indices, (_values(dict),))
     return dict
 end
 
 function Base.filter!(pred, dict::PairDictionary{<:Any, <:Any, <:Dictionary})
     d = dict.d
     indices = keys(d)
-    _filter!(i -> pred(@inbounds _values(indices)[i] => _values(d)[i]), _values(indices), _hashes(indices), (_values(d),))
-    _holes(indices) = 0
-    newsize = Base._tablesz(3*length(_values(indices)) >> 0x01)
-    rehash!(indices, newsize, (_values(d),))
+    _filter!(token -> pred(@inbounds gettokenvalue(indices, token) => gettokenvalue(d, token)), indices, (_values(d),))
     return dict
 end
 

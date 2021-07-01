@@ -74,6 +74,8 @@ istokenizable(::ArrayDictionary) = true
 istokenassigned(d::ArrayDictionary, t::Int) = isassigned(parent(d), t)
 @propagate_inbounds gettokenvalue(d::ArrayDictionary, t::Int) = parent(d)[t]
 
+tokenized(dict::ArrayDictionary) = parent(dict)
+
 # settable interface
 issettable(::ArrayDictionary) = true # Need an array trait for this...
 
@@ -90,11 +92,7 @@ end
 isinsertable(::ArrayDictionary) = true # Need an array trait for this...
 
 @propagate_inbounds function gettoken!(d::ArrayDictionary{I}, i::I) where {I}
-    (hadtoken, token) = gettoken!(keys(d), i)
-    if !hadtoken
-        resize!(parent(d), length(parent(d)) + 1)
-    end
-    return (hadtoken, token)
+    gettoken!(keys(d), i, (parent(d),))
 end
 
 @propagate_inbounds function deletetoken!(d::ArrayDictionary, t::Int)
@@ -104,11 +102,8 @@ end
 end
 
 function Base.empty!(d::ArrayDictionary)
-    empty!(keys(d))
-    empty!(parent(d))
+    empty!(keys(d), (parent(d),))
     return d
 end
 
-function Base.empty(d::ArrayDictionary, ::Type{I}, ::Type{T}) where {I, T}
-    return ArrayDictionary(empty(keys(d), I), empty(parent(d), T))
-end
+empty_type(::Type{<:ArrayDictionary}, ::Type{I}, ::Type{T}) where {I, T} = ArrayDictionary{I, T, ArrayIndices{I, Vector{I}}, Vector{T}}

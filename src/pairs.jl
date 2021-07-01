@@ -53,4 +53,4 @@ iteratetoken(pd::PairDictionary, s...) = iteratetoken(parent(pd), s...)
 
 # Factories
 Base.similar(dict::PairDictionary, ::Type{T}, indices) where {T} = similar(parent(dict), T, indices)
-Base.empty(dict::PairDictionary, ::Type{I}, ::Type{T}) where {I, T} = similar(parent(dict), I, T)
+empty_type(::PairDictionary{<:Any, <:Any, D}, ::Type{I}, ::Type{T}) where {I, T, D} = similar(D, I, T)

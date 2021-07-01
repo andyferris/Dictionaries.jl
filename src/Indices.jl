@@ -337,6 +337,10 @@ end
     return _values(indices)[index]
 end
 
+@propagate_inbounds function gettokenvalue(indices::Indices, index::Int)
+    return _values(indices)[index]
+end
+
 # Insertion interface
 isinsertable(::Indices) = true
 
@@ -359,7 +363,7 @@ function gettoken!(indices::Indices{I}, i::I, values = ()) where {I}
                 deleted_slot = trial_slot
             end
         else
-            value = _values(indices)[trial_index]            
+            value = _values(indices)[trial_index]
             if i === value || isequal(i, value)
                 return (true, (trial_slot, trial_index))
             end
@@ -429,11 +433,13 @@ end
     return indices
 end
 
-function Base.empty!(indices::Indices{I}) where {I} 
+function Base.empty!(indices::Indices{I}, values = ()) where {I} 
     setfield!(indices, :hashes, Vector{UInt}())
     setfield!(indices, :values, Vector{I}())
     setfield!(indices, :slots, fill(0, 8))
     setfield!(indices, :holes, 0)
+
+    foreach(empty!, values)
     
     return indices
 end
@@ -441,29 +447,31 @@ end
 # Accelerated filtering
 
 function Base.filter!(pred, indices::Indices)
-    _filter!(i -> pred(@inbounds _values(indices)[i]), _values(indices), _hashes(indices), ())
-    setfield!(indices, :holes, 0)
-    newsize = Base._tablesz(3*length(_values(indices)) >> 0x01)
-    rehash!(indices, newsize)
+    _filter!(token -> pred(@inbounds gettokenvalue(indices, token)), indices, ())
 end
 
-@inline function _filter!(pred, indices, hashes, values = ())
-    n = length(indices)
+@inline function _filter!(pred, indices::Indices, values = ())
+    indices_values = _values(indices)
+    hashes = _hashes(indices)
+    n = length(indices_values)
     i = Ref(0)
     j = Ref(0)
     @inbounds while i[] < n
         i[] += 1
         if hashes[i[]] & deletion_mask === zero(UInt) && pred(i[])
             j[] += 1
-            indices[j[]] = indices[i[]]
+            indices_values[j[]] = indices_values[i[]]
             hashes[j[]] = hashes[i[]]
             map(vec -> @inbounds(vec[j[]] = vec[i[]]), values)
         end
     end
     newsize = j[]
-    resize!(indices, newsize)
+    resize!(indices_values, newsize)
     resize!(hashes, newsize)
     map(vec -> resize!(vec, newsize), values)
+    setfield!(indices, :holes, 0)
+    newsize = Base._tablesz(3*length(_values(indices)) >> 0x01)
+    rehash!(indices, newsize, values)
 end
 
 # Factories
