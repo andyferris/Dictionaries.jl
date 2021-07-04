@@ -31,7 +31,7 @@ function Base.show(io::IO, d::AbstractDictionary)
             break
         end
         show(io, i)
-        print(io, " │ ")
+        print(io, " = ")
         show(io, v)
         comma = true
         limit -= 1
