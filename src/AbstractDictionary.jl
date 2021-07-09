@@ -348,18 +348,24 @@ end
     similar(d::AbstractDictionary, [T=eltype(d)])
 
 Construct a new `issettable` dictionary with identical `keys` as `d` and an element type of
-`T`. The initial values are3unitialized/undefined.
+`T`. The initial values are unitialized/undefined.
+
+The type of the returned dictionary is controlled by the `similar_type` function.
 """
 Base.similar(d::AbstractDictionary) = similar(keys(d), eltype(d))
 Base.similar(d::AbstractDictionary, ::Type{T}) where {T} = similar(keys(d), T)
 
-function Base.similar(indices::AbstractIndices{I}, ::Type{T}) where {I, T}
-    return similar(convert(Indices{I}, indices), T)
+function Base.similar(indices::AbstractIndices, ::Type{T}) where {T}
+    return similar_type(typeof(indices), T)(indices, undef)
 end
 
-# empty
-empty_type(::Type{<:AbstractDictionary}, ::Type{I}, ::Type{T}) where {I, T} = Dictionary{I, T}
-Base.empty(dict::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T} = empty_type(typeof(dict), I, T)()
+"""
+    similar_type(::Type{Inds}, ::Type{T}) where {Inds <: AbstractIndices, T}
+
+Return the type of an `issettable` dictionary with indices of a similar type to `Inds` and
+with values of type `T`.
+"""
+similar_type(::Type{<:AbstractIndices{I}}, ::Type{T}) where {I, T} = Dictionary{I, T}
 
 function Base.merge(d1::AbstractDictionary, d2::AbstractDictionary)
     # Note: need to copy the keys

@@ -141,7 +141,10 @@ function istokenassigned(d::MappedDictionary{I, T, <:Any, <:Tuple{AbstractDictio
     return istokenassigned(_dicts(d)[1], t)
 end
 
+empty_type(::Type{<:MappedDictionary{<:Any, <:Any, <:Any, <:Tuple{D, Vararg{AbstractDictionary}}}}, ::Type{I}) where {I, D} = empty_type(D, I)
 empty_type(::Type{<:MappedDictionary{<:Any, <:Any, <:Any, <:Tuple{D, Vararg{AbstractDictionary}}}}, ::Type{I}, ::Type{T}) where {I, T, D} = empty_type(D, I, T)
+
+similar_type(::Type{<:MappedDictionary{<:Any, <:Any, <:Any, <:Tuple{D, Vararg{AbstractDictionary}}}}, ::Type{T}) where {T, D} = similar_type(D, T)
 
 if VERSION > v"1.6-"
     function Iterators.map(f, d::AbstractDictionary)

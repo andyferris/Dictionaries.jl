@@ -28,6 +28,7 @@ Construct an `ArrayDictionary` from empty `Vector`s, with `I` and `T` default to
 @propagate_inbounds ArrayDictionary() = ArrayDictionary{Any, Any}([], [])
 @propagate_inbounds ArrayDictionary{I}() where {I} = ArrayDictionary{I, Any}(I[], [])
 @propagate_inbounds ArrayDictionary{I, T}() where {I, T} = ArrayDictionary{I, T}(I[], T[])
+@propagate_inbounds ArrayDictionary{I, T, Inds, Vals}() where {I, T, Inds, Vals} = ArrayDictionary{I, T}(Inds(), Vals())
 
 @propagate_inbounds ArrayDictionary(inds, vals) = ArrayDictionary(ArrayIndices(inds), vals)
 @propagate_inbounds ArrayDictionary{I}(inds, vals) where {I} = ArrayDictionary{I}(ArrayIndices{I}(inds), vals)
@@ -53,6 +54,7 @@ undefined/uninitialized.
 @propagate_inbounds ArrayDictionary(inds::ArrayIndices, ::UndefInitializer) = ArrayDictionary{eltype(inds), Any}(inds, undef)
 @propagate_inbounds ArrayDictionary{I}(inds::ArrayIndices{I}, ::UndefInitializer) where {I} = ArrayDictionary{I, Any}(inds, undef)
 @propagate_inbounds ArrayDictionary{I, T}(inds::ArrayIndices{I}, ::UndefInitializer) where {I, T} = ArrayDictionary{I, T}(inds, similar(parent(inds), T))
+@propagate_inbounds ArrayDictionary{I, T, Inds, Vals}(inds::ArrayIndices{I}, ::UndefInitializer) where {I, T, Inds, Vals} = ArrayDictionary{I, T, Inds, Vals}(inds, similar(parent(inds), T))
 
 """
     ArrayDictionary(indexable)
@@ -86,9 +88,12 @@ issettable(::ArrayDictionary) = true # Need an array trait for this...
     return d
 end
 
-function Base.similar(inds::ArrayIndices, ::Type{T}) where {T}
-    return ArrayDictionary(inds, similar(parent(inds), T))
-end
+similar_type(::Type{Inds}, ::Type{T}) where {I, Inds <: ArrayIndices{I}, T} = ArrayDictionary{I, T, Inds, Vector{T}}
+similar_type(::Type{D}, ::Type{T}) where {I, Inds, D <: ArrayDictionary{I, <:Any, Inds}, T} = ArrayDictionary{I, T, Inds, Vector{T}}
+
+# function Base.similar(inds::ArrayIndices, ::Type{T}) where {T}
+#     return ArrayDictionary(inds, similar(parent(inds), T))
+# end
 
 # insertable interface
 isinsertable(::ArrayDictionary) = true # Need an array trait for this...
@@ -108,4 +113,6 @@ function Base.empty!(d::ArrayDictionary)
     return d
 end
 
+empty_type(::Type{<:ArrayDictionary}, ::Type{I}) where {I} = ArrayIndices{I, Vector{I}}
 empty_type(::Type{<:ArrayDictionary}, ::Type{I}, ::Type{T}) where {I, T} = ArrayDictionary{I, T, ArrayIndices{I, Vector{I}}, Vector{T}}
+empty_type(::Type{<:ArrayIndices}, ::Type{I}, ::Type{T}) where {I, T} = ArrayDictionary{I, T, ArrayIndices{I, Vector{I}}, Vector{T}}
