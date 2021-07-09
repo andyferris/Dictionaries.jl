@@ -100,9 +100,6 @@ function Base.copy(inds::AbstractIndices, ::Type{I}) where I
     return out
 end
 
-empty_type(::Type{<:AbstractIndices}, ::Type{I}) where {I} = Indices{I}
-Base.empty(inds::AbstractIndices, ::Type{I}) where {I} = empty_type(typeof(inds), I)()
-
 """
     distinct(itr)
 

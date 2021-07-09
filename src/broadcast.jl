@@ -52,8 +52,31 @@ end
     return _f(d)(_gettokenvalue(t, _data(d)...)...)
 end
 
-@inline function Base.similar(d::BroadcastedDictionary, ::Type{T}) where {T}
-    return similar(_dicts(d.data...)[1], T)
+@generated function similar_type(::Type{<:BroadcastedDictionary{<:Any, <:Any, <:Any, Data}}, ::Type{T}) where {Data, T}
+    for D in Data.parameters
+        if D <: AbstractDictionary
+            return :(similar_type($D, T))
+        end
+    end
+    # should be unreachable
+end
+
+@generated function empty_type(::Type{<:BroadcastedDictionary{<:Any, <:Any, <:Any, Data}}, ::Type{I}) where {Data, I}
+    for D in Data.parameters
+        if D <: AbstractDictionary
+            return :(empty_type($D, I))
+        end
+    end
+    # should be unreachable
+end
+
+@generated function empty_type(::Type{<:BroadcastedDictionary{<:Any, <:Any, <:Any, Data}}, ::Type{I}, ::Type{T}) where {Data, I, T}
+    for D in Data.parameters
+        if D <: AbstractDictionary
+            return :(empty_type($D, I, T))
+        end
+    end
+    # should be unreachable
 end
 
 @inline _dicts(d::AbstractDictionary, ds...) = (d, _dicts(ds...)...)

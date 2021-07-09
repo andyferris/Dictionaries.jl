@@ -32,7 +32,6 @@ Base.keys(d::PairDictionary) = keys(parent(d))
 
 # Length
 Base.IteratorSize(d::PairDictionary) = Base.IteratorSize(parent(d))
-Base.length(d::PairDictionary) = Base.length(parent(d))
 
 # Standard interface
 @propagate_inbounds Base.getindex(d::PairDictionary{I}, i::I) where {I} = i => parent(d)[i]
@@ -52,5 +51,6 @@ istokenassigned(pd::PairDictionary, t) = istokenassigned(parent(pd), t)
 iteratetoken(pd::PairDictionary, s...) = iteratetoken(parent(pd), s...)
 
 # Factories
-Base.similar(dict::PairDictionary, ::Type{T}, indices) where {T} = similar(parent(dict), T, indices)
-empty_type(::PairDictionary{<:Any, <:Any, D}, ::Type{I}, ::Type{T}) where {I, T, D} = similar(D, I, T)
+empty_type(::PairDictionary{<:Any, <:Any, D}, ::Type{I}) where {I, D} = empty_type(D, I)
+empty_type(::PairDictionary{<:Any, <:Any, D}, ::Type{I}, ::Type{T}) where {I, T, D} = empty_type(D, I, T)
+similar_type(::PairDictionary{<:Any, <:Any, D}, ::Type{T}) where {I, T, D} = empty_type(D, T)

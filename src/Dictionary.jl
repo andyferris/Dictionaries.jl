@@ -339,10 +339,3 @@ function Base.filter!(pred, dict::PairDictionary{<:Any, <:Any, <:Dictionary})
     _filter!(token -> pred(@inbounds gettokenvalue(indices, token) => gettokenvalue(d, token)), indices, (_values(d),))
     return dict
 end
-
-# Factories
-
-function Base.similar(indices::Indices{I}, ::Type{T}) where {I, T}
-    return Dictionary{I, T}(indices, Vector{T}(undef, length(_values(indices))), nothing)
-end
-
