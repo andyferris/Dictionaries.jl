@@ -65,6 +65,10 @@ end
 # Match the default setting from Base - the majority of containers will know their size
 Base.IteratorSize(::AbstractIndices) = Base.HasLength() 
 
+function Base.isempty(inds::AbstractIndices)
+    return iterate(inds) === nothing
+end
+
 function Base.length(indices::AbstractIndices)
     if Base.IteratorSize(indices) isa Base.SizeUnknown
         out = 0

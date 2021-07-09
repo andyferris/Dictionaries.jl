@@ -32,6 +32,8 @@ function Base.keys(dict::AbstractDictionary)
     error("Every AbstractDictionary type must define a method for `keys`: $(typeof(dict))")
 end
 
+Base.haskey(dict::AbstractDictionary, i) = i in keys(dict)
+
 @propagate_inbounds function Base.getindex(dict::AbstractDictionary{I}, i::I) where {I}
     if !(istokenizable(dict))
         error("Every AbstractDictionary type must define a method for `getindex`: $(typeof(dict))")
@@ -60,6 +62,7 @@ end
 
 Base.length(d::AbstractDictionary) = length(keys(d))
 Base.IteratorSize(d::AbstractDictionary) = Base.IteratorSize(keys(d))
+Base.isempty(d::AbstractDictionary) = isempty(keys(d))
 
 Base.checkindex(d::AbstractDictionary{I}, i) where {I} = checkindex(d, convert(I, i))
 Base.checkindex(d::AbstractDictionary{I}, i::I) where {I} = checkindex(keys(d), i)

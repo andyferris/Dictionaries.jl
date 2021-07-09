@@ -25,6 +25,8 @@
     insert!(d, 10, 11)
 
     @test d[10] == 11
+    @test haskey(d, 10)
+    @test !haskey(d, 100)
     @test get(d, 10, 15) == 11
     @test get!(d, 10, 15) == 11
     @test length(d) == 1
@@ -39,7 +41,7 @@
     d[10] = 13
     @test length(d) == 1
     @test d[10] == 13
-    io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 │ 13}"
+    io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 = 13}"
     if VERSION < v"1.6-"
         io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element ArrayDictionary{Int64,Int64,ArrayIndices{Int64,Array{Int64,1}},Array{Int64,1}}\n 10 │ 13"
     else
