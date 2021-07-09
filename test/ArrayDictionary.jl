@@ -66,6 +66,10 @@
     @test all(in(i, keys(d)) == iseven(i) for i in 2:2:100)
     @test isempty(empty!(d))
 
+    @test keys(ArrayDictionary([1, 2, 3], undef)::ArrayDictionary{Int, Any}) == Indices([1,2,3])
+    @test keys(ArrayDictionary{Int}([1, 2, 3], undef)::ArrayDictionary{Int, Any}) == Indices([1,2,3])
+    @test keys(ArrayDictionary{Int, String}([1, 2, 3], undef)::ArrayDictionary{Int, String}) == Indices([1,2,3])
+
     @testset "rand" begin
         dict = ArrayDictionary(["a", "b", "c", "d", "e"], 1:5)
         for i = 1:100

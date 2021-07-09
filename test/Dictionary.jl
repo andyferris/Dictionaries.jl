@@ -165,6 +165,10 @@
     #@test d[begin] == 1 # Parsing issues on earlier versions of Julia...
     @test d[end] == 2
 
+    @test keys(Dictionary([1, 2, 3], undef)::Dictionary{Int, Any}) == Indices([1,2,3])
+    @test keys(Dictionary{Int}([1, 2, 3], undef)::Dictionary{Int, Any}) == Indices([1,2,3])
+    @test keys(Dictionary{Int, String}([1, 2, 3], undef)::Dictionary{Int, String}) == Indices([1,2,3])
+
     # TODO token interface
 
     @testset "filter!" begin

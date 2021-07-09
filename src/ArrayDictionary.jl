@@ -50,6 +50,8 @@ Construct a `ArrayDictionary` from an iterable of `indices`, where the values ar
 undefined/uninitialized.
 """
 @propagate_inbounds ArrayDictionary{I, T}(inds, ::UndefInitializer) where {I, T} = ArrayDictionary{I, T}(ArrayIndices{I}(inds), undef)
+@propagate_inbounds ArrayDictionary(inds::ArrayIndices, ::UndefInitializer) = ArrayDictionary{eltype(inds), Any}(inds, undef)
+@propagate_inbounds ArrayDictionary{I}(inds::ArrayIndices{I}, ::UndefInitializer) where {I} = ArrayDictionary{I, Any}(inds, undef)
 @propagate_inbounds ArrayDictionary{I, T}(inds::ArrayIndices{I}, ::UndefInitializer) where {I, T} = ArrayDictionary{I, T}(inds, similar(parent(inds), T))
 
 """
