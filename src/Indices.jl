@@ -12,6 +12,10 @@ mutable struct Indices{I,V} <: AbstractIndices{I}
     holes::Int # Number of "vacant" slots in hashes and values
 end
 
+function Indices{I}(slots::Vector{Int}, hashes::Vector{UInt}, values::V, holes::Int) where {I,V} 
+    Indices{I,V}(slots, hashes, values, holes)
+end
+
 _slots(inds::Indices) = getfield(inds, :slots)
 _hashes(inds::Indices) = getfield(inds, :hashes)
 _values(inds::Indices) = getfield(inds, :values)
@@ -80,7 +84,7 @@ function Indices{I}(iter) where {I}
     return Indices{I}(values)
 end
 
-function Indices{I}(values::AbstractVector{I}) where {I}
+function Indices{I}(values::V) where {I, V<:AbstractVector{I}}
     # The input must have unique elements (the constructor is not to be used in place of `distinct`)
     hashes = map(v -> hash(v) & hash_mask, values)
     
@@ -106,7 +110,7 @@ function Indices{I}(values::AbstractVector{I}) where {I}
             # This is potentially an infinte loop and care must be taken not to overfill the container
         end
     end
-    return Indices{I}(slots, hashes, values, 0)
+    return Indices{I,V}(slots, hashes, values, 0)
 end
 
 Base.convert(::Type{AbstractIndices{I}}, inds::AbstractIndices) where {I} = convert(Indices{I}, inds) # the default AbstractIndices type

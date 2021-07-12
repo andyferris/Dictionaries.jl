@@ -30,12 +30,12 @@
             @test show_str(Dictionary{Vector{Int64},Vector{Int64}}([collect(1:100+i) for i in 1:100],[collect(101:200+i) for i in 1:100])) == "100-element Dictionary{Array{Int64,1},Array{Int64,1}}\n Int64[1… │ Int64[1…\n Int64[1… │ Int64[1…\n Int64[1… │ Int64[1…\n        ⋮ │ ⋮\n Int64[1… │ Int64[1…\n Int64[1… │ Int64[1…"
         end
     else
-        @test show_str(Indices{Int64}()) == "0-element Indices{Int64}"
-        @test show_str(Indices{Int64}(1:3)) == "3-element Indices{Int64}\n 1\n 2\n 3"
-        @test show_str(Indices{Int64}(1:100)) == "100-element Indices{Int64}\n 1\n 2\n 3\n ⋮\n 99\n 100"
-        @test show_str(filterview(iseven, Indices{Int64}(1:100))) == "Greater than 6-element FilteredIndices{Int64, Indices{Int64}, typeof(iseven)}\n 2\n 4\n 6\n ⋮\n 98\n 100"
+        @test show_str(Indices{Int64}()) == "0-element Indices{Int64, Vector{Int64}}"
+        @test show_str(Indices{Int64}(1:3)) == "3-element Indices{Int64, UnitRange{Int64}}\n 1\n 2\n 3"
+        @test show_str(Indices{Int64}(1:100)) == "100-element Indices{Int64, UnitRange{Int64}}\n 1\n 2\n 3\n ⋮\n 99\n 100"
+        @test show_str(filterview(iseven, Indices{Int64}(1:100))) == "Greater than 6-element FilteredIndices{Int64, Indices{Int64, UnitRange{Int64}}, typeof(iseven)}\n 2\n 4\n 6\n ⋮\n 98\n 100"
         if Int === Int64
-            @test show_str(Indices{Vector{Int64}}([collect(1:100)])) == "1-element Indices{Vector{Int64}}\n [1, 2, 3, 4, 5, 6,…"
+            @test show_str(Indices{Vector{Int64}}([collect(1:100)])) == "1-element Indices{Vector{Int64}, Vector{Vector{Int64}}}\n [1, 2, 3, 4, 5, 6,…"
             @test show_str(Indices{Vector{Int64}}([collect(1:(100+i)) for i in 1:100])) == "100-element Indices{Vector{Int64}}\n [1, 2, 3, 4, 5, 6,…\n [1, 2, 3, 4, 5, 6,…\n [1, 2, 3, 4, 5, 6,…\n ⋮\n [1, 2, 3, 4, 5, 6,…\n [1, 2, 3, 4, 5, 6,…"
         else
             @test show_str(Indices{Vector{Int64}}([collect(1:100)])) == "1-element Indices{Vector{Int64}}\n Int64[1, 2, 3, 4, …"
