@@ -1,13 +1,13 @@
 const hash_mask = typemax(UInt) >>> 0x01
 const deletion_mask = hash_mask + 0x01
 
-mutable struct Indices{I} <: AbstractIndices{I}
+mutable struct Indices{I,V} <: AbstractIndices{I}
     # The hash table
     slots::Vector{Int}
 
     # Hashes and values
     hashes::Vector{UInt} # Deletion marker stored in high bit
-    values::Vector{I}
+    values::V
 
     holes::Int # Number of "vacant" slots in hashes and values
 end
@@ -80,7 +80,7 @@ function Indices{I}(iter) where {I}
     return Indices{I}(values)
 end
 
-function Indices{I}(values::Vector{I}) where {I}
+function Indices{I}(values::AbstractVector{I}) where {I}
     # The input must have unique elements (the constructor is not to be used in place of `distinct`)
     hashes = map(v -> hash(v) & hash_mask, values)
     
