@@ -36,7 +36,7 @@
         @test show_str(filterview(iseven, Indices{Int64}(1:100))) == "Greater than 6-element FilteredIndices{Int64, Indices{Int64, UnitRange{Int64}}, typeof(iseven)}\n 2\n 4\n 6\n ⋮\n 98\n 100"
         if Int === Int64
             @test show_str(Indices{Vector{Int64}}([collect(1:100)])) == "1-element Indices{Vector{Int64}, Vector{Vector{Int64}}}\n [1, 2, 3, 4, 5, 6,…"
-            @test show_str(Indices{Vector{Int64}}([collect(1:(100+i)) for i in 1:100])) == "100-element Indices{Vector{Int64}}\n [1, 2, 3, 4, 5, 6,…\n [1, 2, 3, 4, 5, 6,…\n [1, 2, 3, 4, 5, 6,…\n ⋮\n [1, 2, 3, 4, 5, 6,…\n [1, 2, 3, 4, 5, 6,…"
+            @test show_str(Indices{Vector{Int64}}([collect(1:(100+i)) for i in 1:100])) == "100-element Indices{Vector{Int64}, Vector{Vector{Int64}}}\n [1, 2, 3, 4, 5, 6,…\n [1, 2, 3, 4, 5, 6,…\n [1, 2, 3, 4, 5, 6,…\n ⋮\n [1, 2, 3, 4, 5, 6,…\n [1, 2, 3, 4, 5, 6,…"
         else
             @test show_str(Indices{Vector{Int64}}([collect(1:100)])) == "1-element Indices{Vector{Int64}}\n Int64[1, 2, 3, 4, …"
             @test show_str(Indices{Vector{Int64}}([collect(1:(100+i)) for i in 1:100])) == "100-element Indices{Vector{Int64}}\n Int64[1, 2, 3, 4, …\n Int64[1, 2, 3, 4, …\n Int64[1, 2, 3, 4, …\n ⋮\n Int64[1, 2, 3, 4, …\n Int64[1, 2, 3, 4, …"
