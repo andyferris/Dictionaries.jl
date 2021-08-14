@@ -134,14 +134,16 @@ end
 
 function Base.checkindex(indices::AbstractIndices{I}, i::I) where {I}
 	if i ∉ indices
-		throw(IndexError("Index $i not found in indices $indices"))
+		short_ind = repr(indices, context=:limit => true)
+		throw(IndexError("Index $i not found in indices $short_ind"))
 	end
 end
 Base.checkindex(indices::AbstractIndices{I}, i) where {I} = checkindex(indices, convert(I, i))
 
 function checkindices(indices::AbstractIndices, inds)
     if !(inds ⊆ indices)
-        throw(IndexError("Indices $inds are not a subset of $indices"))
+        short_ind = repr(indices, context=:limit => true)
+        throw(IndexError("Indices $inds are not a subset of $short_ind"))
     end
 end
 
