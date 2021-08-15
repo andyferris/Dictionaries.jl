@@ -320,15 +320,12 @@ function gettoken(indices::Indices{I}, i::I) where {I}
         trial_slot = (trial_slot + 1)
         trial_index = _slots(indices)[trial_slot]
         if trial_index > 0
-            if !isbitstype(I) # this check is a compiletime constant
-                index_hash = @inbounds hashes[trial_index]
-                full_hash === index_hash || (@goto skipcheck)
+            if isbitstype(I) || full_hash === @inbounds hashes[trial_index]
+                value = _values(indices)[trial_index]
+                if i === value || isequal(i, value)
+                    return (true, (trial_slot, trial_index))
+                end
             end
-            value = _values(indices)[trial_index]
-            if i === value || isequal(i, value)
-                return (true, (trial_slot, trial_index))
-            end
-            @label skipcheck
         elseif trial_index === 0
             return (false, (0, 0))
         end
@@ -370,15 +367,12 @@ function gettoken!(indices::Indices{I}, i::I, values = ()) where {I}
                 deleted_slot = trial_slot
             end
         else
-            if !isbitstype(I) # this check is a compiletime constant
-                index_hash = @inbounds hashes[trial_index]
-                full_hash === index_hash || (@goto skipcheck)
+            if isbitstype(I) || full_hash === @inbounds hashes[trial_index]
+                value = _values(indices)[trial_index]
+                if i === value || isequal(i, value)
+                    return (true, (trial_slot, trial_index))
+                end
             end
-            value = _values(indices)[trial_index]
-            if i === value || isequal(i, value)
-                return (true, (trial_slot, trial_index))
-            end
-            @label skipcheck
         end
 
         trial_slot = trial_slot & bit_mask
