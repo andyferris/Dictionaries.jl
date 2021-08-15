@@ -320,7 +320,7 @@ function gettoken(indices::Indices{I}, i::I) where {I}
         trial_slot = (trial_slot + 1)
         trial_index = _slots(indices)[trial_slot]
         if trial_index > 0
-            if isbitstype(I) || full_hash === @inbounds hashes[trial_index]
+            if isbitstype(I) || Base.isbitsunion(I) || I === Symbol || full_hash === @inbounds hashes[trial_index]
                 value = _values(indices)[trial_index]
                 if i === value || isequal(i, value)
                     return (true, (trial_slot, trial_index))
@@ -367,7 +367,7 @@ function gettoken!(indices::Indices{I}, i::I, values = ()) where {I}
                 deleted_slot = trial_slot
             end
         else
-            if isbitstype(I) || full_hash === @inbounds hashes[trial_index]
+            if isbitstype(I) || Base.isbitsunion(I) || I === Symbol || full_hash === @inbounds hashes[trial_index]
                 value = _values(indices)[trial_index]
                 if i === value || isequal(i, value)
                     return (true, (trial_slot, trial_index))
