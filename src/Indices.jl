@@ -317,16 +317,19 @@ function gettoken(indices::Indices{I}, i::I) where {I}
     full_hash = hash(i) & hash_mask
     n_slots = length(_slots(indices))
     bit_mask = n_slots - 1 # n_slots is always a power of two
+    hashes = indices.hashes
 
     trial_slot = reinterpret(Int, full_hash) & bit_mask
     @inbounds while true
         trial_slot = (trial_slot + 1)
         trial_index = _slots(indices)[trial_slot]
         if trial_index > 0
-            value = _values(indices)[trial_index]
-            if i === value || isequal(i, value)
-                return (true, (trial_slot, trial_index))
-            end    
+            if isbitstype(I) || Base.isbitsunion(I) || I === Symbol || full_hash === @inbounds hashes[trial_index]
+                value = _values(indices)[trial_index]
+                if i === value || isequal(i, value)
+                    return (true, (trial_slot, trial_index))
+                end
+            end
         elseif trial_index === 0
             return (false, (0, 0))
         end
@@ -353,6 +356,7 @@ function gettoken!(indices::Indices{I}, i::I, values = ()) where {I}
     n_slots = length(_slots(indices))
     bit_mask = n_slots - 1 # n_slots is always a power of two
     n_values = length(_values(indices))
+    hashes = indices.hashes
 
     trial_slot = reinterpret(Int, full_hash) & bit_mask
     trial_index = 0
@@ -367,9 +371,11 @@ function gettoken!(indices::Indices{I}, i::I, values = ()) where {I}
                 deleted_slot = trial_slot
             end
         else
-            value = _values(indices)[trial_index]
-            if i === value || isequal(i, value)
-                return (true, (trial_slot, trial_index))
+            if isbitstype(I) || Base.isbitsunion(I) || I === Symbol || full_hash === @inbounds hashes[trial_index]
+                value = _values(indices)[trial_index]
+                if i === value || isequal(i, value)
+                    return (true, (trial_slot, trial_index))
+                end
             end
         end
 

@@ -1,7 +1,7 @@
 name = "Dictionaries"
 uuid = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
 authors = ["Andy Ferris <ferris.andy@gmail.com>"]
-version = "0.3.10"
+version = "0.3.11"
 
 [deps]
 Indexing = "313cdc1a-70c2-5d6a-ae34-0150d3930a38"
