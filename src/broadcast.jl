@@ -7,6 +7,10 @@ struct BroadcastedDictionary{I, T, F, Data <: Tuple} <: AbstractDictionary{I, T}
     sharetokens::Bool
 end
 
+# We prevent @inbounds annotations from propagating into the call to the user
+# defined function `d.f` using an extra layer of indirection with `_call_f`.
+_call_f(d::BroadcastedDictionary, args...) = getfield(d, :f)(args...)
+
 _f(d::BroadcastedDictionary) = getfield(d, :f)
 _data(d::BroadcastedDictionary) = getfield(d, :data)
 
@@ -25,9 +29,9 @@ end
 @propagate_inbounds function Base.getindex(d::BroadcastedDictionary{I}, i::I) where {I}
     if istokenizable(d)
         t = gettoken(d, i)
-        return _f(d)(_gettokenvalue(t, _data(d)...)...)
+        return _call_f(d, _gettokenvalue(t, _data(d)...)...)
     else
-        return _f(d)(_getindex(i, _data(d)...)...)
+        return _call_f(d, _getindex(i, _data(d)...)...)
     end
 end
 
@@ -49,7 +53,7 @@ function istokenassigned(d::BroadcastedDictionary, t)
 end
 
 @propagate_inbounds function gettokenvalue(d::BroadcastedDictionary, t)
-    return _f(d)(_gettokenvalue(t, _data(d)...)...)
+    return _call_f(d, _gettokenvalue(t, _data(d)...)...)
 end
 
 @inline function Base.similar(d::BroadcastedDictionary, ::Type{T}) where {T}

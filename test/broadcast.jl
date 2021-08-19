@@ -28,4 +28,21 @@
     @test isequal(d2, dictionary([1=>4, 2=>6, 3=>8, 4=>10, 5=>12]))
 
     @test_throws IndexError Dictionary([1,2],[1,2]) .+ Dictionary([2,3],[2,3])
+
+    # Issue #63 - Broadcasting only omitted bounds check due to inbounds propagation
+    if VERSION < v"1.4" # Compat
+        Base.@propagate_inbounds function only(x)
+            i = iterate(x)
+            @boundscheck if i === nothing
+                throw(ArgumentError("Collection is empty, must contain exactly 1 element"))
+            end
+            (ret, state) = i
+            @boundscheck if iterate(x, state) !== nothing
+                throw(ArgumentError("Collection has multiple elements, must contain exactly 1 element"))
+            end
+            return ret
+        end
+    end
+    d2 = Dictionary([:a, :b], [[1,2], [3,4]])
+    @test_throws ArgumentError only.(d2)
 end
