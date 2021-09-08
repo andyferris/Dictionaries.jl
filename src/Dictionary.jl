@@ -152,6 +152,10 @@ function Dictionary{I, T}(inds::Indices{I}, ::UndefInitializer) where {I, T}
     return Dictionary{I, T}(inds, vs, nothing)
 end
 
+function Base.convert(::Type{Dictionary{I, T}}, dict::Dictionary) where {I, T}
+    return Dictionary{I, T}(convert(Indices{I}, dict.indices), convert(Vector{T}, dict.values))
+end
+
 """
     dictionary(iter)
 

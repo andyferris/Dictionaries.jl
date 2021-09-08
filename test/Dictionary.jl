@@ -155,6 +155,9 @@
     @test isequal(index(first, ["Alice", "Bob", "Charlie"]), Dictionary(['A', 'B', 'C'], ["Alice", "Bob", "Charlie"]))
     @test isequal(index(first, ["Alice", "Bob", "Charlie", "Conner"]), Dictionary(['A', 'B', 'C'], ["Alice", "Bob", "Charlie"]))
 
+    d7 = Dictionary(Int32[1, 2], UInt32[1, 2])
+    @test convert(Dictionary{Int,Int}, d7) == Dictionary([1, 2], [1, 2])
+
     rd = Dictionary([:b, :a], [2, 1])
     @test reverse(d)::Dictionary == rd
     @test Iterators.reverse(d)::ReverseDictionary == rd
