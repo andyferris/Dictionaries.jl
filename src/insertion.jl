@@ -433,11 +433,16 @@ Return an empty, insertable `AbstractIndices` of element type `I` (even when the
 argument is a dictionary). The default container is `Indices{I}`, but the output may
 depend on the first argument.
 
+The type of the returned indices is controlled by the `empty_type` function.
+
     empty(inds::AbstractIndices)
 
 Return an empty, insertable `AbstractIndices` of element type `eltype(inds)`.
 """
 Base.empty(inds::AbstractIndices) = empty(inds, eltype(inds))
+Base.empty(inds::AbstractIndices, ::Type{I}) where {I} = empty_type(typeof(inds), I)()
+
+empty_type(::Type{<:AbstractIndices}, ::Type{I}) where {I} = Indices{I}
 
 """
     empty(inds::AbstractIndices, I::Type, T::Type)
@@ -447,11 +452,22 @@ Return an empty, insertable `AbstractDictionary` of with indices of type `I` and
 of type `T` (even when the first argument is are indices). The default container is
 `Dictionary{I}`, but the output may depend on the first argument.
 
+The type of the returned dictionary is controlled by the `empty_type` function.
+
     empty(dict::AbstractDictionary)
 
 Return an empty, insertable `AbstractDictionary` with indices of type `keytype(dict)` and
 elements of type `eltype(inds)`.
 """
 Base.empty(d::AbstractDictionary) = empty(keys(d), keytype(d), eltype(d))
-
 Base.empty(d::AbstractDictionary, ::Type{I}) where {I} = empty(keys(d), I)
+Base.empty(dict::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T} = empty(keys(dict), I, T)
+Base.empty(inds::AbstractIndices, ::Type{I}, ::Type{T}) where {I, T} = empty_type(typeof(inds), I, T)()
+
+"""
+    empty_type(::Type{Inds}, ::Type{I}, ::Type{T}) where {Inds <: AbstractIndices, I, T}
+
+Return the type of an `isinsertable` dictionary which is similar to type `Inds` and with
+keys of type `I` and values of type `T`.
+"""
+empty_type(::Type{<:AbstractIndices}, ::Type{I}, ::Type{T}) where {I, T} = Dictionary{I, T}

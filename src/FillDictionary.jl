@@ -17,3 +17,7 @@ Base.isassigned(d::FillDictionary{I}, i::I) where {I} = Base.isassigned(keys(d),
 gettokenvalue(d::FillDictionary, t) = getfield(d, :value)
 
 istokenassigned(d::FillDictionary, t) = true
+
+empty_type(::Type{<:FillDictionary{<:Any, <:Any, Inds}}, ::Type{I}) where {I, Inds} = empty_type(Inds, I)
+empty_type(::Type{<:FillDictionary{<:Any, <:Any, Inds}}, ::Type{I}, ::Type{T}) where {I, T, Inds} = empty_type(Inds, I, T)
+similar_type(::Type{<:FillDictionary{<:Any, <:Any, Inds}}, ::Type{T}) where {T, Inds} = similar_type(Inds, T)

@@ -24,7 +24,7 @@ Base.reverse(inds::AbstractIndices) = copy(Iterators.reverse(inds))
 empty_type(::Type{<:ReverseIndices{<:Any, Inds}}, ::Type{I}) where {I, Inds} = empty_type(Inds, I)
 empty_type(::Type{<:ReverseIndices{<:Any, Inds}}, ::Type{I}, ::Type{T}) where {I, T, Inds} = empty_type(Inds, I, T)
 
-Base.similar(inds::ReverseIndices, ::Type{T}) where {T} = Iterators.reverse(similar(parent(inds), T))
+similar_type(::Type{<:ReverseIndices{<:Any, Inds}}, ::Type{T}) where {T, Inds} = similar_type(Inds, T) # TODO can we preserve the index?
 
 # Reversed dictionary
 struct ReverseDictionary{I, T, Dict <: AbstractDictionary{I, T}} <: AbstractDictionary{I, T}
@@ -58,3 +58,5 @@ end
 
 empty_type(::Type{<:ReverseDictionary{<:Any, <:Any, D}}, ::Type{I}) where {I, D} = empty_type(D, I)
 empty_type(::Type{<:ReverseDictionary{<:Any, <:Any, D}}, ::Type{I}, ::Type{T}) where {I, T, D} = empty_type(D, I, T)
+
+similar_type(::Type{<:ReverseDictionary{<:Any, <:Any, D}}, ::Type{T}) where {T, D} = similar_type(D, T) # TODO can we preserve the index?
