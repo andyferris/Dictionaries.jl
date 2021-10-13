@@ -349,3 +349,9 @@ end
 else
     @deprecate disjoint(set1, set2) isdisjoint(set1, set2)
 end
+
+function Base.sort(inds::AbstractIndices{I}; kwargs...) where {I}
+    ks = collect(inds)
+    sort!(ks; kwargs...)
+    return empty_type(typeof(inds), I)(ks)
+end

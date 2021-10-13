@@ -8,7 +8,7 @@ export getindices, setindices!
 
 export AbstractDictionary, AbstractIndices, IndexError, ArrayIndices, Indices, Dictionary, ArrayDictionary, MappedDictionary, ReverseIndices, ReverseDictionary, DictionaryView, FilteredDictionary, FilteredIndices, BroadcastedDictionary, FillDictionary
 
-export dictionary, index, distinct, disjoint, isdictequal, filterview
+export dictionary, index, distinct, disjoint, isdictequal, filterview, sortkeys, sortpairs
 export issettable, isinsertable, set!, unset!
 export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, settokenvalue!, gettoken!, deletetoken!, sharetokens
 

@@ -175,6 +175,18 @@ julia> map(((k,v),) -> k^v, pairs(dict))
  "c" │ "ccc"
 ```
 
+You can sort a dictionary by value using the `sort` function (with the usual keyword arguments).
+
+```julia
+julia> sort(dict; rev = true)
+3-element Dictionary{String, Int64}
+ "c" │ 3
+ "b" │ 2
+ "a" │ 1
+```
+
+The `sortkeys` and `sortpairs` functions allows you to sort by a dictionary's key or key-value pair, respectively.
+
 ### Indices
 
 The indices of a dictionary are unique, and form a set (in the mathematical sense). You can get the indices for any dictionary with the `keys` function.

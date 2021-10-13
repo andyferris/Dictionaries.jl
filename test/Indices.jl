@@ -210,5 +210,11 @@
         end
     end
 
+    @testset "sort" begin
+        inds = Indices([1, 3, 2])
+        @test sort(inds)::Indices == Indices([1, 2, 3])
+        @test sort(inds; rev=true)::Indices == Indices([3, 2, 1])
+    end
+
     # TODO: token interface
 end

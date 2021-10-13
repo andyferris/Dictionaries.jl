@@ -283,4 +283,17 @@
             @test rand(dict) in [1, 3, 4, 5]
         end
     end
+
+    @testset "sort" begin
+        dict = Dictionary([1, 3, 2], ['c', 'a', 'b'])
+        @test sort(dict)::Dictionary == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+        @test sort(dict; rev=true)::Dictionary == Dictionary([1, 2, 3], ['c', 'b', 'a'])
+
+        @test sortkeys(dict)::Dictionary == Dictionary([1, 2, 3], ['c', 'b', 'a'])
+        @test sortkeys(dict; rev=true)::Dictionary == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+
+        @test sortpairs(dict)::Dictionary == Dictionary([1, 2, 3], ['c', 'b', 'a'])
+        @test sortpairs(dict; rev=true)::Dictionary == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+        @test sortpairs(dict; by=kv->kv.second=>kv.first)::Dictionary == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+    end
 end

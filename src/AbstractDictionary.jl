@@ -496,3 +496,55 @@ end
 Base.last(d::AbstractDictionary) = first(Iterators.reverse(d))
 Base.firstindex(d::AbstractDictionary) = first(keys(d))
 Base.lastindex(d::AbstractDictionary) = first(Iterators.reverse(keys(d)))
+
+"""
+    sort(dict::AbstractDictionary; kwargs...)
+
+Return a copy of `dict` sorted by its values. The `kwargs` are the usual ordering options
+supported by `sort`.
+
+See also `sortkeys` and `sortpairs`.
+"""
+function Base.sort(dict::AbstractDictionary{I, T}; kwargs...) where {I, T}
+    ks = collect(keys(dict))
+    vs = collect(dict)
+    perm = sortperm(vs; kwargs...)
+    permute!(ks, perm)
+    permute!(vs, perm)
+    return empty_type(typeof(dict), I, T)(ks, vs)
+end
+
+"""
+    sortkeys(dict::AbstractDictionary; kwargs...)
+
+Return a copy of `dict` sorted by `keys(dict)`. The `kwargs` are the usual ordering options
+supported by `sort`.
+
+See also `sort` and `sortpairs`.
+"""
+function sortkeys(dict::AbstractDictionary{I, T}; kwargs...) where {I, T}
+    ks = collect(keys(dict))
+    vs = collect(dict)
+    perm = sortperm(ks; kwargs...)
+    permute!(ks, perm)
+    permute!(vs, perm)
+    return empty_type(typeof(dict), I, T)(ks, vs)
+end
+
+"""
+    sortpairs(dict::AbstractDictionary; kwargs...)
+
+Return a copy of `dict` sorted by `pairs(dict)`. The `kwargs` are the usual ordering options
+supported by `sort`.
+
+See also `sort` and `sortkeys`.
+"""
+function sortpairs(dict::AbstractDictionary{I, T}; kwargs...) where {I, T}
+    ks = collect(keys(dict))
+    vs = collect(dict)
+    ps = collect(pairs(dict))
+    perm = sortperm(ps; kwargs...)
+    permute!(ks, perm)
+    permute!(vs, perm)
+    return empty_type(typeof(dict), I, T)(ks, vs)
+end
