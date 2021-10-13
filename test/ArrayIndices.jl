@@ -73,4 +73,10 @@
             @test rand(inds) in ["a", "b", "c", "d", "e"]
         end
     end
+
+    @testset "sort" begin
+        inds = ArrayIndices([1, 3, 2])
+        @test sort(inds)::ArrayIndices == ArrayIndices([1, 2, 3])
+        @test sort(inds; rev=true)::ArrayIndices == ArrayIndices([3, 2, 1])
+    end
 end

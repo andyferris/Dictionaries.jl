@@ -43,6 +43,8 @@ Construct an `ArrayDictionary` from empty `Vector`s, with `I` and `T` default to
 @propagate_inbounds ArrayDictionary{I,T}(inds::ArrayIndices{I}, vals::AbstractArray) where {I,T} = ArrayDictionary{I,T}(inds, convert(AbstractArray{T}, vals))
 @propagate_inbounds ArrayDictionary{I,T}(inds::ArrayIndices{I}, vals::AbstractArray{T}) where {I,T} = ArrayDictionary{I,T,typeof(inds),typeof(vals)}(inds, vals)
 
+@propagate_inbounds ArrayDictionary{I,T,Inds,Vals}(inds::AbstractArray, vals::AbstractArray{T}) where {I,T,Inds,Vals} = ArrayDictionary{I,T,Inds,Vals}(Inds(inds), vals)
+
 """
     ArrayDictionary(indices, undef::UndefInitializer)
 
