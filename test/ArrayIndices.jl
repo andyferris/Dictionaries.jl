@@ -78,5 +78,13 @@
         inds = ArrayIndices([1, 3, 2])
         @test sort(inds)::ArrayIndices == ArrayIndices([1, 2, 3])
         @test sort(inds; rev=true)::ArrayIndices == ArrayIndices([3, 2, 1])
+
+        indscopy = deepcopy(inds)
+        sort!(indscopy)
+        @test indscopy == ArrayIndices([1, 2, 3])
+
+        indscopy = deepcopy(inds)
+        sort!(indscopy; rev=true)
+        @test indscopy == ArrayIndices([3, 2, 1])
     end
 end

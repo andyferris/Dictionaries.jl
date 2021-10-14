@@ -214,6 +214,14 @@
         inds = Indices([1, 3, 2])
         @test sort(inds)::Indices == Indices([1, 2, 3])
         @test sort(inds; rev=true)::Indices == Indices([3, 2, 1])
+
+        indscopy = deepcopy(inds)
+        sort!(indscopy)
+        @test indscopy == Indices([1, 2, 3])
+
+        indscopy = deepcopy(inds)
+        sort!(indscopy; rev=true)
+        @test indscopy == Indices([3, 2, 1])
     end
 
     # TODO: token interface

@@ -350,3 +350,82 @@ function Base.similar(indices::Indices{I}, ::Type{T}) where {I, T}
     return Dictionary{I, T}(indices, Vector{T}(undef, length(_values(indices))), nothing)
 end
 
+"""
+    sort!(dict::AbstractDictionary; kwargs...)
+
+Modify `dict` so that it is sorted by its values. The `kwargs` are the usual ordering
+options supported by `sort`. Note that this only works on supported types.
+
+See also `sort`, `sortkeys!` and `sortpairs!`.
+"""
+function Base.sort!(dict::Dictionary; kwargs...)
+    inds = keys(dict)
+    if inds.holes != 0
+        rehash!(inds, length(inds.slots))
+    end
+    perm = sortperm(dict.values; kwargs...)
+    inds.values = @inbounds inds.values[perm]
+    inds.hashes = @inbounds inds.hashes[perm]
+    @inbounds for i in keys(inds.slots)
+        s = inds.slots[i]
+        if s > 0
+            inds.slots[i] = perm[s]
+        end
+    end
+    permute!(dict.values, perm)
+    return dict
+end
+
+"""
+    sortkeys!(dict::AbstractDictionary; kwargs...)
+
+Modify `dict` so that it is sorted by `keys(dict)`. The `kwargs` are the usual ordering
+options supported by `sort`. Note that this only works on supported types.
+
+See also `sortkeys`, `sort!` and `sortpairs!`.
+"""
+function sortkeys!(dict::Dictionary; kwargs...)
+    inds = keys(dict)
+    if inds.holes != 0
+        rehash!(inds, length(inds.slots))
+    end
+    perm = sortperm(inds.values; kwargs...)
+    inds.values = @inbounds inds.values[perm]
+    inds.hashes = @inbounds inds.hashes[perm]
+    @inbounds for i in keys(inds.slots)
+        s = inds.slots[i]
+        if s > 0
+            inds.slots[i] = perm[s]
+        end
+    end
+    permute!(dict.values, perm)
+    return dict
+end
+
+"""
+    sortpairs!(dict::AbstractDictionary; kwargs...)
+
+Modify `dict` so that it is sorted by `pairs(dict)`. The `kwargs` are the usual ordering
+options supported by `sort`.
+
+See also `sortpairs`,`sort!` and `sortkeys!`.
+"""
+function sortpairs!(dict::Dictionary; by = identity, kwargs...)
+    inds = keys(dict)
+    if inds.holes != 0
+        rehash!(inds, length(inds.slots))
+    end
+    vals = dict.values
+    inds_vals = inds.values
+    perm = sortperm(keys(dict.values); by = i -> by(@inbounds(inds_vals[i]) => @inbounds(vals[i])), kwargs...)
+    inds.values = @inbounds inds.values[perm]
+    inds.hashes = @inbounds inds.hashes[perm]
+    @inbounds for i in keys(inds.slots)
+        s = inds.slots[i]
+        if s > 0
+            inds.slots[i] = perm[s]
+        end
+    end
+    permute!(dict.values, perm)
+    return dict
+end

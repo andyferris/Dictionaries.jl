@@ -185,7 +185,7 @@ julia> sort(dict; rev = true)
  "a" │ 1
 ```
 
-The `sortkeys` and `sortpairs` functions allows you to sort by a dictionary's key or key-value pair, respectively.
+The `sortkeys` and `sortpairs` functions allows you to sort by a dictionary's key or key-value pair, respectively, and you can do in-place sorting on supported types with `sort!`, `sortkeys!` and `sortpairs!` (although these may be slower than the out-of-place algorithms).
 
 ### Indices
 
