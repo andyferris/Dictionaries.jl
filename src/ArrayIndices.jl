@@ -136,3 +136,8 @@ end
 function randtoken(rng::Random.AbstractRNG, inds::ArrayIndices)
     return rand(rng, keys(parent(inds)))
 end
+
+function Base.sort!(inds::ArrayIndices; kwargs...)
+    sort!(inds.inds; kwargs...)
+    return inds
+end

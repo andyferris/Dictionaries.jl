@@ -109,3 +109,26 @@ function Base.empty!(d::ArrayDictionary)
 end
 
 empty_type(::Type{<:ArrayDictionary}, ::Type{I}, ::Type{T}) where {I, T} = ArrayDictionary{I, T, ArrayIndices{I, Vector{I}}, Vector{T}}
+
+function Base.sort!(dict::ArrayDictionary; kwargs...)
+    perm = sortperm(dict.values; kwargs...)
+    permute!(dict.values, perm)
+    permute!(keys(dict).inds, perm)
+    return dict
+end
+
+function sortkeys!(dict::ArrayDictionary; kwargs...)
+    perm = sortperm(keys(dict).inds; kwargs...)
+    permute!(dict.values, perm)
+    permute!(keys(dict).inds, perm)
+    return dict
+end
+
+function sortpairs!(dict::ArrayDictionary; by = identity, kwargs...)
+    inds = keys(dict).inds
+    vals = dict.values
+    perm = sortperm(keys(dict.values); by = i -> by(@inbounds(inds[i]) => @inbounds(vals[i])), kwargs...)
+    permute!(dict.values, perm)
+    permute!(inds, perm)
+    return dict
+end

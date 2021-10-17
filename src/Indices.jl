@@ -532,3 +532,19 @@ function randtoken(rng::Random.AbstractRNG, inds::Indices)
         end
     end
 end
+
+function Base.sort!(inds::Indices; kwargs...)
+    if inds.holes != 0
+        rehash!(inds, length(inds.slots))
+    end
+    perm = sortperm(inds.values; kwargs...)
+    inds.values = @inbounds inds.values[perm]
+    inds.hashes = @inbounds inds.hashes[perm]
+    @inbounds for i in keys(inds.slots)
+        s = inds.slots[i]
+        if s > 0
+            inds.slots[i] = perm[s]
+        end
+    end
+    return inds
+end

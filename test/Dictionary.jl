@@ -295,5 +295,33 @@
         @test sortpairs(dict)::Dictionary == Dictionary([1, 2, 3], ['c', 'b', 'a'])
         @test sortpairs(dict; rev=true)::Dictionary == Dictionary([3, 2, 1], ['a', 'b', 'c'])
         @test sortpairs(dict; by=kv->kv.second=>kv.first)::Dictionary == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+
+        dictcopy = deepcopy(dict)
+        sort!(dictcopy)
+        @test dictcopy == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+        
+        dictcopy = deepcopy(dict)
+        sort!(dictcopy; rev = true)
+        @test dictcopy == Dictionary([1, 2, 3], ['c', 'b', 'a'])
+
+        dictcopy = deepcopy(dict)
+        sortkeys!(dictcopy)
+        @test dictcopy == Dictionary([1, 2, 3], ['c', 'b', 'a'])
+
+        dictcopy = deepcopy(dict)
+        sortkeys!(dictcopy; rev = true)
+        @test dictcopy == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+
+        dictcopy = deepcopy(dict)
+        sortpairs!(dictcopy)
+        @test dictcopy == Dictionary([1, 2, 3], ['c', 'b', 'a'])
+
+        dictcopy = deepcopy(dict)
+        sortpairs!(dictcopy; rev = true)
+        @test dictcopy == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+
+        dictcopy = deepcopy(dict)
+        sortpairs!(dictcopy; by = kv->kv.second=>kv.first)
+        @test dictcopy == Dictionary([3, 2, 1], ['a', 'b', 'c'])
     end
 end

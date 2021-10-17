@@ -503,7 +503,7 @@ Base.lastindex(d::AbstractDictionary) = first(Iterators.reverse(keys(d)))
 Return a copy of `dict` sorted by its values. The `kwargs` are the usual ordering options
 supported by `sort`.
 
-See also `sortkeys` and `sortpairs`.
+See also `sort!`, `sortkeys` and `sortpairs`.
 """
 function Base.sort(dict::AbstractDictionary{I, T}; kwargs...) where {I, T}
     ks = collect(keys(dict))
@@ -520,7 +520,7 @@ end
 Return a copy of `dict` sorted by `keys(dict)`. The `kwargs` are the usual ordering options
 supported by `sort`.
 
-See also `sort` and `sortpairs`.
+See also `sortkeys!`, `sort` and `sortpairs`.
 """
 function sortkeys(dict::AbstractDictionary{I, T}; kwargs...) where {I, T}
     ks = collect(keys(dict))
@@ -537,7 +537,7 @@ end
 Return a copy of `dict` sorted by `pairs(dict)`. The `kwargs` are the usual ordering options
 supported by `sort`.
 
-See also `sort` and `sortkeys`.
+See also `sortpairs!`,`sort` and `sortkeys`.
 """
 function sortpairs(dict::AbstractDictionary{I, T}; kwargs...) where {I, T}
     ks = collect(keys(dict))

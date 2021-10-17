@@ -84,5 +84,33 @@
         @test sortpairs(dict)::ArrayDictionary == ArrayDictionary([1, 2, 3], ['c', 'b', 'a'])
         @test sortpairs(dict; rev=true)::ArrayDictionary == ArrayDictionary([3, 2, 1], ['a', 'b', 'c'])
         @test sortpairs(dict; by=kv->kv.second=>kv.first)::ArrayDictionary == ArrayDictionary([3, 2, 1], ['a', 'b', 'c'])
+
+        dictcopy = deepcopy(dict)
+        sort!(dictcopy)
+        @test dictcopy == ArrayDictionary([3, 2, 1], ['a', 'b', 'c'])
+        
+        dictcopy = deepcopy(dict)
+        sort!(dictcopy; rev = true)
+        @test dictcopy == ArrayDictionary([1, 2, 3], ['c', 'b', 'a'])
+
+        dictcopy = deepcopy(dict)
+        sortkeys!(dictcopy)
+        @test dictcopy == ArrayDictionary([1, 2, 3], ['c', 'b', 'a'])
+
+        dictcopy = deepcopy(dict)
+        sortkeys!(dictcopy; rev = true)
+        @test dictcopy == ArrayDictionary([3, 2, 1], ['a', 'b', 'c'])
+
+        dictcopy = deepcopy(dict)
+        sortpairs!(dictcopy)
+        @test dictcopy == ArrayDictionary([1, 2, 3], ['c', 'b', 'a'])
+
+        dictcopy = deepcopy(dict)
+        sortpairs!(dictcopy; rev = true)
+        @test dictcopy == ArrayDictionary([3, 2, 1], ['a', 'b', 'c'])
+
+        dictcopy = deepcopy(dict)
+        sortpairs!(dictcopy; by = kv->kv.second=>kv.first)
+        @test dictcopy == ArrayDictionary([3, 2, 1], ['a', 'b', 'c'])
     end
 end
