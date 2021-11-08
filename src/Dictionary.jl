@@ -26,7 +26,9 @@ Dictionary(; sizehint = 8) = Dictionary{Any, Any}(; sizehint = sizehint)
 Dictionary{I}(; sizehint = 8) where {I} = Dictionary{I, Any}(; sizehint = sizehint)
 
 function Dictionary{I, T}(; sizehint = 8) where {I, T}
-    Dictionary{I, T}(Indices{I}(; sizehint = sizehint), Vector{T}(), nothing)
+    values = Vector{T}()
+    sizehint!(values, sizehint)
+    Dictionary{I, T}(Indices{I}(; sizehint = sizehint), values, nothing)
 end
 
 """
