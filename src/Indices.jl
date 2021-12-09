@@ -165,7 +165,7 @@ Create a shallow copy of the indices, optionally changing the element type.
 (Note that `copy` on a dictionary does not copy its indices).
 """
 function Base.copy(indices::Indices{I}, ::Type{I2}) where {I, I2}
-    return Indices{I}(copy(_slots(indices)), copy(_hashes(indices)), collect(I2, _values(indices)), _holes(indices))
+    return Indices{I2}(copy(_slots(indices)), copy(_hashes(indices)), collect(I2, _values(indices)), _holes(indices))
 end
 
 function Base.copy(indices::ReverseIndices{I,Indices{I}}, ::Type{I2}) where {I, I2}
