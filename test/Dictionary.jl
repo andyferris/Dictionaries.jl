@@ -157,6 +157,8 @@
 
     d7 = Dictionary(Int32[1, 2], UInt32[1, 2])
     @test convert(Dictionary{Int64, Int64}, d7)::Dictionary{Int64, Int64} == Dictionary(Int64[1, 2], Int64[1, 2])
+    d8 = Dictionary{Int,Int}()
+    @test convert(Dictionary{Int,Int}, d8) === d8
 
     rd = Dictionary([:b, :a], [2, 1])
     @test reverse(d)::Dictionary == rd
