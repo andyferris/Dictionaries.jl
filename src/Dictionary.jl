@@ -366,12 +366,13 @@ function Base.sort!(dict::Dictionary; kwargs...)
         rehash!(inds, length(inds.slots))
     end
     perm = sortperm(dict.values; kwargs...)
+    iperm = invperm(perm)
     inds.values = @inbounds inds.values[perm]
     inds.hashes = @inbounds inds.hashes[perm]
     @inbounds for i in keys(inds.slots)
         s = inds.slots[i]
         if s > 0
-            inds.slots[i] = perm[s]
+            inds.slots[i] = iperm[s]
         end
     end
     permute!(dict.values, perm)
@@ -392,12 +393,13 @@ function sortkeys!(dict::Dictionary; kwargs...)
         rehash!(inds, length(inds.slots))
     end
     perm = sortperm(inds.values; kwargs...)
+    iperm = invperm(perm)
     inds.values = @inbounds inds.values[perm]
     inds.hashes = @inbounds inds.hashes[perm]
     @inbounds for i in keys(inds.slots)
         s = inds.slots[i]
         if s > 0
-            inds.slots[i] = perm[s]
+            inds.slots[i] = iperm[s]
         end
     end
     permute!(dict.values, perm)
@@ -420,12 +422,13 @@ function sortpairs!(dict::Dictionary; by = identity, kwargs...)
     vals = dict.values
     inds_vals = inds.values
     perm = sortperm(keys(dict.values); by = i -> by(@inbounds(inds_vals[i]) => @inbounds(vals[i])), kwargs...)
+    iperm = invperm(perm)
     inds.values = @inbounds inds.values[perm]
     inds.hashes = @inbounds inds.hashes[perm]
     @inbounds for i in keys(inds.slots)
         s = inds.slots[i]
         if s > 0
-            inds.slots[i] = perm[s]
+            inds.slots[i] = iperm[s]
         end
     end
     permute!(dict.values, perm)
