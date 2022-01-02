@@ -122,9 +122,9 @@ Base.convert(::Type{Indices}, inds::AbstractIndices{I}) where {I} = convert(Indi
 Base.convert(::Type{Indices{I}}, inds::Indices{I}) where {I} = inds
 function Base.convert(::Type{Indices{I}}, inds::AbstractIndices) where {I}
     # Fast path
-    if inds isa Indices && _holes(inds) == 0
+    if inds isa Indices
         # Note: `convert` doesn't have copy semantics
-        return Indices{I}(_slots(inds), _hashes(inds), convert(Vector{I}, _values(inds)), 0)
+        return Indices{I}(_slots(inds), _hashes(inds), convert(Vector{I}, _values(inds)), _holes(inds))
     end
 
     # The input is already unique

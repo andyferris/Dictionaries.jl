@@ -22,7 +22,7 @@ function Base.show(io::IO, d::AbstractDictionary)
     limit = get(io, :limit, false) ? Int64(10) : typemax(Int64)
     comma = false
     print(io, "{")
-    for (i, v) in pairs(d)
+    for i in keys(d)
         if comma
             print(io, ", ")
         end
@@ -32,7 +32,11 @@ function Base.show(io::IO, d::AbstractDictionary)
         end
         show(io, i)
         print(io, " = ")
-        show(io, v)
+        if isassigned(d, i)
+            show(io, d[i])
+        else
+            print(io, "#undef")
+        end
         comma = true
         limit -= 1
     end
