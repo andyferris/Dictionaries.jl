@@ -61,6 +61,9 @@ Dictionary(indexable) = Dictionary(keys(indexable), values(indexable))
 Dictionary{I}(indexable) where {I} = Dictionary{I}(keys(indexable), values(indexable))
 Dictionary{I, T}(indexable) where {I, T} = Dictionary{I, T}(keys(indexable), values(indexable))
 
+Dictionary{I, T}(indexable::Dictionary) where {I, T} = Dictionary{I, T}(convert(Indices{I}, keys(indexable)), convert(Vector{T}, indexable.values), nothing)
+
+
 """
     Dictionary(inds, values)
     Dictionary{I}(inds, values)
@@ -133,6 +136,14 @@ function Dictionary{I, T}(inds::Indices{I}, values) where {I, T}
     end
 end
 
+function Dictionary{I, T}(inds::Indices{I}, values::AbstractVector) where {I, T}
+    if _holes(inds) != 0
+        # TODO instead constructor a vector with holes in it...
+        inds = copy(inds)
+    end
+    return Dictionary{I, T}(inds, convert(Vector{T}, values), nothing)
+end
+
 """
     Dictionary(indices, undef::UndefInitializer)
 
@@ -155,7 +166,7 @@ function Dictionary{I, T}(inds::Indices{I}, ::UndefInitializer) where {I, T}
 end
 
 function Base.convert(::Type{Dictionary{I, T}}, dict::Dictionary) where {I, T}
-    return Dictionary{I, T}(convert(Indices{I}, dict.indices), convert(Vector{T}, dict.values))
+    return Dictionary{I, T}(convert(Indices{I}, dict.indices), convert(Vector{T}, dict.values), nothing)
 end
 Base.convert(::Type{T}, dict::T) where {T<:Dictionary} = dict
 
