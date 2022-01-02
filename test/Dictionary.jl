@@ -301,29 +301,36 @@
         dictcopy = deepcopy(dict)
         sort!(dictcopy)
         @test dictcopy == Dictionary([3, 2, 1], ['a', 'b', 'c'])
-        
+        @test all(isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
+
         dictcopy = deepcopy(dict)
         sort!(dictcopy; rev = true)
         @test dictcopy == Dictionary([1, 2, 3], ['c', 'b', 'a'])
+        @test all(isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
 
         dictcopy = deepcopy(dict)
         sortkeys!(dictcopy)
         @test dictcopy == Dictionary([1, 2, 3], ['c', 'b', 'a'])
+        @test all(isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
 
         dictcopy = deepcopy(dict)
         sortkeys!(dictcopy; rev = true)
         @test dictcopy == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+        @test all(isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
 
         dictcopy = deepcopy(dict)
         sortpairs!(dictcopy)
         @test dictcopy == Dictionary([1, 2, 3], ['c', 'b', 'a'])
+        @test all(isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
 
         dictcopy = deepcopy(dict)
         sortpairs!(dictcopy; rev = true)
         @test dictcopy == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+        @test all(isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
 
         dictcopy = deepcopy(dict)
         sortpairs!(dictcopy; by = kv->kv.second=>kv.first)
         @test dictcopy == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+        @test all(isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
     end
 end
