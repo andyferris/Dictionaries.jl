@@ -170,6 +170,17 @@
     #@test d[begin] == 1 # Parsing issues on earlier versions of Julia...
     @test d[end] == 2
 
+    dict = Dictionary{Int, String}([1, 2], undef)
+
+    dictcopy = copy(dict)
+    @test dict isa Dictionary{Int, String}
+    @test sharetokens(dict, dictcopy)
+    io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64, String}\n 1 │ #undef\n 2 │ #undef"
+    @test all(!isassigned(dict, i) for i in collect(keys(dict)))
+    @test all(!isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
+    @test sharetokens(dict, Dictionary{Int64, String}(dict))
+    @test pairs(dict) isa Dictionaries.PairDictionary{Int64, String}
+
     # TODO token interface
 
     @testset "filter!" begin
