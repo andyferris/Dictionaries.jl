@@ -246,6 +246,9 @@
         @test isequal(dictionary(['a'=>1, 'b'=>2, 'c'=>3]), res)
         @test isequal(dictionary(['a'=>1, 'b'=>2, 'c'=>3, 'a'=>4]), res)
         @test isequal(dictionary((k,v) for (k,v) in pairs(res)), res)
+
+        res = Dictionary{Any,Any}([2, :x], [2, :b])
+        @test isequal(dictionary([2 => 2, :x => :b]), res)
     end
 
     @testset "index" begin
