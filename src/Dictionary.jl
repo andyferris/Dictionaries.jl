@@ -234,6 +234,7 @@ function __dictionary(key, value, dict, iter, s)
         if !(i isa I) && promote_type(typeof(i), I) != I
             new_inds = copy(keys(dict), promote_type(I, typeof(i)))
             new_dict = similar(new_inds, promote_type(T, typeof(v)))
+            copyto!(new_dict.values, dict.values)
             (hadtoken, token) = gettoken!(new_dict, i)
             if !hadtoken
                 @inbounds settokenvalue!(new_dict, token, v)
