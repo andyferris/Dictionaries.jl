@@ -90,6 +90,8 @@ function Base.similar(inds::ArrayIndices, ::Type{T}) where {T}
     return ArrayDictionary(inds, similar(parent(inds), T))
 end
 
+Base.copy(dict::ArrayDictionary) = ArrayDictionary(dict.indices, copy(dict.values))
+
 # insertable interface
 isinsertable(::ArrayDictionary) = true # Need an array trait for this...
 
