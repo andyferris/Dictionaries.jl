@@ -40,7 +40,7 @@ Base.isassigned(d::PairDictionary{I}, i::I) where {I} = isassigned(parent(d), i)
 
 
 # Token interface
-@propagate_inbounds gettoken(d::PairDictionary{I}, i::I) where {I} = gettoken(parent(d), i)
+@propagate_inbounds gettoken(d::PairDictionary, i) = gettoken(parent(d), i)
 
 @propagate_inbounds function gettokenvalue(pd::PairDictionary, t)
     d = parent(pd)

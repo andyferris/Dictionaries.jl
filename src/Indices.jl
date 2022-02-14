@@ -313,7 +313,7 @@ end
     return nothing
 end
 
-function gettoken(indices::Indices{I}, i::I) where {I}
+function gettoken(indices::Indices{I}, i) where {I}
     full_hash = hash(i) & hash_mask
     n_slots = length(_slots(indices))
     bit_mask = n_slots - 1 # n_slots is always a power of two

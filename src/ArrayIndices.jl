@@ -82,7 +82,7 @@ end
     end
 end
 
-@inline function gettoken(inds::ArrayIndices{I}, i::I) where {I}
+@inline function gettoken(inds::ArrayIndices, i)
     a = parent(inds)
     @inbounds for x in LinearIndices(a)
         if isequal(i, a[x])

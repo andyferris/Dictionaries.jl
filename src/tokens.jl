@@ -83,7 +83,7 @@ tokentype(::IndicesTokens{<:Any, T}) where {T} = T
 tokens(ts::IndicesTokens) = ts
 istokenassigned(ts::IndicesTokens, t) = istokenassigned(parent(ts), t)
 @propagate_inbounds iteratetoken(ts::IndicesTokens, s...) = iteratetoken(parent(ts), s...)
-@propagate_inbounds gettoken(ts::IndicesTokens{I}, i::I) where {I} = gettoken(parent(ts), i)
+@propagate_inbounds gettoken(ts::IndicesTokens, i) = gettoken(parent(ts), i)
 gettokenvalue(ts::IndicesTokens, t) = t
 
 Base.IteratorSize(ts::IndicesTokens) = Base.IteratorSize(parent(ts))
@@ -163,7 +163,7 @@ Settable (i.e. mutable) dictionaries allow you to set a corresponding value via 
 
 Insertable dictionaries provide the `gettoken!` function (see the `isinsertable` trait).
 """
-@propagate_inbounds function gettoken(inds::AbstractIndices{I}, i::I) where I
+@propagate_inbounds function gettoken(inds::AbstractIndices, i)
     if istokenizable(inds)
         error("gettoken needs to be defined for tokenizable indices: $(typeof(inds))")
     end
@@ -174,12 +174,8 @@ Insertable dictionaries provide the `gettoken!` function (see the `isinsertable`
     return (true, i)
 end
 
-@propagate_inbounds function gettoken(d::AbstractDictionary{I}, i::I) where I
+@propagate_inbounds function gettoken(d::AbstractDictionary, i)
     return gettoken(keys(d), i)
-end
-
-@propagate_inbounds function gettoken(d::AbstractDictionary{I}, i) where I
-    return gettoken(d, convert(I, i))
 end
 
 @propagate_inbounds function gettokenvalue(d::AbstractDictionary, token)
