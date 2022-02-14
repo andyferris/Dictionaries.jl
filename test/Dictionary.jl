@@ -25,6 +25,9 @@
     @test cmp(Dictionary(copy(keys(d)), d), d) == 0
     @test_throws IndexError d[10]
     @test get(d, 10, 15) == 15
+    @test get(() -> 15, d, 10) == 15
+    @test get(d, "10", 15) == 15
+    @test get(() -> 15, d, "10") == 15
     @test length(unset!(d, 10)) == 0
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{}"
     if VERSION < v"1.6-"
@@ -41,6 +44,9 @@
     @test haskey(d, 10)
     @test !haskey(d, 100)
     @test get(d, 10, 15) == 11
+    @test get(() -> 15, d, 10) == 11
+    @test get(d, "10", 15) == 15
+    @test get(() -> 15, d, "10") == 15
     @test get!(d, 10, 15) == 11
     @test length(d) == 1
     @test keys(d) === keys(keys(d))
