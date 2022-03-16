@@ -80,7 +80,7 @@
         @test dict isa ArrayDictionary{Int, String}
         @test sharetokens(dict, dictcopy)
         if VERSION < v"1.6-"
-            io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element ArrayDictionary{Int64,String,ArrayIndices{Int64,Vector{Int64}},Vector{String}}\n 1 │ #undef\n 2 │ #undef"
+            io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element ArrayDictionary{Int64,String,ArrayIndices{Int64,Array{Int64,1}},Array{String,1}}\n 1 │ #undef\n 2 │ #undef"
         else
             io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element ArrayDictionary{Int64, String, ArrayIndices{Int64, Vector{Int64}}, Vector{String}}\n 1 │ #undef\n 2 │ #undef"
         end
