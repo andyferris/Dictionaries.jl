@@ -163,8 +163,8 @@
 
     d7 = Dictionary(Int32[1, 2], UInt32[1, 2])
     @test convert(Dictionary{Int64, Int64}, d7)::Dictionary{Int64, Int64} == Dictionary(Int64[1, 2], Int64[1, 2])
-    d8 = Dictionary{Int,Int}()
-    @test convert(Dictionary{Int,Int}, d8) === d8
+    d8 = Dictionary{Int, Int}()
+    @test convert(Dictionary{Int ,Int}, d8) === d8
 
     rd = Dictionary([:b, :a], [2, 1])
     @test reverse(d)::Dictionary == rd
@@ -175,6 +175,21 @@
     @test lastindex(d) == :b
     #@test d[begin] == 1 # Parsing issues on earlier versions of Julia...
     @test d[end] == 2
+
+    dict = Dictionary{Int64, String}([1, 2], undef)
+
+    dictcopy = copy(dict)
+    @test dict isa Dictionary{Int64, String}
+    @test sharetokens(dict, dictcopy)
+    if VERSION < v"1.6-"
+        io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64,String}\n 1 │ #undef\n 2 │ #undef"
+    else
+        io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64, String}\n 1 │ #undef\n 2 │ #undef"
+    end
+    @test all(!isassigned(dict, i) for i in collect(keys(dict)))
+    @test all(!isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
+    @test sharetokens(dict, Dictionary{Int64, String}(dict))
+    @test pairs(dict) isa Dictionaries.PairDictionary{Int64, String}
 
     # TODO token interface
 

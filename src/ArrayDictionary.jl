@@ -9,7 +9,7 @@ If `indices` and `values` are `Vector`s, then the result is `isinsertable` and
 optimal for small collections.
 """
 struct ArrayDictionary{I, T, Inds <: ArrayIndices{I}, Vals <: AbstractArray{T}} <: AbstractDictionary{I, T}
-	indices::Inds
+    indices::Inds
     values::Vals
     
     @inline function ArrayDictionary{I, T, Indices, Values}(indices::Indices, values::Values) where {I, T, Indices <: ArrayIndices{I}, Values <: AbstractArray{T}}
@@ -65,6 +65,8 @@ ArrayDictionary(indexable) = ArrayDictionary(keys(indexable), values(indexable))
 ArrayDictionary{I}(indexable) where {I} = ArrayDictionary{I}(keys(indexable), values(indexable))
 ArrayDictionary{I, T}(indexable) where {I, T} = ArrayDictionary{I, T}(keys(indexable), values(indexable))
 
+ArrayDictionary{I, T}(indexable::ArrayDictionary) where {I, T} = ArrayDictionary{I, T, ArrayIndices{I}, Vector{T}}(convert(ArrayIndices{I}, keys(indexable)), convert(Vector{T}, indexable.values))
+
 Base.parent(d::ArrayDictionary) = getfield(d, :values)
 
 function Base.keys(d::ArrayDictionary{I}) where {I}
@@ -89,6 +91,8 @@ end
 function Base.similar(inds::ArrayIndices, ::Type{T}) where {T}
     return ArrayDictionary(inds, similar(parent(inds), T))
 end
+
+Base.copy(dict::ArrayDictionary) = ArrayDictionary(dict.indices, copy(dict.values))
 
 # insertable interface
 isinsertable(::ArrayDictionary) = true # Need an array trait for this...

@@ -79,6 +79,23 @@
         end
     end
 
+    @testset "copy" begin
+        dict = ArrayDictionary{Int64, String}([1, 2], undef)
+
+        dictcopy = copy(dict)
+        @test dict isa ArrayDictionary{Int64, String}
+        @test sharetokens(dict, dictcopy)
+        if VERSION < v"1.6-"
+            io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element ArrayDictionary{Int64,String,ArrayIndices{Int64,Array{Int64,1}},Array{String,1}}\n 1 │ #undef\n 2 │ #undef"
+        else
+            io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element ArrayDictionary{Int64, String, ArrayIndices{Int64, Vector{Int64}}, Vector{String}}\n 1 │ #undef\n 2 │ #undef"
+        end
+        @test all(!isassigned(dict, i) for i in collect(keys(dict)))
+        @test all(!isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
+        @test sharetokens(dict, ArrayDictionary{Int64, String}(dict))
+        @test pairs(dict) isa Dictionaries.PairDictionary{Int64, String}
+    end
+
     @testset "sort" begin
         dict = ArrayDictionary([1, 3, 2], ['c', 'a', 'b'])
         @test sort(dict)::ArrayDictionary == ArrayDictionary([3, 2, 1], ['a', 'b', 'c'])
