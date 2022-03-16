@@ -74,7 +74,7 @@
     end
 
     @testset "copy" begin
-        dict = ArrayDictionary{Int, String}([1, 2], undef)
+        dict = ArrayDictionary{Int64, String}([1, 2], undef)
 
         dictcopy = copy(dict)
         @test dict isa ArrayDictionary{Int, String}

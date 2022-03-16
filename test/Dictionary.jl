@@ -170,7 +170,7 @@
     #@test d[begin] == 1 # Parsing issues on earlier versions of Julia...
     @test d[end] == 2
 
-    dict = Dictionary{Int, String}([1, 2], undef)
+    dict = Dictionary{Int64, String}([1, 2], undef)
 
     dictcopy = copy(dict)
     @test dict isa Dictionary{Int, String}
