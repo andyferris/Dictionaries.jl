@@ -157,8 +157,8 @@
 
     d7 = Dictionary(Int32[1, 2], UInt32[1, 2])
     @test convert(Dictionary{Int64, Int64}, d7)::Dictionary{Int64, Int64} == Dictionary(Int64[1, 2], Int64[1, 2])
-    d8 = Dictionary{Int,Int}()
-    @test convert(Dictionary{Int,Int}, d8) === d8
+    d8 = Dictionary{Int, Int}()
+    @test convert(Dictionary{Int ,Int}, d8) === d8
 
     rd = Dictionary([:b, :a], [2, 1])
     @test reverse(d)::Dictionary == rd
@@ -173,7 +173,7 @@
     dict = Dictionary{Int64, String}([1, 2], undef)
 
     dictcopy = copy(dict)
-    @test dict isa Dictionary{Int, String}
+    @test dict isa Dictionary{Int64, String}
     @test sharetokens(dict, dictcopy)
     if VERSION < v"1.6-"
         io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64,String}\n 1 │ #undef\n 2 │ #undef"
