@@ -77,7 +77,7 @@
         dict = ArrayDictionary{Int64, String}([1, 2], undef)
 
         dictcopy = copy(dict)
-        @test dict isa ArrayDictionary{Int, String}
+        @test dict isa ArrayDictionary{Int64, String}
         @test sharetokens(dict, dictcopy)
         if VERSION < v"1.6-"
             io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element ArrayDictionary{Int64,String,ArrayIndices{Int64,Array{Int64,1}},Array{String,1}}\n 1 │ #undef\n 2 │ #undef"
