@@ -10,7 +10,7 @@ Base.IteratorSize(inds::ReverseIndices) = Base.IteratorSize(parent(inds))
 
 istokenizable(inds::ReverseIndices) = istokenizable(parent(inds))
 tokentype(inds::ReverseIndices) = tokentype(parent(inds))
-@propagate_inbounds gettoken(inds::ReverseIndices{I}, i::I) where {I} = gettoken(parent(inds), i)
+@propagate_inbounds gettoken(inds::ReverseIndices, i) = gettoken(parent(inds), i)
 @propagate_inbounds gettokenvalue(inds::ReverseIndices, t) = gettokenvalue(parent(inds), t)
 
 @propagate_inbounds iteratetoken(inds::ReverseIndices, s...) = iteratetoken_reverse(parent(inds), s...)

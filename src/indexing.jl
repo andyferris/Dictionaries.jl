@@ -16,11 +16,7 @@ end
 end
 
 ## `get` helper function
-@propagate_inbounds function Base.get(d::AbstractDictionary{I, T}, i, default) where {I, T}
-    get(d, convert(I, i), default)
-end
-
-@propagate_inbounds function Base.get(d::AbstractDictionary{I}, i::I, default) where {I}
+@propagate_inbounds function Base.get(d::AbstractDictionary, i, default)
     (hasindex, t) = gettoken(d, i)
     if hasindex
         return gettokenvalue(d, t)
@@ -29,11 +25,7 @@ end
     end
 end
 
-@propagate_inbounds function Base.get(f::Base.Callable, d::AbstractDictionary{I}, i) where {I}
-    get(f, d, convert(I, i))
-end
-
-@propagate_inbounds function Base.get(f::Base.Callable, d::AbstractDictionary{I, T}, i::I) where {I, T}
+@propagate_inbounds function Base.get(f::Base.Callable, d::AbstractDictionary, i)
     (hasindex, t) = gettoken(d, i)
     if hasindex
         return gettokenvalue(d, t)
@@ -97,7 +89,7 @@ end
 end
 
 # `DictionaryView` shares tokens with it's `keys` (and can co-iterate quickly with other dictionaries with those keys)
-@propagate_inbounds function gettoken(d::DictionaryView{I}, i::I) where {I}
+@propagate_inbounds function gettoken(d::DictionaryView, i)
     return gettoken(_inds(d), i)
 end
 

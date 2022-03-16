@@ -83,7 +83,7 @@ end
     end
     return nothing
 end
-@propagate_inbounds function gettoken(inds::FilteredIndices{I}, i::I) where {I}
+@propagate_inbounds function gettoken(inds::FilteredIndices, i)
     (hastoken, token) = gettoken(parent(inds), i)
     @boundscheck if hastoken
         return (_pred(inds)(@inbounds gettokenvalue(parent, token)), token)
@@ -179,7 +179,7 @@ end
 # These dictionaries are not settable - changing the values can change the keys
 
 istokenizable(dict::FilteredDictionary) = istokenizable(parent(dict))
-@propagate_inbounds function gettoken(dict::FilteredDictionary{I}, i::I) where {I}
+@propagate_inbounds function gettoken(dict::FilteredDictionary, i)
     (hastoken, token) = gettoken(parent(dict), i)
     @boundscheck if hastoken
         return (_pred(dict)(@inbounds gettokenvalue(parent, token)), token)

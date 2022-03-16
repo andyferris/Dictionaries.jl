@@ -44,7 +44,7 @@ function tokens(d::BroadcastedDictionary)
     _tokens(_data(d)...)
 end
 
-@propagate_inbounds function gettoken(d::BroadcastedDictionary{I}, i::I) where {I}
+@propagate_inbounds function gettoken(d::BroadcastedDictionary, i)
     return gettoken(_tokens(_data(d)...), i)
 end
 
