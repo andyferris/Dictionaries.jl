@@ -441,7 +441,7 @@ These rules match those for `AbstractArray`, including offset arrays. The `view`
 Many dictionary types support setting or mutating the the *values* of the elements. To support mutation, an `AbstractDictionary` should implement:
 
  * `issettable(::AbstractDictionary)` (returning `true`)
- * `setindex!(dict::AbstractDictionary{I, T}, ::T, ::I}` (returning `dict`)
+ * `setindex!(dict::AbstractDictionary{I, T}, ::T, ::I)` (returning `dict`)
 
 The `issettable` function is a trait function that indicate whether an `AbstractDictionary` supports `setindex!`.
 
@@ -452,8 +452,8 @@ Because the idempotency property of `AbstractIndices`, indices always have immut
 If arbitrary indices can be added to or removed from an `AbstractDictionary`, one needs to implement:
 
  * `isinsertable(::AbstractDictionary)` (returning `true`)
- * `insert!(dict::AbstractDictionary{I, T}, ::I, ::T}` (returning `dict`)
- * `delete!(dict::AbstractDictionary{I, T}, ::I}` (returning `dict`)
+ * `insert!(dict::AbstractDictionary{I, T}, ::I, ::T)` (returning `dict`)
+ * `delete!(dict::AbstractDictionary{I, T}, ::I)` (returning `dict`)
 
 The `insert!` and `delete!` always create or remove indices. Calling `insert!` when an index already exists will throw an error, as will attempting to `delete!` an index that does not exist. The function `set!` is provided as an "upsert" (update or insert) operation. Similarly, `unset!` function can be used to ensure a given index does not exist. The `get!` function works as in `Base`.
 
@@ -500,7 +500,7 @@ An tokenizable dictionary must implement:
 
 An `issettable` tokenizable dictionary must implement:
 
- * `settokenvalue!(dict, token)`
+ * `settokenvalue!(dict, token, value)`
 
 An `isinsertable` tokenizable dictionary must implement:
 
