@@ -381,7 +381,8 @@ end
 
 # fill! and fill
 
-function Base.fill!(d::AbstractDictionary, value)
+Base.fill!(d::AbstractDictionary{<:Any, T}, value) where {T} = fill!(d, convert(T, value))
+function Base.fill!(d::AbstractDictionary{<:Any, T}, value::T) where {T}
     for t in tokens(d)
         settokenvalue!(d, t, value)
     end
