@@ -272,12 +272,18 @@ function Base.hash(inds::AbstractIndices, h::UInt)
     return hash(hash(UInt === UInt64 ? 0x8955a87bc313a509 : 0xa9cff5d1, h1), h1)
 end
 
-function Base.union(i::AbstractIndices, itr)
+function Base.union(i::AbstractIndices{T}, itr) where {T}
+    if Base.IteratorEltype(itr) === Base.EltypeUnknown()
+        itr = collect(itr)
+    end
+    T2 = eltype(itr)
+    Tout = promote_type(T, T2)
+
     if isinsertable(i)
-        out = copy(i)
+        out = copy(i, Tout)
         union!(out, itr)
     else
-        out = empty(i)
+        out = empty(i, Tout)
         union!(out, i)
         union!(out, itr)
     end
@@ -308,12 +314,18 @@ function Base.setdiff(i::AbstractIndices, itr)
     return out
 end
 
-function Base.symdiff(i::AbstractIndices, itr)
+function Base.symdiff(i::AbstractIndices{T}, itr) where {T}
+    if Base.IteratorEltype(itr) === Base.EltypeUnknown()
+        itr = collect(itr)
+    end
+    T2 = eltype(itr)
+    Tout = promote_type(T, T2)
+
     if isinsertable(i)
-        out = copy(i)
+        out = copy(i, Tout)
         symdiff!(out, itr)
     else
-        out = empty(i)
+        out = empty(i, Tout)
         union!(out, i)
         symdiff!(out, itr)
     end

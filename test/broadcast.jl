@@ -27,5 +27,8 @@
     d2 .= d .+ d
     @test isequal(d2, dictionary([1=>4, 2=>6, 3=>8, 4=>10, 5=>12]))
 
+    d2 .= 0
+    @test isequal(d2, dictionary([1=>0, 2=>0, 3=>0, 4=>0, 5=>0]))
+
     @test_throws IndexError Dictionary([1,2],[1,2]) .+ Dictionary([2,3],[2,3])
 end
