@@ -361,20 +361,21 @@ end
 empty_type(::Type{<:AbstractDictionary}, ::Type{I}, ::Type{T}) where {I, T} = Dictionary{I, T}
 Base.empty(dict::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T} = empty_type(typeof(dict), I, T)()
 
-function Base.merge(d1::AbstractDictionary, d2::AbstractDictionary)
+function Base.merge(d1::AbstractDictionary{K1, T1}, d2::AbstractDictionary{K2, T2}) where {K1, T1, K2, T2}
     # Note: need to copy the keys
-    out = similar(copy(keys(d1)), eltype(d1))
+    out = similar(copy(keys(d1), promote_type(K1, K2)), promote_type(T1, T2))
     copyto!(out, d1)
     merge!(out, d2)
     return out
 end
 
 if isdefined(Base, :mergewith) # Julia 1.5+
-    function Base.mergewith(combner, d1::AbstractDictionary, d2::AbstractDictionary)
+    function Base.mergewith(combiner, d1::AbstractDictionary{K1, T1}, d2::AbstractDictionary{K2, T2}) where {K1, T1, K2, T2}
         # Note: need to copy the keys
-        out = similar(copy(keys(d1)), eltype(d1))
+        T3 = Base.promote_op(combiner, T1, T2)
+        out = similar(copy(keys(d1), promote_type(K1, K2)), promote_type(T1, T2, T3))
         copyto!(out, d1)
-        mergewith!(combner, out, d2)
+        mergewith!(combiner, out, d2)
         return out
     end
 end
