@@ -486,18 +486,16 @@ function Random.randn(rng::AbstractRNG, ::Type{T}, dict::AbstractDictionary) whe
 end
 
 
-# Copying - note that this doesn't necessarily copy the indices! (`copy(keys(dict))` can do that)
 """
     copy(dict::AbstractDictionary)
     copy(dict::AbstractDictionary, ::Type{T})
 
-Create a shallow copy of the values of `dict`. Note that `keys(dict)` is not copied, and
-therefore care must be taken that inserting/deleting elements. A new element type `T` can
+Create a shallow copy of the values and keys of `dict`. A new element type `T` can
 optionally be specified.
 """
 Base.copy(dict::AbstractDictionary) = copy(dict, eltype(dict))
 function Base.copy(d::AbstractDictionary, ::Type{T}) where {T}
-    out = similar(d, T)
+    out = similar(copy(keys(d)), T)
     copyto!(out, d)
     return out
 end

@@ -101,6 +101,12 @@
         @test all(!isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
         @test sharetokens(dict, ArrayDictionary{Int64, String}(dict))
         @test pairs(dict) isa Dictionaries.PairDictionary{Int64, String}
+
+        dict = ArrayDictionary([1,2,3,4,5], [1,3,2,4,5])
+        dictcopy = copy(dict)
+        set!(dict, 6, 7)
+        @test length(dict) == 6
+        @test length(dictcopy) == 5
     end
 
     @testset "sort" begin
