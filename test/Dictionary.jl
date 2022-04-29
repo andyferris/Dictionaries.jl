@@ -180,7 +180,7 @@
 
     dictcopy = copy(dict)
     @test dict isa Dictionary{Int64, String}
-    @test sharetokens(dict, dictcopy)
+    @test !sharetokens(dict, dictcopy)
     if VERSION < v"1.6-"
         io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64,String}\n 1 │ #undef\n 2 │ #undef"
     else
@@ -259,6 +259,14 @@
         for i in 10000:20000
             @test h[i] == i+1
         end
+    end
+
+    @testset "copy" begin
+        dict = Dictionary([1,2,3,4,5], [1,3,2,4,5])
+        dictcopy = copy(dict)
+        set!(dict, 6, 7)
+        @test length(dict) == 6
+        @test length(dictcopy) == 5
     end
 
     @testset "dictionary" begin
