@@ -158,6 +158,8 @@
         i3 = Indices([3,4])
         i4 = Indices([2])
 
+        s1 = [4,5]
+
         @test !issetequal(i1, i2)
         @test !(i1 ⊆ i2)
         @test i4 ⊆ i1
@@ -169,19 +171,23 @@
             @test !isdisjoint(i1, i2)
             @test isdisjoint(i1, i3)
         end
-        
+
         @test isequal(union(i1, i2), Indices([1,2,3]))
         @test isequal(union(i2, i1), Indices([2,3,1]))
         @test isequal(union(i1, i3), Indices([1,2,3,4]))
+        @test isequal(union(i1, s1), Indices([1,2,4,5]))
 
         @test isequal(intersect(i1, i2), Indices([2]))
         @test isequal(intersect(i1, i3), Indices([]))
+        @test isequal(intersect(i3, s1), Indices([4]))
 
         @test isequal(setdiff(i1, i2), Indices([1]))
         @test isequal(setdiff(i1, i3), Indices([1, 2]))
+        @test isequal(setdiff(i3, s1), Indices([3]))
 
         @test isequal(symdiff(i1, i2), Indices([1, 3]))
         @test isequal(symdiff(i1, i3), Indices([1, 2, 3, 4]))
+        @test isequal(symdiff(i3, s1), Indices([3, 5]))
     end
 
     @testset "covert" begin
@@ -193,7 +199,7 @@
 
         @test convert(Indices{Int32}, i) === i
         @test convert(Indices{Int64}, i)::Indices{Int64} == i
-        
+
         @test convert(Indices{Int32}, ai)::Indices{Int32} == i
         @test convert(Indices{Int64}, ai)::Indices{Int64} == i
     end

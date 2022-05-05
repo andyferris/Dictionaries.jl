@@ -3,14 +3,14 @@
 
 Return `true` if `dict` supports the insertable interface, or `false` otherwise. The primary
 functions `dict` needs to implement for the insertable interface are:
- 
+
  * `insert!(dict, i, value)` - add a new `value` at index `i` (will error if index exists)
  * `delete!(dict, i)` - remove element at index `i` (will error if index does not exist)
 
 Functions `get!`, `set!` and `unset!` are also provided for common operations where you are
 not sure if an index exists or not. New insertable dictionaries are primarily generated via
 the `empty` function.
-    
+
 See also `issettable` and `istokenizable`.
 """
 isinsertable(::AbstractDictionary) = false
@@ -20,7 +20,7 @@ isinsertable(::AbstractDictionary) = false
 
 Return `true` if `indices` supports the insertable interface, or `false` otherwise. The
 primary functions a map needs to implement for the insertable interface are:
- 
+
  * `insert!(indices, i)` - add new index `i` to `indices` (will error if index exists)
  * `delete!(indices, i)` - remove an existing index `i` from `indices` (will error if index does not exist).
 
@@ -112,7 +112,7 @@ end
     insert!(dict::AbstractDictionary, i, value)
 
 Insert the `value` at new index `i` into `dict`. An error is thrown if index `i` already
-exists. 
+exists.
 
 Hint: Use `setindex!` to update an existing value, and `set!` to perform an "upsert"
 (update-or-insert) operation.
@@ -368,18 +368,18 @@ function Base.union!(s1::AbstractIndices, itr)
     return s1
 end
 
-function Base.intersect!(s1::AbstractIndices, s2::AbstractIndices)
+function Base.intersect!(s1::AbstractIndices, s2)
     return filter!(in(s2), s1)
 end
 
-function Base.setdiff!(s1::AbstractIndices, s2::AbstractIndices)
+function Base.setdiff!(s1::AbstractIndices, s2)
     for i in s2
         unset!(s1, i)
     end
     return s1
 end
 
-function Base.symdiff!(s1::AbstractIndices, s2::AbstractIndices)
+function Base.symdiff!(s1::AbstractIndices, s2)
     for i in s2
         (hastoken, token) = gettoken!(s1, i)
         if hastoken
@@ -393,7 +393,7 @@ end
 
 # These generic implementations are gimped.
 
-# # `filter!` is basically a programmatic version of `intersect!`. 
+# # `filter!` is basically a programmatic version of `intersect!`.
 # function Base.filter!(pred, indices::AbstractIndices)
 #     for i in copy(indices)
 #         if !pred(i)
