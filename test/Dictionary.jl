@@ -5,6 +5,7 @@
 
     @test eltype(d) === Int64
     @test keytype(d) === Int64
+    @test valtype(d) === Int64
     @test tokentype(d) === Int
     @test Base.IteratorSize(d) === Base.HasLength()
     @test isinsertable(d)

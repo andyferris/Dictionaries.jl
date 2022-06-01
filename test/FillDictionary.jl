@@ -3,6 +3,7 @@
     dict = FillDictionary(inds, 100.0)
 
     @test keytype(dict) == Int
+    @test valtype(dict) == Float64
     @test eltype(dict) == Float64
     @test keys(dict) === inds
     @test dict[2] === 100.0

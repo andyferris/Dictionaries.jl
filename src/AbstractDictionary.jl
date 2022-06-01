@@ -27,6 +27,8 @@ Base.eltype(d::AbstractDictionary) = eltype(typeof(d))
 Base.eltype(::Type{<:AbstractDictionary{I, T}}) where {I, T} = T
 Base.keytype(d::AbstractDictionary) = keytype(typeof(d))
 Base.keytype(::Type{<:AbstractDictionary{I, T}}) where {I, T} = I
+Base.valtype(d::AbstractDictionary) = valtype(typeof(d))
+Base.valtype(::Type{<:AbstractDictionary{I, T}}) where {I, T} = T
 
 function Base.keys(dict::AbstractDictionary)
     error("Every AbstractDictionary type must define a method for `keys`: $(typeof(dict))")
