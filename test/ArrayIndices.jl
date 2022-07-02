@@ -75,16 +75,21 @@
     end
 
     @testset "sort" begin
-        inds = ArrayIndices([1, 3, 2])
-        @test sort(inds)::ArrayIndices == ArrayIndices([1, 2, 3])
-        @test sort(inds; rev=true)::ArrayIndices == ArrayIndices([3, 2, 1])
+        inds = ArrayIndices([1, 5, 2])
+        @test sort(inds)::ArrayIndices == ArrayIndices([1, 2, 5])
+        @test sort(inds; rev=true)::ArrayIndices == ArrayIndices([5, 2, 1])
+
+        @test sortperm(inds)::ArrayIndices == ArrayIndices([1, 2, 5])
+        @test sortperm(inds; rev=true)::ArrayIndices == ArrayIndices([5, 2, 1])
+        @test getindices(inds, sortperm(inds))::ArrayIndices == ArrayIndices([1, 2, 5])
+        @test getindices(inds, sortperm(inds; rev=true))::ArrayIndices == ArrayIndices([5, 2, 1])
 
         indscopy = deepcopy(inds)
         sort!(indscopy)
-        @test indscopy == ArrayIndices([1, 2, 3])
+        @test indscopy == ArrayIndices([1, 2, 5])
 
         indscopy = deepcopy(inds)
         sort!(indscopy; rev=true)
-        @test indscopy == ArrayIndices([3, 2, 1])
+        @test indscopy == ArrayIndices([5, 2, 1])
     end
 end

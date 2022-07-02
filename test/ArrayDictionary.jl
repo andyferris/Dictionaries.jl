@@ -101,6 +101,11 @@
         @test sort(dict)::ArrayDictionary == ArrayDictionary([3, 2, 1], ['a', 'b', 'c'])
         @test sort(dict; rev=true)::ArrayDictionary == ArrayDictionary([1, 2, 3], ['c', 'b', 'a'])
 
+        @test sortperm(dict)::ArrayIndices == ArrayIndices([3, 2, 1])
+        @test sortperm(dict; rev=true)::ArrayIndices == ArrayIndices([1, 2, 3])
+        @test getindices(dict, sortperm(dict))::ArrayDictionary == ArrayDictionary([3, 2, 1], ['a', 'b', 'c'])
+        @test getindices(dict, sortperm(dict; rev=true))::ArrayDictionary ==ArrayDictionary([1, 2, 3], ['c', 'b', 'a'])
+
         @test sortkeys(dict)::ArrayDictionary == ArrayDictionary([1, 2, 3], ['c', 'b', 'a'])
         @test sortkeys(dict; rev=true)::ArrayDictionary == ArrayDictionary([3, 2, 1], ['a', 'b', 'c'])
 

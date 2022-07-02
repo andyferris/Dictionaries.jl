@@ -316,6 +316,11 @@
         @test sort(dict)::Dictionary == Dictionary([3, 2, 1], ['a', 'b', 'c'])
         @test sort(dict; rev=true)::Dictionary == Dictionary([1, 2, 3], ['c', 'b', 'a'])
 
+        @test sortperm(dict)::Indices == Indices([3, 2, 1])
+        @test sortperm(dict; rev=true)::Indices == Indices([1, 2, 3])
+        @test getindices(dict, sortperm(dict))::Dictionary == Dictionary([3, 2, 1], ['a', 'b', 'c'])
+        @test getindices(dict, sortperm(dict; rev=true))::Dictionary ==Dictionary([1, 2, 3], ['c', 'b', 'a'])
+
         @test sortkeys(dict)::Dictionary == Dictionary([1, 2, 3], ['c', 'b', 'a'])
         @test sortkeys(dict; rev=true)::Dictionary == Dictionary([3, 2, 1], ['a', 'b', 'c'])
 

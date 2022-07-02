@@ -394,6 +394,8 @@ function Base.sort!(dict::Dictionary; kwargs...)
     return dict
 end
 
+Base.sortperm(dict::AbstractDictionary; kwargs...) = keys(sort(dict; kwargs...))
+
 """
     sortkeys!(dict::AbstractDictionary; kwargs...)
 

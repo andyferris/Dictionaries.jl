@@ -552,3 +552,5 @@ function Base.sort!(inds::Indices; kwargs...)
     end
     return inds
 end
+
+Base.sortperm(inds::AbstractIndices; kwargs...) = sort(inds; kwargs...)
