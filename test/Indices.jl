@@ -217,17 +217,22 @@
     end
 
     @testset "sort" begin
-        inds = Indices([1, 3, 2])
-        @test sort(inds)::Indices == Indices([1, 2, 3])
-        @test sort(inds; rev=true)::Indices == Indices([3, 2, 1])
+        inds = Indices([1, 5, 2])
+        @test sort(inds)::Indices == Indices([1, 2, 5])
+        @test sort(inds; rev=true)::Indices == Indices([5, 2, 1])
+
+        @test sortperm(inds)::Indices == Indices([1, 2, 5])
+        @test sortperm(inds; rev=true)::Indices == Indices([5, 2, 1])
+        @test getindices(inds, sortperm(inds))::Indices == Indices([1, 2, 5])
+        @test getindices(inds, sortperm(inds; rev=true))::Indices == Indices([5, 2, 1])
 
         indscopy = deepcopy(inds)
         sort!(indscopy)
-        @test indscopy == Indices([1, 2, 3])
+        @test indscopy == Indices([1, 2, 5])
 
         indscopy = deepcopy(inds)
         sort!(indscopy; rev=true)
-        @test indscopy == Indices([3, 2, 1])
+        @test indscopy == Indices([5, 2, 1])
     end
 
     # TODO: token interface
