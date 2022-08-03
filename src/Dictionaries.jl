@@ -6,7 +6,7 @@ using Base: @propagate_inbounds, Callable
 
 export getindices, setindices!
 
-export AbstractDictionary, AbstractIndices, IndexError, ArrayIndices, Indices, Dictionary, ArrayDictionary, MappedDictionary, ReverseIndices, ReverseDictionary, DictionaryView, FilteredDictionary, FilteredIndices, BroadcastedDictionary, FillDictionary
+export AbstractDictionary, AbstractIndices, IndexError, ArrayIndices, Indices, Dictionary, ArrayDictionary, MappedDictionary, ReverseIndices, ReverseDictionary, DictionaryView, FilteredDictionary, FilteredIndices, BroadcastedDictionary, FillDictionary, UnorderedIndices, UnorderedDictionary
 
 export dictionary, index, distinct, disjoint, isdictequal, filterview, sortkeys, sortpairs, sortkeys!, sortpairs!
 export issettable, isinsertable, set!, unset!
@@ -31,6 +31,8 @@ include("ArrayIndices.jl")
 include("ArrayDictionary.jl")
 include("Indices.jl")
 include("Dictionary.jl")
+include("UnorderedIndices.jl")
+include("UnorderedDictionary.jl")
 include("FillDictionary.jl")
 
 Base.@deprecate_binding HashIndices Indices true

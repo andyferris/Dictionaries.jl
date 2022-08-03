@@ -28,6 +28,7 @@ Construct an `ArrayDictionary` from empty `Vector`s, with `I` and `T` default to
 @propagate_inbounds ArrayDictionary() = ArrayDictionary{Any, Any}([], [])
 @propagate_inbounds ArrayDictionary{I}() where {I} = ArrayDictionary{I, Any}(I[], [])
 @propagate_inbounds ArrayDictionary{I, T}() where {I, T} = ArrayDictionary{I, T}(I[], T[])
+@propagate_inbounds ArrayDictionary{I, T, Inds, Vals}() where {I, T, Inds, Vals} = ArrayDictionary{I, T, Inds, Vals}(Inds(), Vals())
 
 @propagate_inbounds ArrayDictionary(inds, vals) = ArrayDictionary(ArrayIndices(inds), vals)
 @propagate_inbounds ArrayDictionary{I}(inds, vals) where {I} = ArrayDictionary{I}(ArrayIndices{I}(inds), vals)
@@ -113,6 +114,7 @@ function Base.empty!(d::ArrayDictionary)
 end
 
 empty_type(::Type{<:ArrayDictionary}, ::Type{I}, ::Type{T}) where {I, T} = ArrayDictionary{I, T, ArrayIndices{I, Vector{I}}, Vector{T}}
+empty_type(::Type{<:ArrayIndices}, ::Type{I}, ::Type{T}) where {I, T} = ArrayDictionary{I, T, ArrayIndices{I, Vector{I}}, Vector{T}}
 
 function Base.sort!(dict::ArrayDictionary; kwargs...)
     perm = sortperm(dict.values; kwargs...)
