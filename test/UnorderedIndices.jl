@@ -46,6 +46,7 @@
     end
     @test issetequal(h, UnorderedIndices(2:2:1000))
     @test all(in(i, h) == iseven(i) for i in 2:1000)
+    @test collect(Iterators.reverse(h)) == reverse(collect(h))
     @test isempty(empty!(h))
 
     # set

@@ -99,6 +99,7 @@
     end
     @test all(in(i, d) == !iseven(i) for i in 2:2:1000)
     @test all(in(i, keys(d)) == iseven(i) for i in 2:2:1000)
+    @test collect(Iterators.reverse(d)) == reverse(collect(d))
     @test isempty(empty!(d))
    
     @test get!(() -> 15, d, 10) == 15

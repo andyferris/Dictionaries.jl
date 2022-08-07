@@ -6,7 +6,8 @@ using OrderedCollections
 
 const suite = BenchmarkGroup()
 
-sizes = [10, 100, 1000, 10_000]
+#sizes = [10, 100, 1000, 10_000]
+sizes = [10_000]
 cutoff = 101
 
 function build_vector_by_insertion(n)
@@ -347,11 +348,13 @@ function basic_unordered_indices_test(N)
     return out
 end
 
+pred1 = !=(5)
+pred2 = ==(5)
+
 for n in sizes
     r = 1:n
     y = n ÷ 2
-    pred1(x) = x != y
-    pred2(x) = x == y
+
     mostly_unique = rand(1:n, n)
     sorted_mostly_unique = sort(mostly_unique)
     rarely_unique = rand(1:floor(Int, sqrt(n)), n)

@@ -81,41 +81,74 @@ Base.length(h::UnorderedIndices) = h.count
 istokenizable(::UnorderedIndices) = true
 tokentype(::UnorderedIndices) = Int
 
-@propagate_inbounds isslotempty(h::UnorderedIndices, i::Int) = h.slots[i] == 0x0
-@propagate_inbounds isslotfilled(h::UnorderedIndices, i::Int) = h.slots[i] == 0x1
-@propagate_inbounds isslotdeleted(h::UnorderedIndices, i::Int) = h.slots[i] == 0x2 # deletion marker/tombstone
+@propagate_inbounds isslotempty(h::UnorderedIndices, i::Int) = h.slots[i] == 0x00
+@propagate_inbounds isslotfilled(h::UnorderedIndices, i::Int) = h.slots[i] == 0x01
+@propagate_inbounds isslotdeleted(h::UnorderedIndices, i::Int) = h.slots[i] == 0x02 # deletion marker/tombstone
 
-istokenassigned(h::UnorderedIndices, i::Int) = isslotfilled(h, i)
+istokenassigned(h::UnorderedIndices, i::Int) = h.slots[i] == 0x01 # isslotfilled(h, i)
 
 # iteratetoken
 
-function skip_deleted(h::UnorderedIndices, i)
-    L = length(h.slots)
-    @inbounds while i <= L && !isslotfilled(h, i)
-        i += 1
-    end
-    return i
-end
-
 @propagate_inbounds function iteratetoken(h::UnorderedIndices{T}) where {T}
-    idx = skip_deleted(h, h.idxfloor)
-    h.idxfloor = idx # An optimization to skip unnecessary elements when iterating multiple times
-    
-    if idx > length(h.inds)
-        return nothing
-    else
-        return (idx, idx + 1)
+    idx = h.idxfloor
+    slots = h.slots
+    L = length(slots)
+
+    @inbounds while idx <= L
+        if slots[idx] == 0x01
+            h.idxfloor = idx # An optimization to skip unnecessary elements when iterating multiple times
+            return (idx, idx + 1)
+        end
+
+        idx += 1
     end
+
+    return nothing
 end
 
 @propagate_inbounds function iteratetoken(h::UnorderedIndices{T}, idx::Int) where {T}
-    idx = skip_deleted(h, idx)
-    
-    if idx > length(h.inds)
-        return nothing
-    else
-        return (idx, idx + 1)
+    slots = h.slots
+    L = length(slots)
+
+    @inbounds while idx <= L
+        if slots[idx] == 0x01
+            return (idx, idx + 1)
+        end
+
+        idx += 1
     end
+
+    return nothing
+end
+
+@propagate_inbounds function iteratetoken_reverse(h::UnorderedIndices{T}) where {T}
+    slots = h.slots
+    L = length(slots)
+    idx = L
+
+    @inbounds while idx > 0
+        if slots[idx] == 0x01
+            return (idx, idx - 1)
+        end
+
+        idx -= 1
+    end
+
+    return nothing
+end
+
+@propagate_inbounds function iteratetoken_reverse(h::UnorderedIndices{T}, idx::Int) where {T}
+    slots = h.slots
+
+    @inbounds while idx > 0
+        if slots[idx] == 0x01
+            return (idx, idx - 1)
+        end
+
+        idx -= 1
+    end
+
+    return nothing
 end
 
 # gettoken
@@ -125,18 +158,22 @@ function hashtoken(key, sz::Int)
 end
 
 function gettoken(h::UnorderedIndices{T}, key) where {T}
-    sz = length(h.inds)
+    inds = h.inds
+    slots = h.slots
+    sz = length(inds)
     iter = 0
     maxprobe = h.maxprobe
     token = hashtoken(key, sz)
-    keys = h.inds
 
     @inbounds while true
-        if isslotempty(h, token)
+        slot = slots[token]
+        if slot == 0x00 # isslotempty(h, token)
             break
-        end
-        if !isslotdeleted(h, token) && (key === keys[token] || isequal(key, keys[token]))
-            return (true, token)
+        elseif slot == 0x01 #= !isslotdeleted(h, token) =#
+            k = inds[token]
+            if key === k || isequal(key, k)
+                return (true, token)
+            end
         end
 
         token = (token & (sz-1)) + 1
@@ -178,9 +215,9 @@ function _rehash!(h::UnorderedIndices{T}, oldv::Union{Nothing, Vector}, newsz::I
     newsz = Base._tablesz(newsz)
     h.idxfloor = 1
     if h.count == 0
-        resize!(h.slots, newsz)
-        fill!(h.slots, 0)
-        resize!(h.inds, newsz)
+        resize!(slots, newsz)
+        fill!(slots, 0)
+        resize!(inds, newsz)
         error()
         oldv === nothing || resize!(oldv, newsz)
         h.ndel = 0
@@ -252,30 +289,33 @@ end
 # and the key would be inserted at pos
 # This version is for use by insert!, set! and get!
 function _gettoken!(h::UnorderedIndices{T}, values::Union{Nothing, Vector}, key::T) where {T}
-    sz = length(h.inds)
+    inds = h.inds
+    slots = h.slots
+    sz = length(inds)
     iter = 0
     maxprobe = h.maxprobe
     token = hashtoken(key, sz)
     avail = 0
-    keys = h.inds
 
     # Search of the key is present or if there is a deleted slot `key` could fill.
     @inbounds while true
-        if isslotempty(h, token)
+        slot = slots[token]
+        if slot == 0x00 # isslotempty(h, token)
             if avail < 0
                 return (avail, values)
             end
             return (-token, values)
-        end
-
-        if isslotdeleted(h, token)
+        elseif slot == 0x02 # isslotdeleted(h, token)
             if avail == 0
                 # found an available deleted slot, but we need to keep scanning
                 # in case `key` already exists in a later collided slot.
                 avail = -token
             end
-        elseif key === keys[token] || isequal(key, keys[token])
-            return (token, values)
+        else
+            k = inds[token]
+            if key === k || isequal(key, k)
+                return (token, values)
+            end
         end
 
         token = (token & (sz-1)) + 1
@@ -290,7 +330,7 @@ function _gettoken!(h::UnorderedIndices{T}, values::Union{Nothing, Vector}, key:
     maxallowed = max(maxallowedprobe, sz>>maxprobeshift)
     
     @inbounds while iter < maxallowed
-        if !isslotfilled(h,token)
+        if slots[token] != 0x01 # !isslotfilled(h,token)
             h.maxprobe = iter
             return (-token, values)
         end
@@ -327,7 +367,7 @@ end
 end
 
 
-function deletetoken!(h::UnorderedIndices{T}, token::Int) where {T}
+@inline function deletetoken!(h::UnorderedIndices{T}, token::Int) where {T}
     h.slots[token] = 0x2
     isbitstype(T) || ccall(:jl_arrayunset, Cvoid, (Any, UInt), h.inds, token-1)
     
