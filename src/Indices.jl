@@ -523,13 +523,17 @@ function __distinct!(indices::AbstractIndices, itr, s, x_old)
 end
 
 function randtoken(rng::Random.AbstractRNG, inds::Indices)
+    if length(inds) == 0
+        throw(ArgumentError("collection must be non-empty"))
+    end
+
     if inds.holes === 0
         return (0, rand(rng, Base.OneTo(length(inds))))
     end
 
     # Rejection sampling to handle deleted tokens (which are sparse)
     range = Base.OneTo(length(_hashes(inds)))
-    while true
+    @inbounds while true
         i = rand(rng, range)
         if inds.hashes[i] !== deletion_mask
             return (0, i)

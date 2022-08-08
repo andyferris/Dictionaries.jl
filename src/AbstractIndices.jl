@@ -37,12 +37,23 @@ end
 
 Base.keys(i::AbstractIndices) = i
 
-@inline function Base.iterate(inds::AbstractIndices, s...)
+@propagate_inbounds function Base.iterate(inds::AbstractIndices)
     if istokenizable(inds)
-        tmp = iteratetoken(keys(inds), s...)
+        tmp = iteratetoken(keys(inds))
         tmp === nothing && return nothing
         (t, s2) = tmp
-        return (gettokenvalue(inds, t), s2)
+        return (@inbounds(gettokenvalue(inds, t)), s2)
+    else
+        error("All AbstractIndices must define `iterate`: $(typeof(inds))")
+    end
+end
+
+@propagate_inbounds function Base.iterate(inds::AbstractIndices, s)
+    if istokenizable(inds)
+        tmp = iteratetoken(keys(inds), s)
+        tmp === nothing && return nothing
+        (t, s2) = tmp
+        return (@inbounds(gettokenvalue(inds, t)), s2)
     else
         error("All AbstractIndices must define `iterate`: $(typeof(inds))")
     end
