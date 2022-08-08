@@ -93,17 +93,17 @@ function foreachsum(set)
 end
 
 function all_in(set, n)
-    out = true
+    out = 0
     for i in 1:n
-        out &= i in set
+        out += i in set
     end
     return out
 end
 
 function not_in(set, n)
-    out = true
+    out = 0
     for i in n+1:2n
-        out &= i in set
+        out += i in set
     end
     return out
 end

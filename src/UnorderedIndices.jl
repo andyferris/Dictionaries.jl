@@ -157,7 +157,7 @@ function hashtoken(key, sz::Int)
     (((hash(key)%Int) & (sz-1)) + 1)::Int
 end
 
-function gettoken(h::UnorderedIndices{T}, key) where {T}
+@inline function gettoken(h::UnorderedIndices{T}, key) where {T}
     inds = h.inds
     slots = h.slots
     sz = length(inds)
