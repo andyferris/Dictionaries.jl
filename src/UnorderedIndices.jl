@@ -46,7 +46,7 @@ end
 function UnorderedIndices{T}(iter) where {T}
     iter_size = Base.IteratorSize(iter)
     if iter_size isa Union{Base.HasLength, Base.HasShape}
-        h = UnorderedIndices{T}(; sizehint = length(iter)*2)
+        h = UnorderedIndices{T}(; sizehint = (length(iter)*5) >>> 0x02)
     else
         h = UnorderedIndices{T}()
     end
