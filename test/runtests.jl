@@ -19,6 +19,11 @@ include("find.jl")
 include("reverse.jl")
 include("show.jl")
 
+# Simple mutable structure for `deepcopy` testing
+mutable struct Foo{T}
+    x::T
+end
+
 # Run the following test without julia --check-bounds=yes mode
 cmd = deepcopy(Base.julia_cmd())
 filter!(a->!startswith(a, "--check-bounds="), cmd.exec)
