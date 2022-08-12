@@ -110,6 +110,9 @@
     @test !isdictequal(UnorderedDictionary(['a','b'],[1,2]), UnorderedDictionary(['b','c'],[2,1]))
     @test !isdictequal(UnorderedDictionary(['a','b'],[1,2]), UnorderedDictionary(['a','b','c'],[1,2,3]))
     @test !isdictequal(UnorderedDictionary(['a','b'],[1,2]), UnorderedDictionary(['b','a'],[2,3]))
+
+    dmutable = deepcopy(UnorderedDictionary([Foo(3), Foo(2)], rand(2)))
+    @test all(k -> haskey(dmutable, k), keys(dmutable))
     
     d5 = UnorderedDictionary(['a','b'],[1,missing])
     @test isdictequal(d5, d5) === missing

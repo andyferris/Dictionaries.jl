@@ -73,6 +73,10 @@ function Base.copy(h::UnorderedIndices{T}, ::Type{T}) where {T}
     return UnorderedIndices{T}(copy(h.slots), copy(h.inds), h.ndel, h.count, h.idxfloor, h.maxprobe)
 end
 
+function Base.deepcopy_internal(uinds::UnorderedIndices{T}, id::IdDict) where {T}
+    return UnorderedIndices{T}(Base.deepcopy_internal(collect(keys(uinds)), id))
+end
+
 ## Length
 Base.length(h::UnorderedIndices) = h.count
 

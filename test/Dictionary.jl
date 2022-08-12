@@ -145,6 +145,9 @@
     @test !isdictequal(Dictionary(['a','b'],[1,2]), Dictionary(['b','c'],[2,1]))
     @test !isdictequal(Dictionary(['a','b'],[1,2]), Dictionary(['a','b','c'],[1,2,3]))
     @test !isdictequal(Dictionary(['a','b'],[1,2]), Dictionary(['b','a'],[2,3]))
+
+    dmutable = deepcopy(Dictionary([Foo(3), Foo(2)], rand(2)))
+    @test all(k -> haskey(dmutable, k), keys(dmutable))
     
     d5 = Dictionary(['a','b'],[1,missing])
     @test isdictequal(d5, d5) === missing

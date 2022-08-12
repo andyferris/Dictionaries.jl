@@ -184,6 +184,10 @@ function Base.copy(indices::ReverseIndices{I,Indices{I}}, ::Type{I2}) where {I, 
     return Indices{I2}(new_slots, reverse(_hashes(p)), collect(I2, Iterators.reverse(_values(p))), _holes(p))
 end
 
+function Base.deepcopy_internal(ind::Indices{T}, id::IdDict) where {T}
+    return Indices{T}(Base.deepcopy_internal(ind.values, id))
+end
+
 # private (note that newsize must be power of two)
 function rehash!(indices::Indices{I}, newsize::Int, values = (), include_last_values::Bool = true) where {I}
     slots = resize!(_slots(indices), newsize)
