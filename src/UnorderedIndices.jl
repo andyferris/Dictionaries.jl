@@ -74,7 +74,7 @@ function Base.copy(h::UnorderedIndices{T}, ::Type{T}) where {T}
 end
 
 function Base.deepcopy_internal(uinds::UnorderedIndices{T}, id::IdDict) where {T}
-    return UnorderedIndices{T}(Base.deepcopy_internal(uinds.inds, id))
+    return UnorderedIndices{T}(Base.deepcopy_internal(collect(keys(uinds)), id))
 end
 
 ## Length
