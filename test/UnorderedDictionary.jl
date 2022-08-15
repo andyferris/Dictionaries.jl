@@ -116,8 +116,8 @@
     @test all(k -> haskey(dmut_copy, k), keys(dmut_copy))
 
     mktemp() do path, io
-        serialize(path, dmut)
-        dmut_ser = deserialize(path)
+        open(io->serialize(io, dmut), path, "w")
+        dmut_ser = deserialize(open(path, "r"))
         @test all(k -> haskey(dmut_ser, k), keys(dmut_ser))
     end
     
