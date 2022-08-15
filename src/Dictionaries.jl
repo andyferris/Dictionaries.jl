@@ -3,6 +3,7 @@ module Dictionaries
 using Random
 using Indexing
 using Base: @propagate_inbounds, Callable
+using Serialization: Serialization, deserialize, serialize, serialize_type, AbstractSerializer, handle_deserialize, UNDEFREF_TAG
 
 export getindices, setindices!
 

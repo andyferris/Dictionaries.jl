@@ -77,6 +77,21 @@ function Base.deepcopy_internal(uinds::UnorderedIndices{T}, id::IdDict) where {T
     return UnorderedIndices{T}(Base.deepcopy_internal(collect(keys(uinds)), id))
 end
 
+function Serialization.serialize(s::AbstractSerializer, uinds::T) where {T<:UnorderedIndices}
+    serialize_type(s, T, false)
+    serialize(s, collect(keys(uinds)))
+end
+
+function Serialization.deserialize(s::AbstractSerializer, T::Type{<:UnorderedIndices})
+    tag = Int32(read(s.io, UInt8)::UInt8)
+    if tag != UNDEFREF_TAG
+        vals = handle_deserialize(s, tag)
+    else
+        error("could not deserialize $T")
+    end
+    return T(vals)
+end
+
 ## Length
 Base.length(h::UnorderedIndices) = h.count
 
