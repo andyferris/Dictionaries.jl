@@ -146,8 +146,15 @@
     @test !isdictequal(Dictionary(['a','b'],[1,2]), Dictionary(['a','b','c'],[1,2,3]))
     @test !isdictequal(Dictionary(['a','b'],[1,2]), Dictionary(['b','a'],[2,3]))
 
-    dmutable = deepcopy(Dictionary([Foo(3), Foo(2)], rand(2)))
-    @test all(k -> haskey(dmutable, k), keys(dmutable))
+    dmut = Dictionary([Foo(3), Foo(2)], rand(2))
+    dmut_copy = deepcopy(dmut)
+    @test all(k -> haskey(dmut_copy, k), keys(dmut_copy))
+
+    mktemp() do path, io
+        open(io->serialize(io, dmut), path, "w")
+        dmut_ser = deserialize(open(path, "r"))
+        @test all(k -> haskey(dmut_ser, k), keys(dmut_ser))
+    end
     
     d5 = Dictionary(['a','b'],[1,missing])
     @test isdictequal(d5, d5) === missing

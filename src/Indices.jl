@@ -188,6 +188,21 @@ function Base.deepcopy_internal(ind::Indices{T}, id::IdDict) where {T}
     return Indices{T}(Base.deepcopy_internal(ind.values, id))
 end
 
+function Serialization.serialize(s::AbstractSerializer, ind::T) where {T<:Indices}
+    serialize_type(s, T, false)
+    serialize(s, getfield(ind, :values))
+end
+
+function Serialization.deserialize(s::AbstractSerializer, T::Type{<:Indices})
+    tag = Int32(read(s.io, UInt8)::UInt8)
+    if tag != UNDEFREF_TAG
+        vals = handle_deserialize(s, tag)
+    else
+        error("could not deserialize $T")
+    end
+    return T(vals)
+end
+
 # private (note that newsize must be power of two)
 function rehash!(indices::Indices{I}, newsize::Int, values = (), include_last_values::Bool = true) where {I}
     slots = resize!(_slots(indices), newsize)

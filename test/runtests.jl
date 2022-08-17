@@ -1,6 +1,7 @@
 using Test
 using Dictionaries
 using Indexing
+using Serialization
 
 # Simple mutable structure for `deepcopy` testing
 mutable struct Foo{T}
