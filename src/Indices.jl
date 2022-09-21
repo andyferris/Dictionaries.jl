@@ -190,7 +190,7 @@ end
 
 function Serialization.serialize(s::AbstractSerializer, ind::T) where {T<:Indices}
     serialize_type(s, T, false)
-    serialize(s, getfield(ind, :values))
+    serialize(s, collect(ind))
 end
 
 function Serialization.deserialize(s::AbstractSerializer, T::Type{<:Indices})
