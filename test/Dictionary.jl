@@ -146,10 +146,11 @@
     @test !isdictequal(Dictionary(['a','b'],[1,2]), Dictionary(['a','b','c'],[1,2,3]))
     @test !isdictequal(Dictionary(['a','b'],[1,2]), Dictionary(['b','a'],[2,3]))
 
-    dmut = Dictionary(Foo.(1:10), rand(10))
+    foos = Foo.(1:10)
+    dmut = Dictionary(foos, rand(10))
     dmut_copy = deepcopy(dmut)
     @test all(k -> haskey(dmut_copy, k), keys(dmut_copy))
-    delete!(dmut, Foo(1))
+    delete!(dmut, foos[3])
     dmut_copy = deepcopy(dmut)
     @test all(k -> haskey(dmut_copy, k), keys(dmut_copy))
 
