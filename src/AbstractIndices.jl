@@ -290,7 +290,7 @@ function Base.union(i::AbstractIndices{T}, itr) where {T}
         itr = collect(itr)
     end
     T2 = eltype(itr)
-    Tout = promote_type(T, T2)
+    Tout = Base.promote_typejoin(T, T2)
 
     if isinsertable(i)
         out = copy(i, Tout)
@@ -332,7 +332,7 @@ function Base.symdiff(i::AbstractIndices{T}, itr) where {T}
         itr = collect(itr)
     end
     T2 = eltype(itr)
-    Tout = promote_type(T, T2)
+    Tout = Base.promote_typejoin(T, T2)
 
     if isinsertable(i)
         out = copy(i, Tout)

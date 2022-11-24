@@ -235,7 +235,7 @@ function __dictionary(key, value, dict, iter, s)
         (x, s) = tmp
         i = key(x)
         v = value(x)
-        if !(i isa I) && promote_type(typeof(i), I) != I
+        if !(i isa I) && Base.promote_typejoin(typeof(i), I) != I
             new_inds = copy(keys(dict), Base.promote_typejoin(I, typeof(i)))
             new_dict = similar(new_inds, Base.promote_typejoin(T, typeof(v)))
             copyto!(new_dict.values, dict.values)
