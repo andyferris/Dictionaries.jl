@@ -65,13 +65,15 @@ Dictionary{I, T}(indexable::Dictionary) where {I, T} = Dictionary{I, T}(convert(
 
 
 """
-    Dictionary(inds, values)
-    Dictionary{I}(inds, values)
-    Dictionary{I, T}(inds, values)
+    Dictionary(inds, values; hash = Base.hash)
+    Dictionary{I}(inds, values; hash = Base.hash)
+    Dictionary{I, T}(inds, values; hash = Base.hash)
 
-Construct a hash-based dictionary from two iterable inputs `inds` and `values`. The first
+Construct a `hash`-based dictionary from two iterable inputs `inds` and `values`. The first
 value of `inds` will be the index for the first value of `values`. The input might not be
 copied.
+You can provide your own `hash` function for different hashing behaviour,
+for example using `objectid` will give you similarities to `IdDict`.
 
 Note: the values of `inds` must be distinct. Consider using `dictionary(zip(inds, values))`
 if they are not. See also the `index` function.

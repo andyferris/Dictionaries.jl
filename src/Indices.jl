@@ -32,13 +32,16 @@ function Indices{I}(; sizehint = 8, hash::F = hash) where {I,F}
 end
 
 """
-    Indices(iter)
-    Indices{I}(iter)
+    Indices(iter; hash = Base.hash)
+    Indices{I}(iter; hash = Base.hash)
 
 Construct a `Indices` with indices from iterable container `iter`.
 
 Note that the elements of `iter` must be distinct/unique. Instead, the `distinct` function
 can be used for finding the unique elements.
+The elements will be hashed with the given `hash` function.
+It defaults to `Base.hash` but one can use `Base.objectid` for getting
+the same behaviour as an `IdDict` for example.
 
 # Examples
 
