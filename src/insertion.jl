@@ -32,6 +32,14 @@ isinsertable(::AbstractIndices) = false
 
 ### Underlying token interface functions
 
+function unsafe_convert(I::Type, i, hash)
+    i2 = convert(I, i)
+    if !isequal(hash(i), hash(i2))
+        throw(ArgumentError("$i is not a valid key for type $I"))
+    end
+    return i2
+end
+
 """
     gettoken!(dict, i)
 
@@ -93,11 +101,7 @@ end
 Insert the new index `i` into `indices`. An error is thrown if `i` already exists.
 """
 @propagate_inbounds function Base.insert!(indices::AbstractIndices{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
-    return insert!(indices, i2)
+    return insert!(indices, unsafe_convert(I, i, _hash(indices)))
 end
 
 function Base.insert!(indices::AbstractIndices{I}, i::I) where {I}
@@ -118,11 +122,7 @@ Hint: Use `setindex!` to update an existing value, and `set!` to perform an "ups
 (update-or-insert) operation.
 """
 function Base.insert!(d::AbstractDictionary{I}, i, value) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
-    return insert!(d, i2, value)
+    return insert!(d, unsafe_convert(I, i, _hash(keys(d))), value)
 end
 
 function Base.insert!(d::AbstractDictionary{I, T}, i::I, value) where {I, T}
@@ -161,11 +161,7 @@ Hint: Use `setindex!` to exclusively update an existing value, and `insert!` to 
 insert a new value. See also `get!`.
 """
 @propagate_inbounds function set!(d::AbstractDictionary{I}, i, value) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
-    return set!(d, i2, value)
+    return set!(d, unsafe_convert(I, i, _hash(keys(d))), value)
 end
 
 function set!(d::AbstractDictionary{I, T}, i::I, value) where {I, T}
@@ -197,11 +193,7 @@ end
 Insert a new value `i` into `indices` if it doesn't exist, or do nothing otherwise.
 """
 @propagate_inbounds function set!(indices::AbstractIndices{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
-    return set!(indices, i2)
+    return set!(indices, unsafe_convert(I, i, _hash(indices)))
 end
 
 function set!(indices::AbstractIndices{I}, i::I) where {I}
@@ -218,11 +210,7 @@ set to `default`, which is returned.
 See also `get`, `set!`.
 """
 @propagate_inbounds function Base.get!(d::AbstractDictionary{I}, i, default) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
-    return get!(d, i2, default)
+    return get!(d, unsafe_convert(I, i, _hash(keys(d))), default)
 end
 
 function Base.get!(d::AbstractDictionary{I, T}, i::I, default) where {I, T}
@@ -246,11 +234,7 @@ Return the value `dict[i]` if index `i` exists. Otherwise, a new index `i` is in
 set to the value `f()`, which is returned.
 """
 function Base.get!(f::Callable, d::AbstractDictionary{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
-    get!(f, d, i2)
+    get!(f, d, unsafe_convert(I, i, _hash(keys(d))))
 end
 
 
@@ -278,11 +262,7 @@ Delete the index `i` from `dict`. An error is thrown if `i` does not exist.
 See also `unset!`, `insert!`.
 """
 @propagate_inbounds function Base.delete!(d::AbstractDictionary{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
-    return delete!(d, i2)
+    return delete!(d, unsafe_convert(I, i, _hash(keys(d))))
 end
 
 function Base.delete!(d::AbstractDictionary{I}, i::I) where {I}
@@ -307,11 +287,7 @@ Delete the index `i` from `dict` if it exists, or do nothing otherwise.
 See also `delete!`, `set!`.
 """
 @propagate_inbounds function unset!(indices::AbstractDictionary{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
-    return unset!(indices, i2)
+    return unset!(indices, unsafe_convert(I, i, _hash(keys(d))))
 end
 
 function unset!(d::AbstractDictionary{I}, i::I) where {I}

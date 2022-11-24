@@ -37,6 +37,8 @@ end
 
 Base.keys(i::AbstractIndices) = i
 
+_hash(::AbstractIndices) = hash
+
 @propagate_inbounds function Base.iterate(inds::AbstractIndices)
     if istokenizable(inds)
         tmp = iteratetoken(keys(inds))

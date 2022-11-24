@@ -32,9 +32,9 @@
     @test length(unset!(d, 10)) == 0
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{}"
     if VERSION < v"1.6-"
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element Dictionary{Int64,Int64}"
+        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element Dictionary{Int64,Int64,typeof(hash)}"
     else
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element Dictionary{Int64, Int64}"
+        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element Dictionary{Int64, Int64, typeof(hash)}"
     end
     @test_throws IndexError d[10] = 11
     @test_throws IndexError delete!(d, 10)
@@ -99,9 +99,9 @@
     @test d[10] == 13
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 = 13}"
     if VERSION < v"1.6-"
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64,Int64}\n 10 │ 13"
+        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64,Int64, typeof(hash)}\n 10 │ 13"
     else
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64, Int64}\n 10 │ 13"
+        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64, Int64, typeof(hash)}\n 10 │ 13"
     end
     @test !isequal(d, empty(d))
     @test isequal(d, copy(d))
@@ -195,7 +195,7 @@
     if VERSION < v"1.6-"
         io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64,String}\n 1 │ #undef\n 2 │ #undef"
     else
-        io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64, String}\n 1 │ #undef\n 2 │ #undef"
+        io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64, String, typeof(hash)}\n 1 │ #undef\n 2 │ #undef"
     end
     @test all(!isassigned(dict, i) for i in collect(keys(dict)))
     @test all(!isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
@@ -270,6 +270,33 @@
         for i in 10000:20000
             @test h[i] == i+1
         end
+    end
+
+    @testset "hash interface" begin
+        i = Real[1, 2.0, 3f0]
+        n = length(i)
+        v = rand(n)
+        dict = Dictionary(copy(i), copy(v))
+        @test dict[1.0] == v[1]
+        @test haskey(dict, 1.0)
+        set!(dict, 1.0, 0.5)
+        @test dict[1.0] == 0.5
+        @test length(dict) == n
+        iddict = Dictionary(copy(i), copy(v); hash = objectid)
+        @test !haskey(iddict, 1.0)
+        set!(iddict, 1.0, 0.5)
+        @test length(iddict) == n + 1
+        @test iddict[1.0] == 0.5
+        @test iddict[1] == v[1]
+
+        i = 1:n
+        dict = Dictionary(copy(i), copy(v))
+        @test haskey(dict, 1.0)
+        set!(dict, 1.0, 0.5)
+        @test dict[1.0] == 0.5
+        @test length(dict) == n
+        iddict = Dictionary(copy(i), copy(v); hash = objectid)
+        @test_throws ArgumentError set!(iddict, 1.0, 0.5)
     end
 
     @testset "dictionary" begin

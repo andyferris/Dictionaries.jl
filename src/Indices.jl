@@ -1,7 +1,7 @@
 const hash_mask = typemax(UInt) >>> 0x01
 const deletion_mask = hash_mask + 0x01
 
-mutable struct Indices{I} <: AbstractIndices{I}
+mutable struct Indices{I,F} <: AbstractIndices{I}
     # The hash table
     slots::Vector{Int}
 
@@ -10,22 +10,25 @@ mutable struct Indices{I} <: AbstractIndices{I}
     values::Vector{I}
 
     holes::Int # Number of "vacant" slots in hashes and values
+
+    hash::F # Function for hashing keys
 end
 
 _slots(inds::Indices) = getfield(inds, :slots)
 _hashes(inds::Indices) = getfield(inds, :hashes)
 _values(inds::Indices) = getfield(inds, :values)
 _holes(inds::Indices) = getfield(inds, :holes)
+_hash(inds::Indices) = getfield(inds, :hash)
 
-Indices(; sizehint = 8) = Indices{Any}(; sizehint = sizehint)
+Indices(; sizehint = 8, hash = hash) = Indices{Any}(; sizehint, hash)
 
-function Indices{I}(; sizehint = 8) where {I}
+function Indices{I}(; sizehint = 8, hash::F = hash) where {I,F}
     newsize = Base._tablesz((3 * sizehint) >> 0x01);
     hashes = Vector{UInt}()
     values = Vector{I}()
     sizehint!(hashes, sizehint)
     sizehint!(values, sizehint)
-    Indices{I}(fill(0, newsize), hashes, values, 0)
+    Indices{I,F}(fill(0, newsize), hashes, values, 0, hash)
 end
 
 """
@@ -60,15 +63,15 @@ julia> distinct([1,2,3,3])
  3
 ```
 """
-function Indices(iter)
+function Indices(iter; hash = hash)
     if Base.IteratorEltype(iter) === Base.EltypeUnknown()
         iter = collect(iter)
     end
 
-    return Indices{eltype(iter)}(iter)
+    return Indices{eltype(iter)}(iter; hash)
 end
 
-function Indices{I}(iter) where {I}
+function Indices{I}(iter; hash = hash) where {I}
     iter_size = Base.IteratorSize(iter)
     if iter_size isa Union{Base.HasLength, Base.HasShape}
         values = Vector{I}(undef, length(iter))
@@ -81,10 +84,11 @@ function Indices{I}(iter) where {I}
             push!(values, value)
         end
     end
-    return Indices{I}(values)
+    return Indices{I}(values; hash)
 end
 
-function Indices{I}(values::Vector{I}) where {I}
+Indices{I,F}(values::Vector{I}, hash::F) where {I,F} = Indices{I}(values; hash)
+function Indices{I}(values::Vector{I}; hash::F = hash) where {I,F}
     # The input must have unique elements (the constructor is not to be used in place of `distinct`)
     hashes = map(v -> hash(v) & hash_mask, values)
     
@@ -110,7 +114,7 @@ function Indices{I}(values::Vector{I}) where {I}
             # This is potentially an infinte loop and care must be taken not to overfill the container
         end
     end
-    return Indices{I}(slots, hashes, values, 0)
+    return Indices{I,F}(slots, hashes, values, 0, hash)
 end
 
 Base.convert(::Type{AbstractIndices{I}}, inds::AbstractIndices) where {I} = convert(Indices{I}, inds) # the default AbstractIndices type
@@ -124,7 +128,7 @@ function Base.convert(::Type{Indices{I}}, inds::AbstractIndices) where {I}
     # Fast path
     if inds isa Indices
         # Note: `convert` doesn't have copy semantics
-        return Indices{I}(_slots(inds), _hashes(inds), convert(Vector{I}, _values(inds)), _holes(inds))
+        return Indices{I,typeof(_hash(inds))}(_slots(inds), _hashes(inds), convert(Vector{I}, _values(inds)), _holes(inds), _hash(inds))
     end
 
     # The input is already unique
@@ -153,7 +157,7 @@ function Base.convert(::Type{Indices{I}}, inds::AbstractIndices) where {I}
             # This is potentially an infinte loop and care must be taken not to overfill the container
         end
     end
-    return Indices{I}(slots, hashes, values, 0)
+    return Indices{I,typeof(hash)}(slots, hashes, values, 0, hash)
 end
 
 """
@@ -164,8 +168,8 @@ Create a shallow copy of the indices, optionally changing the element type.
 
 (Note that `copy` on a dictionary does not copy its indices).
 """
-function Base.copy(indices::Indices{I}, ::Type{I2}) where {I, I2}
-    return Indices{I2}(copy(_slots(indices)), copy(_hashes(indices)), collect(I2, _values(indices)), _holes(indices))
+function Base.copy(indices::Indices{I,F}, ::Type{I2}) where {I, F, I2}
+    return Indices{I2,F}(copy(_slots(indices)), copy(_hashes(indices)), collect(I2, _values(indices)), _holes(indices), _hash(indices))
 end
 
 function Base.copy(indices::ReverseIndices{I,Indices{I}}, ::Type{I2}) where {I, I2}
@@ -191,16 +195,19 @@ end
 function Serialization.serialize(s::AbstractSerializer, ind::T) where {T<:Indices}
     serialize_type(s, T, false)
     serialize(s, getfield(ind, :values))
+    serialize(s, getfield(ind, :hash))
 end
 
 function Serialization.deserialize(s::AbstractSerializer, T::Type{<:Indices})
+    # Deserialize the values
     tag = Int32(read(s.io, UInt8)::UInt8)
-    if tag != UNDEFREF_TAG
-        vals = handle_deserialize(s, tag)
-    else
-        error("could not deserialize $T")
-    end
-    return T(vals)
+    tag == UNDEFREF_TAG && error("could not deserialize $T")
+    vals = handle_deserialize(s, tag)
+    # Deserialize the hash function
+    tag = Int32(read(s.io, UInt8)::UInt8)
+    tag == UNDEFREF_TAG && error("could not deserialize $T")
+    hash = handle_deserialize(s, tag)
+    return T(vals, hash)
 end
 
 # private (note that newsize must be power of two)
@@ -333,7 +340,7 @@ end
 end
 
 function gettoken(indices::Indices{I}, i) where {I}
-    full_hash = hash(i) & hash_mask
+    full_hash = _hash(indices)(i) & hash_mask
     n_slots = length(_slots(indices))
     bit_mask = n_slots - 1 # n_slots is always a power of two
     hashes = indices.hashes
@@ -371,7 +378,7 @@ end
 isinsertable(::Indices) = true
 
 function gettoken!(indices::Indices{I}, i::I, values = ()) where {I}
-    full_hash = hash(i) & hash_mask
+    full_hash = _hash(indices)(i) & hash_mask
     n_slots = length(_slots(indices))
     bit_mask = n_slots - 1 # n_slots is always a power of two
     n_values = length(_values(indices))

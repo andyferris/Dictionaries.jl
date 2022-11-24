@@ -1,10 +1,10 @@
-struct Dictionary{I, T} <: AbstractDictionary{I, T}
-    indices::Indices{I}
+struct Dictionary{I, T, F} <: AbstractDictionary{I, T}
+    indices::Indices{I, F}
     values::Vector{T}
 
-    function Dictionary{I, T}(inds::Indices{I}, values::Vector{T}, ::Nothing) where {I, T}
+    function Dictionary{I, T}(inds::Indices{I,F}, values::Vector{T}, ::Nothing) where {I, T, F}
        @assert length(values) == length(_values(inds))
-       return new{I,T}(inds, values)
+       return new{I,T,F}(inds, values)
     end
 end
 
@@ -22,13 +22,13 @@ julia> d = Dictionary{Int, Int}()
 0-element Dictionary{Int64,Int64}
 ```
 """
-Dictionary(; sizehint = 8) = Dictionary{Any, Any}(; sizehint = sizehint)
-Dictionary{I}(; sizehint = 8) where {I} = Dictionary{I, Any}(; sizehint = sizehint)
+Dictionary(; sizehint = 8, hash = hash) = Dictionary{Any, Any}(; sizehint = sizehint, hash)
+Dictionary{I}(; sizehint = 8, hash = hash) where {I} = Dictionary{I, Any}(; sizehint = sizehint, hash)
 
-function Dictionary{I, T}(; sizehint = 8) where {I, T}
+function Dictionary{I, T}(; sizehint = 8, hash = hash) where {I, T}
     values = Vector{T}()
     sizehint!(values, sizehint)
-    Dictionary{I, T}(Indices{I}(; sizehint = sizehint), values, nothing)
+    Dictionary{I, T}(Indices{I}(; sizehint = sizehint, hash), values, nothing)
 end
 
 """
@@ -57,9 +57,9 @@ julia> Dictionary(3:-1:1)
  3 │ 1 
 ```
 """
-Dictionary(indexable) = Dictionary(keys(indexable), values(indexable))
-Dictionary{I}(indexable) where {I} = Dictionary{I}(keys(indexable), values(indexable))
-Dictionary{I, T}(indexable) where {I, T} = Dictionary{I, T}(keys(indexable), values(indexable))
+Dictionary(indexable; hash = hash) = Dictionary(keys(indexable), values(indexable); hash)
+Dictionary{I}(indexable; hash = hash) where {I} = Dictionary{I}(keys(indexable), values(indexable); hash)
+Dictionary{I, T}(indexable; hash = hash) where {I, T} = Dictionary{I, T}(keys(indexable), values(indexable); hash)
 
 Dictionary{I, T}(indexable::Dictionary) where {I, T} = Dictionary{I, T}(convert(Indices{I}, keys(indexable)), convert(Vector{T}, indexable.values), nothing)
 
@@ -90,16 +90,16 @@ julia> Dictionary{String, Float64}(["a", "b", "c"], [1, 2, 3])
  "b" │ 2.0
  "c" │ 3.0
 """
-function Dictionary(inds, values)
-    return Dictionary(Indices(inds), values)
+function Dictionary(inds, values; hash = hash)
+    return Dictionary(Indices(inds; hash), values)
 end
 
 function Dictionary(inds::Indices{I}, values) where {I}
     return Dictionary{I}(inds, values)
 end
 
-function Dictionary{I}(inds, values) where {I}
-    return Dictionary{I}(Indices{I}(inds), values)
+function Dictionary{I}(inds, values; hash = hash) where {I}
+    return Dictionary{I}(Indices{I}(inds; hash), values)
 end
 
 function Dictionary{I}(inds::Indices{I}, values) where {I}
@@ -110,8 +110,8 @@ function Dictionary{I}(inds::Indices{I}, values) where {I}
     return Dictionary{I, eltype(values)}(inds, values)
 end
 
-function Dictionary{I, T}(inds, values) where {I, T}
-    return Dictionary{I, T}(Indices{I}(inds), values)
+function Dictionary{I, T}(inds, values; hash = hash) where {I, T}
+    return Dictionary{I, T}(Indices{I}(inds; hash), values)
 end
 
 function Dictionary{I, T}(inds::Indices{I}, values) where {I, T}
@@ -203,23 +203,23 @@ julia> dictionary(zip(["a","b","c"], [1,2,3]))
  "c" │ 3
 ```
 """
-function dictionary(iter)
-    return _dictionary(first, last, Dictionary, iter)
+function dictionary(iter; hash = hash)
+    return _dictionary(first, last, Dictionary, iter; hash)
 end
 
 # An auto-widening Dictionary constructor
-function _dictionary(key, value, ::Type{Dictionary}, iter)
+function _dictionary(key, value, ::Type{Dictionary}, iter; hash = hash)
     tmp = iterate(iter)
     if tmp === nothing
         IT = Base.@default_eltype(iter)
         I = Core.Compiler.return_type(first, Tuple{IT})
         T = Core.Compiler.return_type(last, Tuple{IT})
-        return Dictionary{I, T}()
+        return Dictionary{I, T}(; hash)
     end
     (x, s) = tmp
     i = key(x)
     v = value(x)
-    dict = Dictionary{typeof(i), typeof(v)}()
+    dict = Dictionary{typeof(i), typeof(v)}(; hash)
     insert!(dict, i, v)
     return __dictionary(key, value, dict, iter, s)
 end
@@ -234,8 +234,8 @@ function __dictionary(key, value, dict, iter, s)
         i = key(x)
         v = value(x)
         if !(i isa I) && promote_type(typeof(i), I) != I
-            new_inds = copy(keys(dict), promote_type(I, typeof(i)))
-            new_dict = similar(new_inds, promote_type(T, typeof(v)))
+            new_inds = copy(keys(dict), Base.promote_typejoin(I, typeof(i)))
+            new_dict = similar(new_inds, Base.promote_typejoin(T, typeof(v)))
             copyto!(new_dict.values, dict.values)
             (hadtoken, token) = gettoken!(new_dict, i)
             if !hadtoken

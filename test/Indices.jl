@@ -16,7 +16,7 @@
     @test_throws IndexError h[10]
     @test length(unset!(h, 10)) == 0
     io = IOBuffer(); print(io, h); @test String(take!(io)) == "{}"
-    io = IOBuffer(); show(io, MIME"text/plain"(), h); @test String(take!(io)) == "0-element Indices{Int64}"
+    io = IOBuffer(); show(io, MIME"text/plain"(), h); @test String(take!(io)) == "0-element Indices{Int64, typeof(hash)}"
     @test_throws IndexError delete!(h, 10)
 
     insert!(h, 10.0)
@@ -33,7 +33,7 @@
     @test length(set!(h, 10)) == 1
     @test_throws IndexError insert!(h, 10)
     io = IOBuffer(); print(io, h); @test String(take!(io)) == "{10}"
-    io = IOBuffer(); show(io, MIME"text/plain"(), h); @test String(take!(io)) == "1-element Indices{Int64}\n 10"
+    io = IOBuffer(); show(io, MIME"text/plain"(), h); @test String(take!(io)) == "1-element Indices{Int64, typeof(hash)}\n 10"
     @test !isequal(h, empty(h))
     @test isequal(h, copy(h))
     @test isempty(empty(h))
@@ -54,6 +54,17 @@
     @test length(set!(h, 2, 2)) == 2
     @test length(set!(h, 3.0, 3.0)) == 3
     @test_throws ErrorException set!(h, 4, 5)
+
+    @testset "IdDict equivalence" begin
+        iddict = Indices(;hash=objectid)
+        @test iddict isa Indices{Any,typeof(objectid)}
+        @test Dictionaries._hash(iddict) == objectid
+        i = Real[1, 2.0, 3f0]
+        dict = Indices(i)
+        @test haskey(dict, 1.0)
+        iddict = Indices(i; hash = objectid)
+        @test !haskey(iddict, 1.0)
+    end
 
     @testset "Comparison" begin
         i1 = Indices([1,2,3])
