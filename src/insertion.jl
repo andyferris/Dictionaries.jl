@@ -287,7 +287,7 @@ Delete the index `i` from `dict` if it exists, or do nothing otherwise.
 See also `delete!`, `set!`.
 """
 @propagate_inbounds function unset!(indices::AbstractDictionary{I}, i) where {I}
-    return unset!(indices, unsafe_convert(I, i, _hash(keys(d))))
+    return unset!(indices, unsafe_convert(I, i, _hash(keys(indices))))
 end
 
 function unset!(d::AbstractDictionary{I}, i::I) where {I}
