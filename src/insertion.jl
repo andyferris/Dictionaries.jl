@@ -195,8 +195,7 @@ end
 
 Update the value at `i` with the function `f` (`f(dict[i], value)`) or insert `value`.
 
-Hint: Use [`mergewith!`](@ref) to exclusively update an existing value, and `insert!` to exclusively
-insert a new value. See also `get!`.
+Hint: Use [`mergewith!`](@ref) to merge `Dictionary`s together.
 """
 function setwith!(f, d::AbstractDictionary{I}, i, value) where {I}
     i2 = safe_convert(I, i)
