@@ -201,14 +201,14 @@ Update the value at `i` with the function `f` (`f(dict[i], value)`) or insert `v
 Hint: Use [`mergewith!`](@ref) to exclusively update an existing value, and `insert!` to exclusively
 insert a new value. See also `get!`.
 """
-function insertwith!(f, d::AbstractDictionary{I}, i, value) where {I}
+function setwith!(f, d::AbstractDictionary{I}, i, value) where {I}
     i2 = safe_convert(I, i)
     old_value = get(d, i2, nothing)
-    isnothing(old_val) ? insert!(d, i2, value) : d[i2] = f(old_value, value) 
-    return dict
+    isnothing(old_value) ? insert!(d, i2, value) : d[i2] = f(old_value, value) 
+    return d
 end
 
-insertwith!(f, ::AbstractIndices, i, value) = error("`insertwith!` does not work with `AbstractIndices`")
+setwith!(f, ::AbstractIndices, i, value) = error("`insertwith!` does not work with `AbstractIndices`")
 
 """
     set!(indices::AbstractIndices, i)
