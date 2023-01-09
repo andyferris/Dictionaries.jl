@@ -163,10 +163,7 @@ Hint: Use `setindex!` to exclusively update an existing value, and `insert!` to 
 insert a new value. See also `get!`.
 """
 @propagate_inbounds function set!(d::AbstractDictionary{I}, i, value) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return set!(d, i2, value)
 end
 
@@ -237,10 +234,7 @@ set to `default`, which is returned.
 See also `get`, `set!`.
 """
 @propagate_inbounds function Base.get!(d::AbstractDictionary{I}, i, default) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return get!(d, i2, default)
 end
 
@@ -265,10 +259,7 @@ Return the value `dict[i]` if index `i` exists. Otherwise, a new index `i` is in
 set to the value `f()`, which is returned.
 """
 function Base.get!(f::Callable, d::AbstractDictionary{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     get!(f, d, i2)
 end
 
@@ -297,10 +288,7 @@ Delete the index `i` from `dict`. An error is thrown if `i` does not exist.
 See also `unset!`, `insert!`.
 """
 @propagate_inbounds function Base.delete!(d::AbstractDictionary{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return delete!(d, i2)
 end
 
@@ -326,10 +314,7 @@ Delete the index `i` from `dict` if it exists, or do nothing otherwise.
 See also `delete!`, `set!`.
 """
 @propagate_inbounds function unset!(indices::AbstractDictionary{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return unset!(indices, i2)
 end
 
