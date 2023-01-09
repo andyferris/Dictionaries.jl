@@ -54,6 +54,7 @@
     @test length(set!(h, 2, 2)) == 2
     @test length(set!(h, 3.0, 3.0)) == 3
     @test_throws ErrorException set!(h, 4, 5)
+    @test_throws ErrorException setwith!(+, h, 3, 2)
 
     @testset "Comparison" begin
         i1 = Indices([1,2,3])

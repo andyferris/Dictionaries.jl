@@ -30,6 +30,14 @@ function.
 """
 isinsertable(::AbstractIndices) = false
 
+function safe_convert(::Type{I}, i) where {I}
+    i2 = convert(I, i)
+    if !isequal(i, i2)
+        throw(ArgumentError("$i is not a valid key for type $I"))
+    end
+    return i2
+end
+
 ### Underlying token interface functions
 
 """
@@ -93,10 +101,7 @@ end
 Insert the new index `i` into `indices`. An error is thrown if `i` already exists.
 """
 @propagate_inbounds function Base.insert!(indices::AbstractIndices{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return insert!(indices, i2)
 end
 
@@ -118,10 +123,7 @@ Hint: Use `setindex!` to update an existing value, and `set!` to perform an "ups
 (update-or-insert) operation.
 """
 function Base.insert!(d::AbstractDictionary{I}, i, value) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return insert!(d, i2, value)
 end
 
@@ -190,6 +192,23 @@ function set!(indices::AbstractIndices{I}, i1::I, i2::I) where {I}
         error("indices not insertable: $(typeof(indices))")
     end
 end
+
+"""
+    setwith!(f, dict::AbstractDictionary, i, value)
+
+Update the value at `i` with the function `f` (`f(dict[i], value)`) or insert `value`.
+
+Hint: Use [`mergewith!`](@ref) to exclusively update an existing value, and `insert!` to exclusively
+insert a new value. See also `get!`.
+"""
+function insertwith!(f, d::AbstractDictionary{I}, i, value) where {I}
+    i2 = safe_convert(I, i)
+    old_value = get(d, i2, nothing)
+    isnothing(old_val) ? insert!(d, i2, value) : d[i2] = f(old_value, value) 
+    return dict
+end
+
+insertwith!(f, ::AbstractIndices, i, value) = error("`insertwith!` does not work with `AbstractIndices`")
 
 """
     set!(indices::AbstractIndices, i)

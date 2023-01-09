@@ -42,10 +42,21 @@
     @test_throws IndexError insert!(d, 10, 12)
     @test d[10] == 11
     set!(d, 10, 12)
+    @test length(d) == 1setwith!(+, d, 10.0, 2.0)
     @test length(d) == 1
+    @test d[10] == 14
+    setwith!(+, d, 2.0, 2.0)
+    @test length(d) == 2
+    @test d[2] == 2
     @test d[10] == 12
-    d[10] = 13
+    setwith!(+, d, 10.0, 2.0)
     @test length(d) == 1
+    @test d[10] == 14
+    setwith!(+, d, 2.0, 2.0)
+    @test length(d) == 2
+    @test d[2] == 2
+    d[10] = 13
+    @test length(d) == 2
     @test d[10] == 13
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 = 13}"
     if VERSION < v"1.6-"
