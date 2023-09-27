@@ -30,6 +30,9 @@ julia> dict = Dictionary(["a", "b", "c"], [1, 2, 3])
 
 julia> dict["a"]
 1
+
+julia> dict == Dictionary(("a", "b", "c"), (1, 2, 3))
+true
 ```
 
 The constructor also accepts any indexable container, preserving the keys and values.
