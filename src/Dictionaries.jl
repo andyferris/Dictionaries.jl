@@ -14,14 +14,14 @@ export issettable, isinsertable, set!, unset!
 export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, settokenvalue!, gettoken!, deletetoken!, sharetokens
 
 """
-    return_type(f, types)::DataType
+    return_type(f, types)
 
 Find the return type of `f` called with `types`.
 
 !!! note 
     Currently, this method depends on `code_typed`.
 """
-function return_type(f, types)::DataType
+function return_type(f, types)
     return last(only(code_typed(f, types; 
                                 optimize=false, 
                                 debuginfo=:none)))
