@@ -71,7 +71,7 @@ function Indices(iter)
     # is used. For an empty iterator, we actually don't know what the 
     # True(tm) eltype is, so the top of the type hierarchy (Any) is 
     # just as reasonable as the bottom (Union{})
-    I = isempty(iter) ? Any : eltype(iter)
+    I = typeof(iter) == Tuple{} ? Any : eltype(iter)
     
     return Indices{I}(iter)
 end
