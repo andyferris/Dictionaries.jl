@@ -13,6 +13,20 @@ export dictionary, index, distinct, disjoint, isdictequal, filterview, sortkeys,
 export issettable, isinsertable, set!, unset!
 export istokenizable, tokentype, tokens, tokenized, gettoken, gettokenvalue, istokenassigned, settokenvalue!, gettoken!, deletetoken!, sharetokens
 
+"""
+    return_type(f, types)::DataType
+
+Find the return type of `f` called with `types`.
+
+!!! note 
+    Currently, this method depends on `code_typed`.
+"""
+function return_type(f, types)::DataType
+    return last(only(code_typed(f, types; 
+                                optimize=false, 
+                                debuginfo=:none)))
+end
+
 include("AbstractDictionary.jl")
 include("AbstractIndices.jl")
 

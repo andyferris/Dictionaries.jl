@@ -220,8 +220,8 @@ function _dictionary(key, value, ::Type{Dictionary}, iter)
     tmp = iterate(iter)
     if tmp === nothing
         IT = Base.@default_eltype(iter)
-        I = Core.Compiler.return_type(first, Tuple{IT})
-        T = Core.Compiler.return_type(last, Tuple{IT})
+        I = return_type(first, Tuple{IT})
+        T = return_type(last, Tuple{IT})
         return Dictionary{I, T}()
     end
     (x, s) = tmp

@@ -1,7 +1,7 @@
 @testset "map" begin
     function _mapview(f, d::AbstractDictionary)
         I = keytype(d)
-        T = Core.Compiler.return_type(f, Tuple{eltype(d)})
+        T = Dictionaries.return_type(f, Tuple{eltype(d)})
         
         return MappedDictionary{I, T, typeof(f), Tuple{typeof(d)}}(f, (d,))
     end

@@ -19,7 +19,7 @@ _data(d::BroadcastedDictionary) = getfield(d, :data)
     sharetokens = _sharetokens(dicts...)
     I = keytype(dicts[1])
     Ts = Base.Broadcast.eltypes(data)
-    T = Core.Compiler.return_type(f, Ts)
+    T = return_type(f, Ts)
 
     return BroadcastedDictionary{I, T, typeof(f), typeof(data)}(f, data, sharetokens)
 end

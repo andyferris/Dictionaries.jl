@@ -88,13 +88,13 @@ function Base.map!(f, out::AbstractDictionary)
 end
 
 function Base.map(f, d::AbstractDictionary)
-    out = similar(d, Core.Compiler.return_type(f, Tuple{eltype(d)}))
+    out = similar(d, return_type(f, Tuple{eltype(d)}))
     @inbounds map!(f, out, d)
     return out
 end
 
 function Base.map(f, d::AbstractDictionary, ds::AbstractDictionary...)
-    out = similar(d, Core.Compiler.return_type(f, Tuple{eltype(d), map(eltype, ds)...}))
+    out = similar(d, return_type(f, Tuple{eltype(d), map(eltype, ds)...}))
     @inbounds map!(f, out, d, ds...)
     return out
 end
@@ -146,7 +146,7 @@ empty_type(::Type{<:MappedDictionary{<:Any, <:Any, <:Any, <:Tuple{D, Vararg{Abst
 if VERSION > v"1.6-"
     function Iterators.map(f, d::AbstractDictionary)
         I = keytype(d)
-        T = Core.Compiler.return_type(f, Tuple{eltype(d)}) # Base normally wouldn't invoke inference for something like this...
+        T = return_type(f, Tuple{eltype(d)}) # Base normally wouldn't invoke inference for something like this...
         return MappedDictionary{I, T, typeof(f), Tuple{typeof(d)}}(f, (d,))
     end
 end
