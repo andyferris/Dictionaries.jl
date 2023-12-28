@@ -65,7 +65,15 @@ function Indices(iter)
         iter = collect(iter)
     end
 
-    return Indices{eltype(iter)}(iter)
+    # This is necessary to make map'ing across an empty dictionary work
+    # In both Julia 1.9 and 1.10 eltype(::Tuple{}) == Union{}
+    # but in Julia 1.10, this causes problems downstream when Indices{Union{}}
+    # is used. For an empty iterator, we actually don't know what the 
+    # True(tm) eltype is, so the top of the type hierarchy (Any) is 
+    # just as reasonable as the bottom (Union{})
+    I = isempty(iter) ? Any : eltype(iter)
+    
+    return Indices{I}(iter)
 end
 
 function Indices{I}(iter) where {I}
