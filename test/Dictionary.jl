@@ -67,9 +67,9 @@
     @test isequal(Dictionary(copy(keys(d)), d), d)
     @test !isequal(d, empty(d))
     @test !isequal(empty(d), d)
-    @test !isequal(fill(0, d), d) 
+    @test !isequal(fill(0, d), d)
     @test !isequal(d, fill(0, d))
-    @test !isequal(fill(0, copy(keys(d))), d) 
+    @test !isequal(fill(0, copy(keys(d))), d)
     @test !isequal(d, fill(0, copy(keys(d))))
     @test !isless(d, d)
     @test !isless(copy(d), d)
@@ -113,7 +113,7 @@
     @test get!(d, 10, 14.0) == 14
     @test d[10] == 14
     delete!(d, 10)
-    
+
     for i = 2:2:1000
         insert!(d, i, i+1)
         @test d[i] == i + 1 ? true : (@show i; false)
@@ -121,7 +121,7 @@
     @test all(in(i, d) == !iseven(i) for i in 2:2:1000)
     @test all(in(i, keys(d)) == iseven(i) for i in 2:2:1000)
     @test isempty(empty!(d))
-   
+
     @test get!(() -> 15, d, 10) == 15
     @test get!(() -> 16, d, 10) == 15
 
@@ -159,7 +159,7 @@
         dmut_ser = deserialize(open(path, "r"))
         @test all(k -> haskey(dmut_ser, k), keys(dmut_ser))
     end
-    
+
     d5 = Dictionary(['a','b'],[1,missing])
     @test isdictequal(d5, d5) === missing
     @test (d5 == d5) === missing
@@ -169,7 +169,7 @@
 
     @test isequal(merge(d, d), d)
     @test isequal(merge(d, d2), d)
-    
+
     @test isequal(merge(d, Dictionary([:c], [3])), Dictionary([:a, :b, :c], [1, 2, 3]))
     @test isequal(merge(d, Dictionary([:b, :c], [4, 3])), Dictionary([:a, :b, :c], [1, 4, 3]))
 
@@ -376,5 +376,18 @@
         sortpairs!(dictcopy; by = kv->kv.second=>kv.first)
         @test dictcopy == Dictionary([3, 2, 1], ['a', 'b', 'c'])
         @test all(isassigned(dictcopy, i) for i in keys(dictcopy))
+    end
+
+    @testset "merge" begin
+        d1 = Dictionary([1, 2, 3], [1, 2, 3])
+        d2 = Float32.(d1)
+        d3 = Float64.(d1) .+ 0.5
+        @test merge(d1, d2) isa Dictionary{Int, Float32}
+        @test merge(d1, d2, d3) isa Dictionary{Int, Float64}
+        @test merge!(d2, d1) == d1
+        @test_throws InexactError merge!(d1, d2, d3)
+        @test mergewith(+, d1, d2, d3) isa Dictionary{Int, Float64}
+        @test_throws InexactError mergewith!(+, d1, d2, d3)
+        @test mergewith(+, d3, d1, d2) isa Dictionary{Int, Float64}
     end
 end
