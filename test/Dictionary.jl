@@ -386,8 +386,11 @@
         @test merge(d1, d2, d3) isa Dictionary{Int, Float64}
         @test merge!(d2, d1) == d1
         @test_throws InexactError merge!(d1, d2, d3)
-        @test mergewith(+, d1, d2, d3) isa Dictionary{Int, Float64}
-        @test_throws InexactError mergewith!(+, d1, d2, d3)
-        @test mergewith(+, d3, d1, d2) isa Dictionary{Int, Float64}
+
+        if isdefined(Base, :mergewith) # Julia 1.5+
+            @test mergewith(+, d1, d2, d3) isa Dictionary{Int, Float64}
+            @test_throws InexactError mergewith!(+, d1, d2, d3)
+            @test mergewith(+, d3, d1, d2) isa Dictionary{Int, Float64}
+        end
     end
 end
