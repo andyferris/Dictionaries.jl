@@ -323,15 +323,17 @@ function unset!(d::AbstractDictionary{I}, i::I) where {I}
 end
 
 ### Non-scalar insertion/deletion
-function Base.merge!(d::AbstractDictionary, d2::AbstractDictionary)
-    for (i, v) in pairs(d2)
-        set!(d, i, v)
+function Base.merge!(d::AbstractDictionary, others::AbstractDictionary...)
+    for other in others
+        for (i, v) in pairs(other)
+            set!(d, i, v)
+        end
     end
     return d
 end
 
 if isdefined(Base, :mergewith) # Julia 1.5+
-    function Base.mergewith!(combiner::Callable, d::AbstractDictionary, d2::AbstractDictionary)
+    function Base.mergewith!(combiner, d::AbstractDictionary, d2::AbstractDictionary)
         for (i, v) in pairs(d2)
             (hasindex, token) = gettoken!(d, i)
             if hasindex
@@ -342,6 +344,8 @@ if isdefined(Base, :mergewith) # Julia 1.5+
         end
         return d
     end
+    Base.mergewith!(combiner, d::AbstractDictionary, others::AbstractDictionary...) =
+        foldl(mergewith!(combiner), others, init = d)
 end
 
 # TODO some kind of exclusive merge (throw on key clash like `insert!`)

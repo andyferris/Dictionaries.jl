@@ -206,7 +206,7 @@ function Base.isless(dict1::AbstractDictionary, dict2::AbstractDictionary)
         (p1, s1) = tmp1
         (p2, s2) = tmp2
         c = cmp(p1, p2)
-        
+
         if c == -1
             return true
         elseif c == 1
@@ -244,7 +244,7 @@ function Base.cmp(dict1::AbstractDictionary, dict2::AbstractDictionary)
         (p1, s1) = tmp1
         (p2, s2) = tmp2
         c = cmp(p1, p2)
-        
+
         if c == -1
             return -1
         elseif c == 1
@@ -270,7 +270,7 @@ function Base.hash(dict::AbstractDictionary, h::UInt)
         h1 = hash(i, h1)
         h2 = hash(v, h2)
     end
-    
+
     return hash(hash(UInt === UInt64 ? 0x8955a87bc313a509 : 0xa9cff5d1, h1), h2)
 end
 
@@ -363,23 +363,32 @@ end
 empty_type(::Type{<:AbstractDictionary}, ::Type{I}, ::Type{T}) where {I, T} = Dictionary{I, T}
 Base.empty(dict::AbstractDictionary, ::Type{I}, ::Type{T}) where {I, T} = empty_type(typeof(dict), I, T)()
 
-function Base.merge(d1::AbstractDictionary{K1, T1}, d2::AbstractDictionary{K2, T2}) where {K1, T1, K2, T2}
+function Base.merge(d1::AbstractDictionary, others::AbstractDictionary...)
     # Note: need to copy the keys
-    out = similar(copy(keys(d1), promote_type(K1, K2)), promote_type(T1, T2))
+    K = promote_type(keytype(d1), keytype.(others)...)
+    T = promote_type(valtype(d1), valtype.(others)...)
+    out = similar(copy(keys(d1), K), T)
     copyto!(out, d1)
-    merge!(out, d2)
+    merge!(out, others...)
     return out
 end
 
 if isdefined(Base, :mergewith) # Julia 1.5+
-    function Base.mergewith(combiner, d1::AbstractDictionary{K1, T1}, d2::AbstractDictionary{K2, T2}) where {K1, T1, K2, T2}
+    function Base.mergewith(combiner, d1::AbstractDictionary, others::AbstractDictionary...)
         # Note: need to copy the keys
-        T3 = Base.promote_op(combiner, T1, T2)
-        out = similar(copy(keys(d1), promote_type(K1, K2)), promote_type(T1, T2, T3))
+        K = promote_type(keytype(d1), keytype.(others)...)
+        T = promote_op_valtype(combiner, d1, others...)
+        out = similar(copy(keys(d1), K), T)
         copyto!(out, d1)
-        mergewith!(combiner, out, d2)
+        mergewith!(combiner, out, others...)
         return out
     end
+    promote_op_valtype(combiner, d1::AbstractDictionary{<:Any,T}, others::AbstractDictionary...) where {T} =
+        promote_op_valtype(T, combiner, d1, others...)
+    promote_op_valtype(T::Type, combiner, d1::AbstractDictionary, others::AbstractDictionary...) =
+        promote_op_valtype(promote_op_valtype(T, combiner, d1), combiner, others...)
+    promote_op_valtype(T::Type, combiner, ::AbstractDictionary{<:Any,T´}) where {T´} =
+        promote_type(T, T´, Base.promote_op(combiner, T, T´))
 end
 
 # fill! and fill
@@ -483,7 +492,7 @@ end
     copy(dict::AbstractDictionary, ::Type{T})
 
 Create a shallow copy of the values of `dict`. Note that `keys(dict)` is not copied, and
-therefore care must be taken that inserting/deleting elements. A new element type `T` can 
+therefore care must be taken that inserting/deleting elements. A new element type `T` can
 optionally be specified.
 """
 Base.copy(dict::AbstractDictionary) = copy(dict, eltype(dict))
