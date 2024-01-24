@@ -153,6 +153,8 @@
     delete!(dmut, foos[3])
     dmut_copy = deepcopy(dmut)
     @test all(k -> haskey(dmut_copy, k), keys(dmut_copy))
+    dmut2_copy = deepcopy((dmut, dmut));
+    @test dmut2_copy[1] === dmut2_copy[2];
 
     mktemp() do path, io
         open(io->serialize(io, dmut), path, "w")

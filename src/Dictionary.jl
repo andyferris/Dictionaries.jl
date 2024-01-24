@@ -172,8 +172,6 @@ Base.convert(::Type{T}, dict::T) where {T<:Dictionary} = dict
 
 Base.copy(dict::Dictionary) = Dictionary(dict.indices, copy(dict.values))
 
-Base.deepcopy_internal(dict::Dictionary{I,T}, id::IdDict) where {I,T} = Dictionary{I,T}(Base.deepcopy_internal(keys(dict), id), Base.deepcopy_internal(collect(dict), id))
-
 function Serialization.serialize(s::AbstractSerializer, dict::T) where {T<:Dictionary}
     serialize_type(s, T, false)
     serialize(s, keys(dict))
