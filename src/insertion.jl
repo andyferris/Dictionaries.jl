@@ -30,6 +30,7 @@ function.
 """
 isinsertable(::AbstractIndices) = false
 
+safe_convert(::Type{I}, i::I) where {I} = i
 function safe_convert(::Type{I}, i) where {I}
     i2 = convert(I, i)
     if !isequal(i, i2)
