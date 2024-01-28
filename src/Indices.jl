@@ -185,7 +185,11 @@ function Base.copy(indices::ReverseIndices{I,Indices{I}}, ::Type{I2}) where {I, 
 end
 
 function Base.deepcopy_internal(ind::Indices{T}, id::IdDict) where {T}
-    return Indices{T}(Base.deepcopy_internal(collect(ind), id))
+    if haskey(id, ind)
+        id[ind]::Indices{T}
+    else
+        id[ind] = Indices{T}(Base.deepcopy_internal(collect(ind), id))
+    end
 end
 
 function Serialization.serialize(s::AbstractSerializer, ind::T) where {T<:Indices}

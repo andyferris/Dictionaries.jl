@@ -74,7 +74,11 @@ function Base.copy(h::UnorderedIndices{T}, ::Type{T}) where {T}
 end
 
 function Base.deepcopy_internal(uinds::UnorderedIndices{T}, id::IdDict) where {T}
-    return UnorderedIndices{T}(Base.deepcopy_internal(collect(keys(uinds)), id))
+    if haskey(id, uinds)
+        id[uinds]::UnorderedIndices{T}
+    else
+        id[uinds] = UnorderedIndices{T}(Base.deepcopy_internal(collect(keys(uinds)), id))
+    end
 end
 
 function Serialization.serialize(s::AbstractSerializer, uinds::T) where {T<:UnorderedIndices}

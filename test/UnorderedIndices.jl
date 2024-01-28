@@ -12,6 +12,8 @@
     @test h == copy(h)
     @test isempty(h)
     @test issetequal(copy(h), h)
+    h2 = deepcopy((h, h))
+    @test h2[1] === h2[2];
     @test_throws IndexError h[10]
     @test length(unset!(h, 10)) == 0
     io = IOBuffer(); print(io, h); @test String(take!(io)) == "{}"
