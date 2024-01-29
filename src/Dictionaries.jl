@@ -47,7 +47,6 @@ end # module
 # * TODO: have `delete!` return next key, `deletetoken!` return next token.
 #   For these kinds of algorithms, probably need: firstindex, firsttoken, nextind, prevind,
 #   nexttoken, prevtoken, lastindex, lasttoken.
-# * A surface interface for updates like https://github.com/JuliaLang/julia/pull/31367
 # * More operations for "ordered" indices/sets (sort-based dictionaries and
 #   B-trees). We can probably formalize an interface around a trait here. Certain operations
 #   like slicing out an interval or performing a sort-merge co-iteration for `merge` become
