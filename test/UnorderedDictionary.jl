@@ -78,8 +78,9 @@
     setwith!(+, d, 2.0, 2.0)
     @test length(d) == 2
     @test d[2] == 2
+    delete!(d, 2)
+    @test length(d) == 1
     d[10.0] = 13.0
-    @test length(d) == 2
     @test d[10] == 13
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 = 13}"
     if VERSION < v"1.6-"
