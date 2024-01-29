@@ -199,13 +199,13 @@ Update the value at `i` with the function `f` (`f(dict[i], value)`) or insert `v
 Hint: Use [`mergewith!`](@ref) to merge `Dictionary`s together.
 """
 function setwith!(f, d::AbstractDictionary{I}, i, value) where {I}
-    i2 = safe_convert(I, i)
-    old_value = get(d, i2, nothing)
-    isnothing(old_value) ? insert!(d, i2, value) : d[i2] = f(old_value, value) 
+    (had_token, token) = gettoken!(d, i)
+    new_value = had_token ? f(@inbounds(gettokenvalue(d, token)), value) : value
+    @inbounds settokenvalue!(d, token, new_value)
     return d
 end
 
-setwith!(f, ::AbstractIndices, i, value) = error("`insertwith!` does not work with `AbstractIndices`")
+setwith!(f, ::AbstractIndices, i, value) = error("`setwith!` does not work with `AbstractIndices`")
 
 """
     set!(indices::AbstractIndices, i)
