@@ -1,7 +1,7 @@
 name = "Dictionaries"
 uuid = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
 authors = ["Andy Ferris <ferris.andy@gmail.com>"]
-version = "0.3.27"
+version = "0.3.28"
 
 [deps]
 Indexing = "313cdc1a-70c2-5d6a-ae34-0150d3930a38"
@@ -10,7 +10,7 @@ Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
 [compat]
 Indexing = "1.1"
-julia = "1"
+julia = "1.6"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
