@@ -30,6 +30,15 @@ function.
 """
 isinsertable(::AbstractIndices) = false
 
+safe_convert(::Type{I}, i::I) where {I} = i
+function safe_convert(::Type{I}, i) where {I}
+    i2 = convert(I, i)
+    if !isequal(i, i2)
+        throw(ArgumentError("$i is not a valid key for type $I"))
+    end
+    return i2
+end
+
 ### Underlying token interface functions
 
 """
@@ -93,10 +102,7 @@ end
 Insert the new index `i` into `indices`. An error is thrown if `i` already exists.
 """
 @propagate_inbounds function Base.insert!(indices::AbstractIndices{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return insert!(indices, i2)
 end
 
@@ -118,10 +124,7 @@ Hint: Use `setindex!` to update an existing value, and `set!` to perform an "ups
 (update-or-insert) operation.
 """
 function Base.insert!(d::AbstractDictionary{I}, i, value) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return insert!(d, i2, value)
 end
 
@@ -161,10 +164,7 @@ Hint: Use `setindex!` to exclusively update an existing value, and `insert!` to 
 insert a new value. See also `get!`.
 """
 @propagate_inbounds function set!(d::AbstractDictionary{I}, i, value) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return set!(d, i2, value)
 end
 
@@ -190,6 +190,22 @@ function set!(indices::AbstractIndices{I}, i1::I, i2::I) where {I}
         error("indices not insertable: $(typeof(indices))")
     end
 end
+
+"""
+    setwith!(f, dict::AbstractDictionary, i, value)
+
+Update the value at `i` with the function `f` (`f(dict[i], value)`) or insert `value`.
+
+Hint: Use [`mergewith!`](@ref) to merge `Dictionary`s together.
+"""
+function setwith!(f, d::AbstractDictionary{I}, i, value) where {I}
+    (had_token, token) = gettoken!(d, i)
+    new_value = had_token ? f(@inbounds(gettokenvalue(d, token)), value) : value
+    @inbounds settokenvalue!(d, token, new_value)
+    return d
+end
+
+setwith!(f, ::AbstractIndices, i, value) = error("`setwith!` does not work with `AbstractIndices`")
 
 """
     set!(indices::AbstractIndices, i)
@@ -218,10 +234,7 @@ set to `default`, which is returned.
 See also `get`, `set!`.
 """
 @propagate_inbounds function Base.get!(d::AbstractDictionary{I}, i, default) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return get!(d, i2, default)
 end
 
@@ -246,10 +259,7 @@ Return the value `dict[i]` if index `i` exists. Otherwise, a new index `i` is in
 set to the value `f()`, which is returned.
 """
 function Base.get!(f::Callable, d::AbstractDictionary{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     get!(f, d, i2)
 end
 
@@ -278,10 +288,7 @@ Delete the index `i` from `dict`. An error is thrown if `i` does not exist.
 See also `unset!`, `insert!`.
 """
 @propagate_inbounds function Base.delete!(d::AbstractDictionary{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return delete!(d, i2)
 end
 
@@ -307,10 +314,7 @@ Delete the index `i` from `dict` if it exists, or do nothing otherwise.
 See also `delete!`, `set!`.
 """
 @propagate_inbounds function unset!(indices::AbstractDictionary{I}, i) where {I}
-    i2 = convert(I, i)
-    if !isequal(i, i2)
-        throw(ArgumentError("$i is not a valid key for type $I"))
-    end
+    i2 = safe_convert(I, i)
     return unset!(indices, i2)
 end
 
