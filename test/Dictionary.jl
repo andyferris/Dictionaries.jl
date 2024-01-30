@@ -402,4 +402,10 @@
             @test mergewith(+, d3, d1, d2) isa Dictionary{Int, Float64}
         end
     end
+
+    @testset "deepcopy" begin
+        local d = Dictionary(1:4, 1:4)
+        delete!(d, 2)
+        @test d == deepcopy(d)
+    end
 end
