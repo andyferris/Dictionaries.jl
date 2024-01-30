@@ -540,7 +540,7 @@ an iterative approach rather than using multiple hash-table lookups per element,
 relatively snappy.
 
 ```julia
-julia> @btime map(+, d1, $(Dictionary(copy(keys(d2)), d2)));
+julia> @btime map(+, d1, $(copy(d2)));
   61.615 ms (20 allocations: 76.29 MiB)
 ```
 
