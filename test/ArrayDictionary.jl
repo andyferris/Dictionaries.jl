@@ -17,11 +17,7 @@
     @test get(() -> 15, d, "10") == 15
     @test length(unset!(d, 10)) == 0
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{}"
-    if VERSION < v"1.6-"
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element ArrayDictionary{Int64,Int64,ArrayIndices{Int64,Array{Int64,1}},Array{Int64,1}}"
-    else
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element ArrayDictionary{Int64, Int64, ArrayIndices{Int64, Vector{Int64}}, Vector{Int64}}"
-    end
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element ArrayDictionary{Int64, Int64, ArrayIndices{Int64, Vector{Int64}}, Vector{Int64}}"
     @test_throws IndexError d[10] = 11
     @test_throws IndexError delete!(d, 10)
 
@@ -55,11 +51,7 @@
     d[10.0] = 13.0
     @test d[10] == 13
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 = 13}"
-    if VERSION < v"1.6-"
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element ArrayDictionary{Int64,Int64,ArrayIndices{Int64,Array{Int64,1}},Array{Int64,1}}\n 10 │ 13"
-    else
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element ArrayDictionary{Int64, Int64, ArrayIndices{Int64, Vector{Int64}}, Vector{Int64}}\n 10 │ 13"
-    end
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element ArrayDictionary{Int64, Int64, ArrayIndices{Int64, Vector{Int64}}, Vector{Int64}}\n 10 │ 13"
     @test !isequal(d, empty(d))
     @test isequal(d, copy(d))
     @test isempty(empty(d))
@@ -92,11 +84,7 @@
         dictcopy = copy(dict)
         @test dict isa ArrayDictionary{Int64, String}
         @test !sharetokens(dict, dictcopy)
-        if VERSION < v"1.6-"
-            io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element ArrayDictionary{Int64,String,ArrayIndices{Int64,Array{Int64,1}},Array{String,1}}\n 1 │ #undef\n 2 │ #undef"
-        else
-            io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element ArrayDictionary{Int64, String, ArrayIndices{Int64, Vector{Int64}}, Vector{String}}\n 1 │ #undef\n 2 │ #undef"
-        end
+        io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element ArrayDictionary{Int64, String, ArrayIndices{Int64, Vector{Int64}}, Vector{String}}\n 1 │ #undef\n 2 │ #undef"
         @test all(!isassigned(dict, i) for i in collect(keys(dict)))
         @test all(!isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
         @test sharetokens(dict, ArrayDictionary{Int64, String}(dict))

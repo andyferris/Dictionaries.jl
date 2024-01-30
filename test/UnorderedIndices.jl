@@ -127,13 +127,8 @@
         @test !(i1 ⊆ i2)
         @test i4 ⊆ i1
 
-        if VERSION < v"1.5-"
-            @test !disjoint(i1, i2)
-            @test disjoint(i1, i3)
-        else
-            @test !isdisjoint(i1, i2)
-            @test isdisjoint(i1, i3)
-        end
+        @test !isdisjoint(i1, i2)
+        @test isdisjoint(i1, i3)
 
         @test issetequal(union(i1, i2), UnorderedIndices([1,2,3]))
         @test issetequal(union(i2, i1), UnorderedIndices([2,3,1]))

@@ -336,21 +336,19 @@ function Base.merge!(d::AbstractDictionary, others::AbstractDictionary...)
     return d
 end
 
-if isdefined(Base, :mergewith) # Julia 1.5+
-    function Base.mergewith!(combiner, d::AbstractDictionary, d2::AbstractDictionary)
-        for (i, v) in pairs(d2)
-            (hasindex, token) = gettoken!(d, i)
-            if hasindex
-                @inbounds settokenvalue!(d, token, combiner(gettokenvalue(d, token), v))
-            else
-                @inbounds settokenvalue!(d, token, v)
-            end
+function Base.mergewith!(combiner, d::AbstractDictionary, d2::AbstractDictionary)
+    for (i, v) in pairs(d2)
+        (hasindex, token) = gettoken!(d, i)
+        if hasindex
+            @inbounds settokenvalue!(d, token, combiner(gettokenvalue(d, token), v))
+        else
+            @inbounds settokenvalue!(d, token, v)
         end
-        return d
     end
-    Base.mergewith!(combiner, d::AbstractDictionary, others::AbstractDictionary...) =
-        foldl(mergewith!(combiner), others, init = d)
+    return d
 end
+Base.mergewith!(combiner, d::AbstractDictionary, others::AbstractDictionary...) =
+    foldl(mergewith!(combiner), others, init = d)
 
 # TODO some kind of exclusive merge (throw on key clash like `insert!`)
 

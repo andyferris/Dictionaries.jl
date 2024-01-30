@@ -353,26 +353,6 @@ function randtoken(::Random.AbstractRNG, i::AbstractIndices)
     error("randtoken is not implemented for $(typeof(i))")
 end
 
-@static if VERSION < v"1.5-"
-    """
-        disjoint(set1, set2)
-
-    Return `true` if `set1` and `set2` are disjoint or `false`. Two sets are disjoint if no
-    elements of `set1` is in `set2`, and vice-versa. Somewhat equivalent to, but faster than,
-    `isempty(intersect(set1, set2))`.
-    """
-    function disjoint(set1, set2)
-        for i in set1
-            if i in set2
-                return false
-            end
-        end
-        return true
-    end
-else
-    @deprecate disjoint(set1, set2) isdisjoint(set1, set2)
-end
-
 function Base.sort(inds::AbstractIndices{I}; kwargs...) where {I}
     ks = collect(inds)
     sort!(ks; kwargs...)
