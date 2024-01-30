@@ -25,7 +25,7 @@ UnorderedDictionary() = UnorderedDictionary{Any}()
     UnorderedDictionary{I, T}(indices, undef::UndefInitializer)
 
 Construct a `UnorderedDictionary` with index type `I` and element type `T`. The container is
-initialized with `keys` that match the values of `indices`, but the values are unintialized.
+initialized with `keys` that match the values of `indices`, but the values are uninitialized.
 """
 function UnorderedDictionary{I, T}(indices, ::UndefInitializer) where {I, T} 
     return UnorderedDictionary{I, T}(UnorderedIndices{I}(indices), undef)
@@ -70,7 +70,7 @@ function UnorderedDictionary{I, T}(indices, values) where {I, T}
 end
 function UnorderedDictionary{I}(indices, values) where {I}
     if Base.IteratorEltype(values) === Base.EltypeUnknown()
-        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
+        # TODO: implement automatic widening from iterators of Base.EltypeUnknown
         values = collect(values)
     end
 
@@ -79,7 +79,7 @@ end
 
 function UnorderedDictionary(indices, values)
     if Base.IteratorEltype(indices) === Base.EltypeUnknown()
-        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
+        # TODO: implement automatic widening from iterators of Base.EltypeUnknown
         indices = collect(indices)
     end
 

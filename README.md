@@ -159,7 +159,7 @@ julia> filter(isodd, dict)
  "c" │ 3
 ```
 
-The `filterview` function is provided to lazily filter a dictionary, which may occassionally
+The `filterview` function is provided to lazily filter a dictionary, which may occasionally
 be more performant when working with larger containers.
 
 The `pairs` function allows access to both the index (key) and value when iterating.
@@ -396,7 +396,7 @@ julia> zeros(UInt8, dict)
  "c" │ 0x00
 ```
 
-Note that the *indices* of the output are not guaranteed to be mutable/insertable - in fact, in the current implementation inserting or deleting indices to the output of the above can corrupt the input container (Julia suffers similar restrictions with `AbstractArray`s with mutable indices, for example changing the size of the indices of a `SubArray` can lead to corruption and segfaults). This also holds true for the output of `map`, `broadcast`, `getindices`, `similar`, `zeros`, `ones`, `falses` and `trues`. If you want a new container with indices you can insert, by sure to `copy` the indices furst, or use `empty` instead.
+Note that the *indices* of the output are not guaranteed to be mutable/insertable - in fact, in the current implementation inserting or deleting indices to the output of the above can corrupt the input container (Julia suffers similar restrictions with `AbstractArray`s with mutable indices, for example changing the size of the indices of a `SubArray` can lead to corruption and segfaults). This also holds true for the output of `map`, `broadcast`, `getindices`, `similar`, `zeros`, `ones`, `falses` and `trues`. If you want a new container with indices you can insert, by sure to `copy` the indices first, or use `empty` instead.
 
 #### Empty, insertable dictionaries indices
 
@@ -478,7 +478,7 @@ To make operations on dictionaries fast, we need to avoid unnecessary lookups in
 
 #### Implementing the token interface for `AbstractIndices`
 
-A token is a more efficient way of refering to an element of `indices`. Using tokens may
+A token is a more efficient way of referring to an element of `indices`. Using tokens may
 help avoid multiple index lookups for a single operation.
 
 A tokenizable indices must implement:
@@ -536,7 +536,7 @@ julia> @btime map(+, d1, d2);
 ```
 
 The `copy` below makes `keys(d1) !== keys(d2)`, disabling token co-iteration. It still uses
-an iterative approach rather than using mulitple hash-table lookups per element, so it's
+an iterative approach rather than using multiple hash-table lookups per element, so it's
 relatively snappy.
 
 ```julia
@@ -544,7 +544,7 @@ julia> @btime map(+, d1, $(Dictionary(copy(keys(d2)), d2)));
   61.615 ms (20 allocations: 76.29 MiB)
 ```
 
-For a comparitive baseline benchmark, we can try the same with dense vectors.
+For a comparative baseline benchmark, we can try the same with dense vectors.
 
 ```julia
 julia> v1 = collect(10_000_000:-1:1);
@@ -557,7 +557,7 @@ julia> @btime map(+, v1, v2);
 
 Here, the vector results are in line with the dictionary co-iteration!
 
-Using insertion, instead of preserving the existing indices, is comparitively slow.
+Using insertion, instead of preserving the existing indices, is comparatively slow.
 
 ```julia
 julia> function f(d1, d2)

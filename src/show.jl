@@ -80,7 +80,7 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractIndices)
         for i in Iterators.reverse(keys(d))
             if bottom_full
                 if isequal(i, top_last_index[])
-                    bottom_full = false # overide this, we don't need the ⋮
+                    bottom_full = false # override this, we don't need the ⋮
                 else
                     bottom_ind_strs[end] = "⋮"
                 end
@@ -170,7 +170,7 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
         for i in Iterators.reverse(keys(d))
             if bottom_full
                 if isequal(i, top_last_index[])
-                    bottom_full = false # overide this, we don't need the ⋮
+                    bottom_full = false # override this, we don't need the ⋮
                 else
                     bottom_ind_strs[end] = "⋮"
                     bottom_val_strs[end] = "⋮"

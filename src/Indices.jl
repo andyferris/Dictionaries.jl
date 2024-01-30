@@ -107,7 +107,7 @@ function Indices{I}(values::Vector{I}) where {I}
                 end
             end
             trial_slot = trial_slot & bit_mask
-            # This is potentially an infinte loop and care must be taken not to overfill the container
+            # This is potentially an infinite loop and care must be taken not to overfill the container
         end
     end
     return Indices{I}(slots, hashes, values, 0)
@@ -150,7 +150,7 @@ function Base.convert(::Type{Indices{I}}, inds::AbstractIndices) where {I}
                 end
             end
             trial_slot = trial_slot & bit_mask
-            # This is potentially an infinte loop and care must be taken not to overfill the container
+            # This is potentially an infinite loop and care must be taken not to overfill the container
         end
     end
     return Indices{I}(slots, hashes, values, 0)
@@ -224,7 +224,7 @@ function rehash!(indices::Indices{I}, newsize::Int, values = (), include_last_va
                 else
                     trial_slot = trial_slot & bit_mask
                 end
-                # This is potentially an infinte loop and care must be taken not to overfill the container
+                # This is potentially an infinite loop and care must be taken not to overfill the container
             end
         end
     else
@@ -358,7 +358,7 @@ function gettoken(indices::Indices{I}, i) where {I}
         end
 
         trial_slot = trial_slot & bit_mask
-        # This is potentially an infinte loop and care must be taken upon insertion not
+        # This is potentially an infinite loop and care must be taken upon insertion not
         # to completely fill the container
     end
 end
@@ -403,7 +403,7 @@ function gettoken!(indices::Indices{I}, i::I, values = ()) where {I}
         end
 
         trial_slot = trial_slot & bit_mask
-        # This is potentially an infinte loop and care must be taken upon insertion not
+        # This is potentially an infinite loop and care must be taken upon insertion not
         # to completely fill the container
     end
 

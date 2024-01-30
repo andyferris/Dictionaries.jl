@@ -120,4 +120,4 @@ end
 end
 
 # TODO accelerate view(::Union{Dictionary, Indices}, ::Indices) to fetch not compute the intermediate `hash`
-# (similary a sort-based index could take advantage of sort-merge algorithms on iteration?)
+# (similarly a sort-based index could take advantage of sort-merge algorithms on iteration?)

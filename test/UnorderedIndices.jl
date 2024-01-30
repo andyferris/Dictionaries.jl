@@ -67,7 +67,7 @@
         @test issetequal(i2, i2)
     end
 
-    @testset "Adapated from Dict tests from Base" begin
+    @testset "Adapted from Dict tests from Base" begin
         h = UnorderedIndices{Int}()
         N = 10000
 

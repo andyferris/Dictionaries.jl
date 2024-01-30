@@ -36,7 +36,7 @@ function rehash!(indices::DenseHashIndices{I}, newsize::Integer) where {I}
             else
                 trial_slot = trial_slot & bit_mask
             end
-            # This is potentially an infinte loop and care must be taken by the callee not
+            # This is potentially an infinite loop and care must be taken by the callee not
             # to overfill the container
         end
     end
@@ -84,7 +84,7 @@ function Dictionaries.gettoken(indices::DenseHashIndices{I}, i::I) where {I}
         end
 
         trial_slot = trial_slot & bit_mask
-        # This is potentially an infinte loop and care must be taken upon insertion not
+        # This is potentially an infinite loop and care must be taken upon insertion not
         # to completely fill the container
     end
 end
@@ -119,7 +119,7 @@ function Dictionaries.gettoken!(indices::DenseHashIndices{I}, i::I) where {I}
         end
 
         trial_slot = trial_slot & bit_mask
-        # This is potentially an infinte loop and care must be taken upon insertion not
+        # This is potentially an infinite loop and care must be taken upon insertion not
         # to completely fill the container
     end
 

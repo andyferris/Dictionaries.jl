@@ -36,7 +36,7 @@ Construct a `UnorderedIndices` with indices from iterable container `iter`.
 """
 function UnorderedIndices(iter)
     if Base.IteratorEltype(iter) === Base.EltypeUnknown()
-        # TODO: implement automatic widening from iterators of Base.EltypeUnkown
+        # TODO: implement automatic widening from iterators of Base.EltypeUnknown
         iter = collect(iter)
     end
 
