@@ -5,7 +5,7 @@
 
 Return `true` if the indices `indices` obeys the token interface, or `false` otherwise.
 
-A token is a more efficient way of refering to an element of `indices`. Using tokens may
+A token is a more efficient way of referring to an element of `indices`. Using tokens may
 help avoid multiple index lookups for a single operation.
 
 A tokenizable indices must implement:
@@ -24,7 +24,7 @@ An `isinsertable` tokenizable indices must implement
 
 Return `true` if the dictionary `dict` obeys the token interface, or `false` otherwise.
 
-A token is a more efficient way of refering to an element of `dict`. Using tokens may
+A token is a more efficient way of referring to an element of `dict`. Using tokens may
 help avoid multiple index lookups for a single operation.
 
 An tokenizable dictionary must implement:

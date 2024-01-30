@@ -97,7 +97,7 @@
         @test (i5 == Indices([1,2,missing])) === missing
     end
 
-    @testset "Adapated from Dict tests from Base" begin
+    @testset "Adapted from Dict tests from Base" begin
         h = Indices{Int}()
         N = 10000
 

@@ -180,7 +180,7 @@ function isdictequal(d1::AbstractDictionary, d2::AbstractDictionary)
     return out
 end
 
-# Lexical ordering based on iteration (of pairs - lesser key takes priority over lesser value, as implmeneted in `cmp(::Pair)`)
+# Lexical ordering based on iteration (of pairs - lesser key takes priority over lesser value, as implemented in `cmp(::Pair)`)
 function Base.isless(dict1::AbstractDictionary, dict2::AbstractDictionary)
     if sharetokens(dict1, dict2)
         @inbounds for t in tokens(dict1)
@@ -310,7 +310,7 @@ indices). The mutable interface requires the dictionary to implement:
  * `setindex!(dict::AbstractDictionary{I, T}, value::I, index::T)`
 
 New settable dictionaries are primarily created through the `similar` function (for
-unitialized values), as well as `fill`, `zeros`, `ones`, `trues` and `falses` (for
+uninitialized values), as well as `fill`, `zeros`, `ones`, `trues` and `falses` (for
 initialized values).
 
 See also `isinsertable`.
@@ -350,7 +350,7 @@ end
     similar(d::AbstractDictionary, [T=eltype(d)])
 
 Construct a new `issettable` dictionary with identical `keys` as `d` and an element type of
-`T`. The initial values are3unitialized/undefined.
+`T`. The initial values are uninitialized/undefined.
 """
 Base.similar(d::AbstractDictionary) = similar(keys(d), eltype(d))
 Base.similar(d::AbstractDictionary, ::Type{T}) where {T} = similar(keys(d), T)

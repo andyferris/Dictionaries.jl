@@ -14,7 +14,7 @@ struct ArrayDictionary{I, T, Inds <: ArrayIndices{I}, Vals <: AbstractArray{T}} 
     
     @inline function ArrayDictionary{I, T, Indices, Values}(indices::Indices, values::Values) where {I, T, Indices <: ArrayIndices{I}, Values <: AbstractArray{T}}
         @boundscheck if LinearIndices(parent(indices)) != LinearIndices(values)
-            error("Dictinary indices and values inputs do not match")
+            error("Dictionary indices and values inputs do not match")
         end
         return new(indices, values)
     end
