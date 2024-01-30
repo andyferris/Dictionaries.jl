@@ -141,7 +141,7 @@ function gettoken!(d::UnorderedDictionary{T}, key::T) where {T}
 end
 
 function Base.copy(d::UnorderedDictionary{I, T}) where {I, T}
-    return UnorderedDictionary{I, T}(d.indices, copy(d.values), nothing)
+    return UnorderedDictionary{I, T}(copy(d.indices), copy(d.values), nothing)
 end
 
 tokenized(d::UnorderedDictionary) = d.values

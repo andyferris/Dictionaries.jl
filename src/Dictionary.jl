@@ -170,7 +170,7 @@ function Base.convert(::Type{Dictionary{I, T}}, dict::Dictionary) where {I, T}
 end
 Base.convert(::Type{T}, dict::T) where {T<:Dictionary} = dict
 
-Base.copy(dict::Dictionary) = Dictionary(dict.indices, copy(dict.values))
+Base.copy(dict::Dictionary) = Dictionary(copy(dict.indices), copy(dict.values))
 
 function Base.deepcopy_internal(dict::Dictionary{I,T}, id::IdDict) where {I,T}
     if haskey(id, dict)

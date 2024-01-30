@@ -14,11 +14,11 @@
     @test isempty(keys(d))
     @test d == d
     @test d == copy(d)
-    @test d == UnorderedDictionary(copy(keys(d)), d)
+    @test d == map(identity, d)
     @test isequal(d, d)
     @test isdictequal(d, d)
     @test isdictequal(copy(d), d)
-    @test isdictequal(UnorderedDictionary(copy(keys(d)), d), d)
+    @test isdictequal(map(identity, d), d)
     @test_throws IndexError d[10]
     @test get(d, 10, 15) == 15
     @test get(() -> 15, d, 10) == 15
@@ -26,11 +26,7 @@
     @test get(() -> 15, d, "10") == 15
     @test length(unset!(d, 10)) == 0
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{}"
-    if VERSION < v"1.6-"
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element UnorderedDictionary{Int64,Int64}"
-    else
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element UnorderedDictionary{Int64, Int64}"
-    end
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element UnorderedDictionary{Int64, Int64}"
     @test_throws IndexError d[10] = 11
     @test_throws IndexError delete!(d, 10)
 
@@ -50,7 +46,7 @@
     @test !isempty(d)
     @test d == d
     @test d == copy(d)
-    @test d == UnorderedDictionary(copy(keys(d)), d)
+    @test d == map(identity, d)
     @test d != empty(d)
     @test empty(d) != d
     @test fill(0, d) != d
@@ -60,7 +56,7 @@
     @test isequal(d, d)
     @test isdictequal(d, d)
     @test isdictequal(copy(d), d)
-    @test isdictequal(UnorderedDictionary(copy(keys(d)), d), d)
+    @test isdictequal(map(identity, d), d)
     @test !isdictequal(d, empty(d))
     @test !isdictequal(empty(d), d)
     @test !isdictequal(fill(0, d), d) 
@@ -83,11 +79,7 @@
     d[10.0] = 13.0
     @test d[10] == 13
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 = 13}"
-    if VERSION < v"1.6-"
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element UnorderedDictionary{Int64,Int64}\n 10 │ 13"
-    else
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element UnorderedDictionary{Int64, Int64}\n 10 │ 13"
-    end
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element UnorderedDictionary{Int64, Int64}\n 10 │ 13"
     @test !isdictequal(d, empty(d))
     @test isdictequal(d, copy(d))
     @test isempty(empty(d))
@@ -150,18 +142,11 @@
 
     dictcopy = copy(dict)
     @test dict isa UnorderedDictionary{Int64, String}
-    @test sharetokens(dict, dictcopy)
-    if VERSION < v"1.6-"
-        io = IOBuffer(); show(io, MIME"text/plain"(), dict); str = String(take!(io)); @test(
-            str == "2-element UnorderedDictionary{Int64,String}\n 1 │ #undef\n 2 │ #undef" ||
-            str == "2-element UnorderedDictionary{Int64,String}\n 2 │ #undef\n 1 │ #undef"
-        )
-    else
-        io = IOBuffer(); show(io, MIME"text/plain"(), dict); str = String(take!(io)); @test(
-            str == "2-element UnorderedDictionary{Int64, String}\n 1 │ #undef\n 2 │ #undef" ||
-            str == "2-element UnorderedDictionary{Int64, String}\n 2 │ #undef\n 1 │ #undef"
-        )
-    end
+    @test !sharetokens(dict, dictcopy)
+    io = IOBuffer(); show(io, MIME"text/plain"(), dict); str = String(take!(io)); @test(
+        str == "2-element UnorderedDictionary{Int64, String}\n 1 │ #undef\n 2 │ #undef" ||
+        str == "2-element UnorderedDictionary{Int64, String}\n 2 │ #undef\n 1 │ #undef"
+    )
     @test all(!isassigned(dict, i) for i in collect(keys(dict)))
     @test all(!isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
     @test sharetokens(dict, UnorderedDictionary{Int64, String}(dict))

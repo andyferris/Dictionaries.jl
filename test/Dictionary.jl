@@ -14,16 +14,16 @@
     @test isempty(keys(d))
     @test d == d
     @test d == copy(d)
-    @test d == Dictionary(copy(keys(d)), d)
+    @test d == map(identity, d)
     @test isequal(d, d)
     @test isequal(copy(d), d)
-    @test isequal(Dictionary(copy(keys(d)), d), d)
+    @test isequal(map(identity, d), d)
     @test !isless(d, d)
     @test !isless(copy(d), d)
-    @test !isless(Dictionary(copy(keys(d)), d), d)
+    @test !isless(map(identity, d), d)
     @test cmp(d, d) == 0
     @test cmp(copy(d), d) == 0
-    @test cmp(Dictionary(copy(keys(d)), d), d) == 0
+    @test cmp(map(identity, d), d) == 0
     @test_throws IndexError d[10]
     @test get(d, 10, 15) == 15
     @test get(() -> 15, d, 10) == 15
@@ -31,11 +31,7 @@
     @test get(() -> 15, d, "10") == 15
     @test length(unset!(d, 10)) == 0
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{}"
-    if VERSION < v"1.6-"
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element Dictionary{Int64,Int64}"
-    else
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element Dictionary{Int64, Int64}"
-    end
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "0-element Dictionary{Int64, Int64}"
     @test_throws IndexError d[10] = 11
     @test_throws IndexError delete!(d, 10)
 
@@ -55,7 +51,7 @@
     @test !isempty(d)
     @test d == d
     @test d == copy(d)
-    @test d == Dictionary(copy(keys(d)), d)
+    @test d == map(identity, d)
     @test d != empty(d)
     @test empty(d) != d
     @test fill(0, d) != d
@@ -64,7 +60,7 @@
     @test d != fill(0, copy(keys(d)))
     @test isequal(d, d)
     @test isequal(copy(d), d)
-    @test isequal(Dictionary(copy(keys(d)), d), d)
+    @test isequal(map(identity, d), d)
     @test !isequal(d, empty(d))
     @test !isequal(empty(d), d)
     @test !isequal(fill(0, d), d)
@@ -73,7 +69,7 @@
     @test !isequal(d, fill(0, copy(keys(d))))
     @test !isless(d, d)
     @test !isless(copy(d), d)
-    @test !isless(Dictionary(copy(keys(d)), d), d)
+    @test !isless(map(identity, d), d)
     @test !isless(d, empty(d))
     @test isless(empty(d), d)
     @test isless(fill(0, d), d)
@@ -82,7 +78,7 @@
     @test !isless(d, fill(0, copy(keys(d))))
     @test cmp(d, d) == 0
     @test cmp(copy(d), d) == 0
-    @test cmp(Dictionary(copy(keys(d)), d), d) == 0
+    @test cmp(map(identity, d), d) == 0
     @test cmp(d, empty(d)) == 1
     @test cmp(empty(d), d) == -1
     @test cmp(fill(0, d), d) == -1
@@ -105,11 +101,7 @@
     d[10.0] = 13.0
     @test d[10] == 13
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 = 13}"
-    if VERSION < v"1.6-"
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64,Int64}\n 10 │ 13"
-    else
-        io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64, Int64}\n 10 │ 13"
-    end
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64, Int64}\n 10 │ 13"
     @test !isequal(d, empty(d))
     @test isequal(d, copy(d))
     @test isempty(empty(d))
@@ -204,12 +196,8 @@
 
     dictcopy = copy(dict)
     @test dict isa Dictionary{Int64, String}
-    @test sharetokens(dict, dictcopy)
-    if VERSION < v"1.6-"
-        io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64,String}\n 1 │ #undef\n 2 │ #undef"
-    else
-        io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64, String}\n 1 │ #undef\n 2 │ #undef"
-    end
+    @test !sharetokens(dict, dictcopy)
+    io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64, String}\n 1 │ #undef\n 2 │ #undef"
     @test all(!isassigned(dict, i) for i in collect(keys(dict)))
     @test all(!isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
     @test sharetokens(dict, Dictionary{Int64, String}(dict))
@@ -283,6 +271,14 @@
         for i in 10000:20000
             @test h[i] == i+1
         end
+    end
+
+    @testset "copy" begin
+        dict = Dictionary([1,2,3,4,5], [1,3,2,4,5])
+        dictcopy = copy(dict)
+        set!(dict, 6, 7)
+        @test length(dict) == 6
+        @test length(dictcopy) == 5
     end
 
     @testset "dictionary" begin
@@ -396,11 +392,9 @@
         @test merge!(d2, d1) == d1
         @test_throws InexactError merge!(d1, d2, d3)
 
-        if isdefined(Base, :mergewith) # Julia 1.5+
-            @test mergewith(+, d1, d2, d3) isa Dictionary{Int, Float64}
-            @test_throws InexactError mergewith!(+, d1, d2, d3)
-            @test mergewith(+, d3, d1, d2) isa Dictionary{Int, Float64}
-        end
+        @test mergewith(+, d1, d2, d3) isa Dictionary{Int, Float64}
+        @test_throws InexactError mergewith!(+, d1, d2, d3)
+        @test mergewith(+, d3, d1, d2) isa Dictionary{Int, Float64}
     end
 
     @testset "deepcopy" begin

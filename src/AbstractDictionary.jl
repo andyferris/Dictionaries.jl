@@ -373,23 +373,21 @@ function Base.merge(d1::AbstractDictionary, others::AbstractDictionary...)
     return out
 end
 
-if isdefined(Base, :mergewith) # Julia 1.5+
-    function Base.mergewith(combiner, d1::AbstractDictionary, others::AbstractDictionary...)
-        # Note: need to copy the keys
-        K = promote_type(keytype(d1), keytype.(others)...)
-        T = promote_op_valtype(combiner, d1, others...)
-        out = similar(copy(keys(d1), K), T)
-        copyto!(out, d1)
-        mergewith!(combiner, out, others...)
-        return out
-    end
-    promote_op_valtype(combiner, d1::AbstractDictionary{<:Any,T}, others::AbstractDictionary...) where {T} =
-        promote_op_valtype(T, combiner, d1, others...)
-    promote_op_valtype(T::Type, combiner, d1::AbstractDictionary, others::AbstractDictionary...) =
-        promote_op_valtype(promote_op_valtype(T, combiner, d1), combiner, others...)
-    promote_op_valtype(T::Type, combiner, ::AbstractDictionary{<:Any,T´}) where {T´} =
-        promote_type(T, T´, Base.promote_op(combiner, T, T´))
+function Base.mergewith(combiner, d1::AbstractDictionary, others::AbstractDictionary...)
+    # Note: need to copy the keys
+    K = promote_type(keytype(d1), keytype.(others)...)
+    T = promote_op_valtype(combiner, d1, others...)
+    out = similar(copy(keys(d1), K), T)
+    copyto!(out, d1)
+    mergewith!(combiner, out, others...)
+    return out
 end
+promote_op_valtype(combiner, d1::AbstractDictionary{<:Any,T}, others::AbstractDictionary...) where {T} =
+    promote_op_valtype(T, combiner, d1, others...)
+promote_op_valtype(T::Type, combiner, d1::AbstractDictionary, others::AbstractDictionary...) =
+    promote_op_valtype(promote_op_valtype(T, combiner, d1), combiner, others...)
+promote_op_valtype(T::Type, combiner, ::AbstractDictionary{<:Any,T´}) where {T´} =
+    promote_type(T, T´, Base.promote_op(combiner, T, T´))
 
 # fill! and fill
 
@@ -486,18 +484,16 @@ function Random.randn(rng::AbstractRNG, ::Type{T}, dict::AbstractDictionary) whe
 end
 
 
-# Copying - note that this doesn't necessarily copy the indices! (`copy(keys(dict))` can do that)
 """
     copy(dict::AbstractDictionary)
     copy(dict::AbstractDictionary, ::Type{T})
 
-Create a shallow copy of the values of `dict`. Note that `keys(dict)` is not copied, and
-therefore care must be taken that inserting/deleting elements. A new element type `T` can
+Create a shallow copy of the values and keys of `dict`. A new element type `T` can
 optionally be specified.
 """
 Base.copy(dict::AbstractDictionary) = copy(dict, eltype(dict))
 function Base.copy(d::AbstractDictionary, ::Type{T}) where {T}
-    out = similar(d, T)
+    out = similar(copy(keys(d)), T)
     copyto!(out, d)
     return out
 end

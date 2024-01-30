@@ -143,10 +143,8 @@ end
 
 empty_type(::Type{<:MappedDictionary{<:Any, <:Any, <:Any, <:Tuple{D, Vararg{AbstractDictionary}}}}, ::Type{I}, ::Type{T}) where {I, T, D} = empty_type(D, I, T)
 
-if VERSION > v"1.6-"
-    function Iterators.map(f, d::AbstractDictionary)
-        I = keytype(d)
-        T = Core.Compiler.return_type(f, Tuple{eltype(d)}) # Base normally wouldn't invoke inference for something like this...
-        return MappedDictionary{I, T, typeof(f), Tuple{typeof(d)}}(f, (d,))
-    end
+function Iterators.map(f, d::AbstractDictionary)
+    I = keytype(d)
+    T = Core.Compiler.return_type(f, Tuple{eltype(d)}) # Base normally wouldn't invoke inference for something like this...
+    return MappedDictionary{I, T, typeof(f), Tuple{typeof(d)}}(f, (d,))
 end
