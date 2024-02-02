@@ -401,5 +401,10 @@
         local d = Dictionary(1:4, 1:4)
         delete!(d, 2)
         @test d == deepcopy(d)
+
+        local k = keys(d)
+        local d_key_copy = deepcopy((k, d, k));
+        @test keys(d_key_copy[2]) == d_key_copy[1]
+        @test d_key_copy[1] === d_key_copy[3]
     end
 end
