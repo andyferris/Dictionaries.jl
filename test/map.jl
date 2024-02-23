@@ -1,7 +1,7 @@
 @testset "map" begin
     function _mapview(f, d::AbstractDictionary)
         I = keytype(d)
-        T = Base.promote_op(f, Tuple{eltype(d)})
+        T = Base.promote_op(f, eltype(d))
         
         return MappedDictionary{I, T, typeof(f), Tuple{typeof(d)}}(f, (d,))
     end
