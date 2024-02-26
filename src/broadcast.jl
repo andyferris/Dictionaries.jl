@@ -18,8 +18,7 @@ _data(d::BroadcastedDictionary) = getfield(d, :data)
     dicts = _dicts(data...)
     sharetokens = _sharetokens(dicts...)
     I = keytype(dicts[1])
-    Ts = Base.Broadcast.eltypes(data)
-    T = Base.promote_op(f, Ts...)
+    T = Base.Broadcast.combine_eltypes(f data)
 
     return BroadcastedDictionary{I, T, typeof(f), typeof(data)}(f, data, sharetokens)
 end
