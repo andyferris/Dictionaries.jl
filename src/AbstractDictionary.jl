@@ -20,7 +20,7 @@ If arbitrary indices can be added to or removed from the dictionary, implement:
  * `insert!(dict::AbstractDictionary{I, T}, ::I, ::T}` (returning `dict`)
  * `delete!(dict::AbstractDictionary{I, T}, ::I}` (returning `dict`)
 """
-abstract type AbstractDictionary{I, T}; end
+abstract type AbstractDictionary{I, T} <: AbstractDict{I, T}; end
 abstract type AbstractIndices{I} <: AbstractDictionary{I, I}; end
 
 Base.eltype(d::AbstractDictionary) = eltype(typeof(d))
