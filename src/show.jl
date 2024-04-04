@@ -246,24 +246,7 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
 end
 
 function shrink_to!(strs, width)
-    for i in keys(strs)
-        str = strs[i]
-        if textwidth(str) > width
-            new_str = ""
-            w = 0
-            for c in str
-                new_w = textwidth(c)
-                if new_w + w < width
-                    new_str = new_str * c
-                    w += new_w
-                else
-                    new_str = new_str * "…"
-                    break
-                end
-            end
-            strs[i] = new_str
-        end
-    end
+    strs .= Base._truncate_at_width_or_chars(true, strs, width)
 end
 
 # TODO fix `repr`
