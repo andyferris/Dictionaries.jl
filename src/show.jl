@@ -246,7 +246,11 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
 end
 
 function shrink_to!(strs, width)
-    strs .= Base._truncate_at_width_or_chars.(true, strs, width)
+    @static if VERSION >= v"1.9"
+      strs .= Base._truncate_at_width_or_chars.(true, strs, width)
+    else
+      strs .= Base._truncate_at_width_or_chars.(strs, width)
+    end
 end
 
 # TODO fix `repr`
