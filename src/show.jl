@@ -1,6 +1,6 @@
 # Simple "print"-like rendering, use "{ ... }" brackets for compactness
 function Base.show(io::IO, inds::AbstractIndices)
-    limit = get(io, :limit, false) ? Int64(10) : typemax(Int64)
+    limit = get(io, :limit, false) ? Int(10) : typemax(Int)
     comma = false
     print(io, "{")
     for i in inds
@@ -19,7 +19,7 @@ function Base.show(io::IO, inds::AbstractIndices)
 end
 
 function Base.show(io::IO, d::AbstractDictionary)
-    limit = get(io, :limit, false) ? Int64(10) : typemax(Int64)
+    limit = get(io, :limit, false) ? Int(10) : typemax(Int)
     comma = false
     print(io, "{")
     for i in keys(d)
@@ -52,16 +52,16 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractIndices)
 
     # Designed to be efficient for very large sets of unknown lengths
 
-    n_lines = max(Int64(3), get(io, :limit, false) ? Int64(displaysize(io)[1] - 4) : typemax(Int64))
-    n_cols = max(Int64(2), get(io, :limit, false) ? Int64(displaysize(io)[2] - 1) : typemax(Int64))
-    n_lines_top = n_lines ÷ Int64(2)
+    n_lines = max(Int(3), get(io, :limit, false) ? Int(displaysize(io)[1] - 4) : typemax(Int))
+    n_cols = max(Int(2), get(io, :limit, false) ? Int(displaysize(io)[2] - 1) : typemax(Int))
+    n_lines_top = n_lines ÷ Int(2)
     n_lines_bottom = n_lines - n_lines_top
 
     # First we collect strings of all the relevant elements
     top_ind_strs = Vector{String}()
     bottom_ind_strs = Vector{String}()
 
-    top_lines = Int64(1)
+    top_lines = Int(1)
     top_full = false
     top_last_index = Base.RefValue{keytype(d)}()
     for i in keys(d)
@@ -74,7 +74,7 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractIndices)
         end
     end
 
-    bottom_lines = Int64(1)
+    bottom_lines = Int(1)
     bottom_full = false
     if top_full
         for i in Iterators.reverse(keys(d))
@@ -135,9 +135,9 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
 
     # Designed to be efficient for very large sets of unknown lengths
 
-    n_lines = max(Int64(3), get(io, :limit, false) ? Int64(displaysize(io)[1] - 4) : typemax(Int64))
-    n_cols = max(Int64(8), get(io, :limit, false) ? Int64(displaysize(io)[2] - 4) : typemax(Int64))
-    n_lines_top = n_lines ÷ Int64(2)
+    n_lines = max(Int(3), get(io, :limit, false) ? Int(displaysize(io)[1] - 4) : typemax(Int))
+    n_cols = max(Int(8), get(io, :limit, false) ? Int(displaysize(io)[2] - 4) : typemax(Int))
+    n_lines_top = n_lines ÷ Int(2)
     n_lines_bottom = n_lines - n_lines_top
 
     # First we collect strings of all the relevant elements
@@ -146,7 +146,7 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
     bottom_val_strs = Vector{String}()
     bottom_ind_strs = Vector{String}()
 
-    top_lines = Int64(1)
+    top_lines = Int(1)
     top_full = false
     top_last_index = Base.RefValue{keytype(d)}()
     for i in keys(d)
@@ -164,7 +164,7 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
         end
     end
 
-    bottom_lines = Int64(1)
+    bottom_lines = Int(1)
     bottom_full = false
     if top_full
         for i in Iterators.reverse(keys(d))
