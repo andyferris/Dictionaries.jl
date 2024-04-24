@@ -207,7 +207,7 @@ end
         error("Cannot mutate values of dictionary: $(typeof(d))")
     end
     if istokenizable(d)
-        error("settoken! needs to be defined for settable, tokenizable dictionary: $(typeof(d))")
+        error("settokenvalue! needs to be defined for settable, tokenizable dictionary: $(typeof(d))")
     end
 
     return d[i] = value
