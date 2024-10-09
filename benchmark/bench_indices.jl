@@ -6,8 +6,8 @@ using OrderedCollections
 
 const suite = BenchmarkGroup()
 
-#sizes = [10, 100, 1000, 10_000]
-sizes = [10_000]
+sizes = [10, 100, 1000, 10_000]
+#sizes = [10_000]
 cutoff = 101
 
 function build_vector_by_insertion(n)
@@ -388,7 +388,7 @@ for n in sizes
 
     suite_n = suite["$n"] = BenchmarkGroup()
 
-    s = suite_n["constructor ($n)"] = BenchmarkGroup()
+    s = suite_n["constructor"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable Vector($r))
     s["Set"] = @benchmarkable Set($r)
     s["OrderedSet"] = @benchmarkable OrderedSet($r)
@@ -396,7 +396,7 @@ for n in sizes
     s["Indices"] = @benchmarkable Indices($r)
     s["UnorderedIndices"] = @benchmarkable UnorderedIndices($r)
 
-    s = suite_n["build by insertion ($n)"] = BenchmarkGroup()
+    s = suite_n["build by insertion"] = BenchmarkGroup()
     n < cutoff && (s["Vector (push!)"] = @benchmarkable build_set_by_insertion($n))
     s["Set"] = @benchmarkable build_set_by_insertion($n)
     s["OrderedSet"] = @benchmarkable build_ordered_set_by_insertion($n)
@@ -404,7 +404,7 @@ for n in sizes
     s["Indices"] = @benchmarkable build_hashindices_by_insertion($n)
     s["UnorderedIndices"] = @benchmarkable build_old_hashindices_by_insertion($n)
 
-    s = suite_n["copy ($n)"] = BenchmarkGroup()
+    s = suite_n["copy"] = BenchmarkGroup()
     n < cutoff && (s["Vector (pop!)"] = @benchmarkable copy($vec))
     s["Set"] = @benchmarkable copy($set)
     s["OrderedSet"] = @benchmarkable copy($ordered_set)
@@ -412,7 +412,7 @@ for n in sizes
     s["Indices"] = @benchmarkable copy($hash_indices)
     s["UnorderedIndices"] = @benchmarkable copy($unordered_indices)
 
-    s = suite_n["copy and empty by deletion ($n)"] = BenchmarkGroup()
+    s = suite_n["copy and empty by deletion"] = BenchmarkGroup()
     n < cutoff && (s["Vector (pop!)"] = @benchmarkable empty_by_deletion(copy($vec), $n))
     s["Set"] = @benchmarkable empty_by_deletion(copy($set), $n)
     s["OrderedSet"] = @benchmarkable empty_by_deletion(copy($ordered_set), $n)
@@ -420,45 +420,45 @@ for n in sizes
     s["Indices"] = @benchmarkable empty_by_deletion(copy($hash_indices), $n)
     s["UnorderedIndices"] = @benchmarkable empty_by_deletion(copy($unordered_indices), $n)
 
-    s = suite_n["insertion/deletion tests ($n)"] = BenchmarkGroup()
+    s = suite_n["insertion/deletion tests"] = BenchmarkGroup()
     s["Set"] = @benchmarkable basic_set_test($n)
     s["OrderedSet"] = @benchmarkable basic_ordered_set_test($n)
     n < cutoff && (s["ArrayIndices"] = @benchmarkable basic_indices_test($n))
     s["Indices"] = @benchmarkable basic_hash_indices_test($n)
     s["UnorderedIndices"] = @benchmarkable basic_unordered_indices_test($n)
 
-    s = suite_n["insertion/deletion tests ($n)"] = BenchmarkGroup()
+    s = suite_n["insertion/deletion tests"] = BenchmarkGroup()
     s["Set"] = @benchmarkable basic_set_test($n)
     s["OrderedSet"] = @benchmarkable basic_ordered_set_test($n)
     n < cutoff && (s["ArrayIndices"] = @benchmarkable basic_indices_test($n))
     s["Indices"] = @benchmarkable basic_hash_indices_test($n)
     s["UnorderedIndices"] = @benchmarkable basic_unordered_indices_test($n)
 
-    s = suite_n["unique/distinct (high uniqueness, unsorted) ($n)"] = BenchmarkGroup()
+    s = suite_n["unique/distinct (high uniqueness, unsorted)"] = BenchmarkGroup()
     s["Vector (unique)"] = @benchmarkable unique($mostly_unique)
     s["Set"] = @benchmarkable Set($mostly_unique)
     s["OrderedSet"] = @benchmarkable OrderedSet($mostly_unique)
     s["Indices (distinct)"] = @benchmarkable distinct($mostly_unique)
 
-    s = suite_n["unique/distinct (high uniqueness, sorted) ($n)"] = BenchmarkGroup()
+    s = suite_n["unique/distinct (high uniqueness, sorted)"] = BenchmarkGroup()
     s["Vector (unique)"] = @benchmarkable unique($sorted_mostly_unique)
     s["Set"] = @benchmarkable Set($sorted_mostly_unique)
     s["OrderedSet"] = @benchmarkable OrderedSet($sorted_mostly_unique)
     s["Indices"] = @benchmarkable distinct($sorted_mostly_unique)
 
-    s = suite_n["unique/distinct (low uniqueness, unsorted) ($n)"] = BenchmarkGroup()
+    s = suite_n["unique/distinct (low uniqueness, unsorted)"] = BenchmarkGroup()
     s["Vector (unique)"] = @benchmarkable unique($rarely_unique)
     s["Set"] = @benchmarkable Set($rarely_unique)
     s["OrderedSet"] = @benchmarkable OrderedSet($rarely_unique)
     s["Indices"] = @benchmarkable distinct($rarely_unique)
 
-    s = suite_n["unique/distinct (low uniqueness, sorted) ($n)"] = BenchmarkGroup()
+    s = suite_n["unique/distinct (low uniqueness, sorted)"] = BenchmarkGroup()
     s["Vector (unique)"] = @benchmarkable unique($sorted_rarely_unique)
     s["Set"] = @benchmarkable Set($sorted_rarely_unique)
     s["OrderedSet"] = @benchmarkable OrderedSet($sorted_rarely_unique)
     s["Indices"] = @benchmarkable distinct($sorted_rarely_unique)
 
-    s = suite_n["in ($n)"] = BenchmarkGroup()
+    s = suite_n["in"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable all_in($vec, $n))
     s["Set"] = @benchmarkable all_in($set, $n)
     s["OrderedSet"] = @benchmarkable all_in($ordered_set, $n)
@@ -466,7 +466,7 @@ for n in sizes
     s["Indices"] = @benchmarkable all_in($hash_indices, $n)
     s["UnorderedIndices"] = @benchmarkable all_in($unordered_indices, $n)
 
-    s = suite_n["not in ($n)"] = BenchmarkGroup()
+    s = suite_n["not in"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable not_in($vec, $n))
     s["Set"] = @benchmarkable not_in($set, $n)
     s["OrderedSet"] = @benchmarkable not_in($ordered_set, $n)
@@ -474,7 +474,7 @@ for n in sizes
     s["Indices"] = @benchmarkable not_in($hash_indices, $n)
     s["UnorderedIndices"] = @benchmarkable not_in($unordered_indices, $n)
 
-    s = suite_n["count ($n)"] = BenchmarkGroup()
+    s = suite_n["count"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable count(iseven, $vec))
     s["Set"] = @benchmarkable count(iseven, $set)
     s["OrderedSet"] = @benchmarkable count(iseven, $ordered_set)
@@ -482,7 +482,7 @@ for n in sizes
     s["Indices"] = @benchmarkable count(iseven, $hash_indices)
     s["UnorderedIndices"] = @benchmarkable count(iseven, $unordered_indices)
 
-    s = suite_n["sum ($n)"] = BenchmarkGroup()
+    s = suite_n["sum"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable sum($vec))
     s["Set"] = @benchmarkable sum($set)
     s["OrderedSet"] = @benchmarkable sum($ordered_set)
@@ -490,7 +490,7 @@ for n in sizes
     s["Indices"] = @benchmarkable sum($hash_indices)
     s["UnorderedIndices"] = @benchmarkable sum($unordered_indices)
 
-    s = suite_n["foreach ($n)"] = BenchmarkGroup()
+    s = suite_n["foreach"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable foreachsum($vec))
     s["Set"] = @benchmarkable foreachsum($set)
     s["OrderedSet"] = @benchmarkable foreachsum($ordered_set)
@@ -498,7 +498,7 @@ for n in sizes
     s["Indices"] = @benchmarkable foreachsum($hash_indices)
     s["UnorderedIndices"] = @benchmarkable foreachsum($unordered_indices)
 
-    s = suite_n["filter-map-reduce via generator ($n)"] = BenchmarkGroup()
+    s = suite_n["filter-map-reduce via generator"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable sum($(2x for x in vec if isodd(x))))
     s["Set"] = @benchmarkable sum($(2x for x in set if isodd(x)))
     s["OrderedSet"] = @benchmarkable sum($(2x for x in ordered_set if isodd(x)))
@@ -506,7 +506,7 @@ for n in sizes
     s["Indices"] = @benchmarkable sum($(2x for x in hash_indices if isodd(x)))
     s["UnorderedIndices"] = @benchmarkable sum($(2x for x in unordered_indices if isodd(x)))
 
-    s = suite_n["filter (most) ($n)"] = BenchmarkGroup()
+    s = suite_n["filter (most)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable filter($pred1, $vec))
     s["Set"] = @benchmarkable filter($pred1, $set)
     s["OrderedSet"] = @benchmarkable filter($pred1, $ordered_set)
@@ -514,7 +514,7 @@ for n in sizes
     s["Indices"] = @benchmarkable filter($pred1, $hash_indices)
     s["UnorderedIndices"] = @benchmarkable filter($pred1, $unordered_indices)
 
-    s = suite_n["filter (half) ($n)"] = BenchmarkGroup()
+    s = suite_n["filter (half)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable filter(iseven, $vec))
     s["Set"] = @benchmarkable filter(iseven, $set)
     s["OrderedSet"] = @benchmarkable filter(iseven, $ordered_set)
@@ -522,7 +522,7 @@ for n in sizes
     s["Indices"] = @benchmarkable filter(iseven, $hash_indices)
     s["UnorderedIndices"] = @benchmarkable filter(iseven, $unordered_indices)
 
-    s = suite_n["filter (few) ($n)"] = BenchmarkGroup()
+    s = suite_n["filter (few)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable filter($pred2, $vec))
     s["Set"] = @benchmarkable filter($pred2, $set)
     s["OrderedSet"] = @benchmarkable filter($pred2, $ordered_set)
@@ -530,7 +530,7 @@ for n in sizes
     s["Indices"] = @benchmarkable filter($pred2, $hash_indices)
     s["UnorderedIndices"] = @benchmarkable filter($pred2, $unordered_indices)
 
-    s = suite_n["copy and filter! (most) ($n)"] = BenchmarkGroup()
+    s = suite_n["copy and filter! (most)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable filter!($pred1, copy($vec)))
     s["Set"] = @benchmarkable filter!($pred1, copy($set))
     s["OrderedSet"] = @benchmarkable filter!($pred1, copy($ordered_set))
@@ -538,7 +538,7 @@ for n in sizes
     s["Indices"] = @benchmarkable filter!($pred1, copy($hash_indices))
     s["UnorderedIndices"] = @benchmarkable filter!($pred1, copy($unordered_indices))
 
-    s = suite_n["copy and filter! (half) ($n)"] = BenchmarkGroup()
+    s = suite_n["copy and filter! (half)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable filter!(iseven, copy($vec)))
     s["Set"] = @benchmarkable filter!(iseven, copy($set))
     s["OrderedSet"] = @benchmarkable filter!(iseven, copy($ordered_set))
@@ -546,7 +546,7 @@ for n in sizes
     s["Indices"] = @benchmarkable filter!(iseven, copy($hash_indices))
     s["UnorderedIndices"] = @benchmarkable filter!(iseven, copy($unordered_indices))
 
-    s = suite_n["copy and filter! (few) ($n)"] = BenchmarkGroup()
+    s = suite_n["copy and filter! (few)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable filter!($pred2, copy($vec)))
     s["Set"] = @benchmarkable filter!($pred2, copy($set))
     s["OrderedSet"] = @benchmarkable filter!($pred2, copy($ordered_set))
@@ -554,7 +554,7 @@ for n in sizes
     s["Indices"] = @benchmarkable filter!($pred2, copy($hash_indices))
     s["UnorderedIndices"] = @benchmarkable filter!($pred2, copy($unordered_indices))
 
-    s = suite_n["union ($n)"] = BenchmarkGroup()
+    s = suite_n["union"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable union($even_vec, $odd_vec))
     s["Set"] = @benchmarkable union($even_set, $odd_set)
     s["OrderedSet"] = @benchmarkable union($even_ordered_set, $odd_ordered_set)
@@ -562,7 +562,7 @@ for n in sizes
     s["Indices"] = @benchmarkable union($even_hash_indices, $odd_hash_indices)
     s["UnorderedIndices"] = @benchmarkable union($even_unordered_indices, $odd_unordered_indices)
 
-    s = suite_n["intersect (empty) ($n)"] = BenchmarkGroup()
+    s = suite_n["intersect (empty)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable intersect($even_vec, $odd_vec))
     s["Set"] = @benchmarkable intersect($even_set, $odd_set)
     s["OrderedSet"] = @benchmarkable intersect($even_ordered_set, $odd_ordered_set)
@@ -570,7 +570,7 @@ for n in sizes
     s["Indices"] = @benchmarkable intersect($even_hash_indices, $odd_hash_indices)
     s["UnorderedIndices"] = @benchmarkable intersect($even_unordered_indices, $odd_unordered_indices)
 
-    s = suite_n["intersect (half) ($n)"] = BenchmarkGroup()
+    s = suite_n["intersect (half)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable intersect($even_vec, $vec))
     s["Set"] = @benchmarkable intersect($even_set, $set)
     s["OrderedSet"] = @benchmarkable intersect($even_ordered_set, $ordered_set)
@@ -578,7 +578,7 @@ for n in sizes
     s["Indices"] = @benchmarkable intersect($even_hash_indices, $hash_indices)
     s["UnorderedIndices"] = @benchmarkable intersect($even_unordered_indices, $unordered_indices)
 
-    s = suite_n["intersect (whole) ($n)"] = BenchmarkGroup()
+    s = suite_n["intersect (whole)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable intersect($vec, $vec))
     s["Set"] = @benchmarkable intersect($set, $set)
     s["OrderedSet"] = @benchmarkable intersect($ordered_set, $ordered_set)
@@ -586,7 +586,7 @@ for n in sizes
     s["Indices"] = @benchmarkable intersect($hash_indices, $hash_indices)
     s["UnorderedIndices"] = @benchmarkable intersect($unordered_indices, $unordered_indices)
 
-    s = suite_n["setdiff (whole) ($n)"] = BenchmarkGroup()
+    s = suite_n["setdiff (whole)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable setdiff($even_vec, $odd_vec))
     s["Set"] = @benchmarkable setdiff($even_set, $odd_set)
     s["OrderedSet"] = @benchmarkable setdiff($even_ordered_set, $odd_ordered_set)
@@ -594,7 +594,7 @@ for n in sizes
     s["Indices"] = @benchmarkable setdiff($even_hash_indices, $odd_hash_indices)
     s["UnorderedIndices"] = @benchmarkable setdiff($even_unordered_indices, $odd_unordered_indices)
 
-    s = suite_n["setdiff (half) ($n)"] = BenchmarkGroup()
+    s = suite_n["setdiff (half)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable setdiff($even_vec, $vec))
     s["Set"] = @benchmarkable setdiff($even_set, $set)
     s["OrderedSet"] = @benchmarkable setdiff($even_ordered_set, $ordered_set)
@@ -602,7 +602,7 @@ for n in sizes
     s["Indices"] = @benchmarkable setdiff($even_hash_indices, $hash_indices)
     s["UnorderedIndices"] = @benchmarkable setdiff($even_unordered_indices, $unordered_indices)
 
-    s = suite_n["setdiff (empty) ($n)"] = BenchmarkGroup()
+    s = suite_n["setdiff (empty)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable setdiff($vec, $vec))
     s["Set"] = @benchmarkable setdiff($set, $set)
     s["OrderedSet"] = @benchmarkable setdiff($ordered_set, $ordered_set)
@@ -610,7 +610,7 @@ for n in sizes
     s["Indices"] = @benchmarkable setdiff($hash_indices, $hash_indices)
     s["UnorderedIndices"] = @benchmarkable setdiff($unordered_indices, $unordered_indices)
 
-    s = suite_n["symdiff (whole) ($n)"] = BenchmarkGroup()
+    s = suite_n["symdiff (whole)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable symdiff($even_vec, $odd_vec))
     s["Set"] = @benchmarkable symdiff($even_set, $odd_set)
     s["OrderedSet"] = @benchmarkable symdiff($even_ordered_set, $odd_ordered_set)
@@ -618,7 +618,7 @@ for n in sizes
     s["Indices"] = @benchmarkable symdiff($even_hash_indices, $odd_hash_indices)
     s["UnorderedIndices"] = @benchmarkable symdiff($even_unordered_indices, $odd_unordered_indices)
 
-    s = suite_n["symdiff (left half) ($n)"] = BenchmarkGroup()
+    s = suite_n["symdiff (left half)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable symdiff($vec, $odd_vec))
     s["Set"] = @benchmarkable symdiff($set, $odd_set)
     s["OrderedSet"] = @benchmarkable symdiff($ordered_set, $odd_ordered_set)
@@ -626,7 +626,7 @@ for n in sizes
     s["Indices"] = @benchmarkable symdiff($hash_indices, $odd_hash_indices)
     s["UnorderedIndices"] = @benchmarkable symdiff($unordered_indices, $odd_unordered_indices)
 
-    s = suite_n["symdiff (right half) ($n)"] = BenchmarkGroup()
+    s = suite_n["symdiff (right half)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable symdiff($even_vec, $vec))
     s["Set"] = @benchmarkable symdiff($even_set, $set)
     s["OrderedSet"] = @benchmarkable symdiff($even_ordered_set, $ordered_set)
@@ -634,7 +634,7 @@ for n in sizes
     s["Indices"] = @benchmarkable symdiff($even_hash_indices, $hash_indices)
     s["UnorderedIndices"] = @benchmarkable symdiff($even_unordered_indices, $unordered_indices)
 
-    s = suite_n["symdiff (empty) ($n)"] = BenchmarkGroup()
+    s = suite_n["symdiff (empty)"] = BenchmarkGroup()
     n < cutoff && (s["Vector"] = @benchmarkable symdiff($vec, $vec))
     s["Set"] = @benchmarkable symdiff($set, $set)
     s["OrderedSet"] = @benchmarkable symdiff($ordered_set, $ordered_set)
