@@ -392,7 +392,7 @@ See also `sort`, `sortkeys!` and `sortpairs!`.
 function Base.sort!(dict::Dictionary; kwargs...)
     inds = keys(dict)
     if inds.holes != 0
-        rehash!(inds, length(inds.slots))
+        rehash!(inds, length(inds.slots), (dict.values,))
     end
     perm = sortperm(dict.values; kwargs...)
     iperm = invperm(perm)
@@ -421,7 +421,7 @@ See also `sortkeys`, `sort!` and `sortpairs!`.
 function sortkeys!(dict::Dictionary; kwargs...)
     inds = keys(dict)
     if inds.holes != 0
-        rehash!(inds, length(inds.slots))
+        rehash!(inds, length(inds.slots), (dict.values,))
     end
     perm = sortperm(inds.values; kwargs...)
     iperm = invperm(perm)
@@ -448,7 +448,7 @@ See also `sortpairs`,`sort!` and `sortkeys!`.
 function sortpairs!(dict::Dictionary; by = identity, kwargs...)
     inds = keys(dict)
     if inds.holes != 0
-        rehash!(inds, length(inds.slots))
+        rehash!(inds, length(inds.slots), (dict.values,))
     end
     vals = dict.values
     inds_vals = inds.values
