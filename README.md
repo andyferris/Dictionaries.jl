@@ -5,17 +5,17 @@
 ![Test Status](https://github.com/andyferris/Dictionaries.jl/workflows/Test/badge.svg)
 [![Codecov](https://codecov.io/gh/andyferris/Dictionaries.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/andyferris/Dictionaries.jl)
 
-This package is somewhat young - new features are being added and some (low-level) interfaces may be tweaked in the future, but things should be stable enough for general usage. Contributions welcome - please submit an issue or PR!
+This package is somewhat young – new features are being added and some (low-level) interfaces may be tweaked in the future, but things should be stable enough for general usage. Contributions welcome – please submit an issue or PR!
 
 ## Motivation
 
-The high-level goal of this package is to define a new interface for dictionary and set structures which is convenient and efficient for functional data manipulation - including operations such as non-scalar indexing, broadcasting, mapping, filtering, reducing, grouping, and so-on. While Julia comes with built-in `AbstractDict` and `AbstractSet` supertypes, the interfaces for these are not as well established or generic as for `AbstractArray`, the built-in dictionaries implement less of the common data manipulation operations compared to arrays, and it is difficult to work with them in a performant manner.
+The high-level goal of this package is to define a new interface for dictionary and set structures which is convenient and efficient for functional data manipulation – including operations such as non-scalar indexing, broadcasting, mapping, filtering, reducing, grouping, and so-on. While Julia comes with built-in `AbstractDict` and `AbstractSet` supertypes, the interfaces for these are not as well established or generic as for `AbstractArray`, the built-in dictionaries implement less of the common data manipulation operations compared to arrays, and it is difficult to work with them in a performant manner.
 
 In this package we aim to devise a cohesive interface for abstract dictionaries (or associative maps), having the common supertype `AbstractDictionary`. A large part of this is working with indices (of arbitrary type) as well as convenient and efficient iteration of the containers. A second goal is to make dictionary manipulation more closely resemble array manipulation, to make it easier for users. Simultaneously, we are pushing the performance of working with dictionaries to be closer to that of working with arrays.
 
 ## Getting started
 
-Dictionaries share the common supertype `AbstractDictionary`, and the go-to container in this package is `Dictionary` - which is a new hash-based implementation that serves as a replacement of Julia's inbuilt `Dict` type (using `hash` and `isequal` for key lookup and comparison). The three main difference to `Dict` are that it preserves the order of elements, it iterates much faster, and it iterates values rather than key-value pairs.
+Dictionaries share the common supertype `AbstractDictionary`, and the go-to container in this package is `Dictionary` – which is a new hash-based implementation that serves as a replacement of Julia's inbuilt `Dict` type (using `hash` and `isequal` for key lookup and comparison). The three main difference to `Dict` are that it preserves the order of elements, it iterates much faster, and it iterates values rather than key-value pairs.
 
 ### Constructing dictionaries
 
@@ -89,7 +89,7 @@ Stacktrace:
  [2] top-level scope at REPL[7]:1
 ```
 
-The indices of `Dictionary` are said to be "insertable" - indices can be added or removed with the `insert!` and `delete!` functions.
+The indices of `Dictionary` are said to be "insertable" – indices can be added or removed with the `insert!` and `delete!` functions.
 
 ```
 julia> insert!(dict, "d", 42)
@@ -251,7 +251,7 @@ julia> inds["b"]
 
 Thus, if you iterate an `AbstractIndices` you are guaranteed never to get the same value twice, and the collection is a set. All the usual set operations like `union`, `intersect`, `setdiff` and `symdiff` are defined, as well as a newly exported predicate function `disjoint(set1, set2)` which returns `true` if `set1` and `set2` do not intersect/overlap according to an elementwise `isequal` check, and `false` otherwise (note that `Dictionaries.disjoint` is deprecated in favour of `Base.isdisjoint` in Julia 1.5 onwards).
 
-Since all dictionaries have `keys`, even indices must have `keys` - and in this case `keys(inds::AbstractIndices) === inds`.
+Since all dictionaries have `keys`, even indices must have `keys` – and in this case `keys(inds::AbstractIndices) === inds`.
 
 ### Working with indices
 
@@ -332,11 +332,11 @@ julia> getindices(dict, findall(isodd.(dict)))
  "c" │ 3
 ```
 
-(Who knows - maybe we need syntax for this, too?)
+(Who knows – maybe we need syntax for this, too?)
 
 ### Other dictionary types
 
-The `UnorderedDictionary` container is another hash-based dictionary, but unlike `Dictionary` the order of elements is not defined. Internally, it has a slightly optimized version of the implementation of the `Dict` built into Julia, but supports the `AbstractDictionary` interface as well as tokens. It can be a bit faster than `Dictionary` for workloads focussing on insertion and deletion - such as when building a cache where iteration order and speed are unimportant.
+The `UnorderedDictionary` container is another hash-based dictionary, but unlike `Dictionary` the order of elements is not defined. Internally, it has a slightly optimized version of the implementation of the `Dict` built into Julia, but supports the `AbstractDictionary` interface as well as tokens. It can be a bit faster than `Dictionary` for workloads focussing on insertion and deletion – such as when building a cache where iteration order and speed are unimportant.
 
 The `ArrayDictionary` container is a simple, iteration-based dictionary that may be faster for smaller collections. It's `keys` are the corresponding `ArrayIndices` type. By default these contain `Vector`s which support mutation, insertion and tokenization, but they can contain other arrays such as [`SVector`](https://github.com/JuliaArrays/StaticArrays.jl)s (which make for good statically-sized dictionaries, with similarities with `Base.ImmutableDict`).
 
@@ -358,7 +358,7 @@ julia> similar(dict, Vector{Int})
  "c" │ #undef
 ```
 
-The behaviour is the same if `dict` is an `AbstractIndices` - you always get a dictionary with settable/mutable elements. Preserving the indices using `similar` and setting the values provides a huge performance advantage compared to iteratively constructing a new dictionary via insertion (see the bottom of this README).
+The behaviour is the same if `dict` is an `AbstractIndices` – you always get a dictionary with settable/mutable elements. Preserving the indices using `similar` and setting the values provides a huge performance advantage compared to iteratively constructing a new dictionary via insertion (see the bottom of this README).
 
 On the other hand, values can be initialized with the `fill(value, dict)` function.
 
@@ -396,7 +396,7 @@ julia> zeros(UInt8, dict)
  "c" │ 0x00
 ```
 
-Note that the *indices* of the output are not guaranteed to be mutable/insertable - in fact, in the current implementation inserting or deleting indices to the output of the above can corrupt the input container (Julia suffers similar restrictions with `AbstractArray`s with mutable indices, for example changing the size of the indices of a `SubArray` can lead to corruption and segfaults). This also holds true for the output of `map`, `broadcast`, `getindices`, `similar`, `zeros`, `ones`, `falses` and `trues`. If you want a new container with indices you can insert, by sure to `copy` the indices first, or use `empty` instead.
+Note that the *indices* of the output are not guaranteed to be mutable/insertable – in fact, in the current implementation inserting or deleting indices to the output of the above can corrupt the input container (Julia suffers similar restrictions with `AbstractArray`s with mutable indices, for example changing the size of the indices of a `SubArray` can lead to corruption and segfaults). For efficiency, the indices (the keys and hashmap, etc) are often not copied when creating a new dictionary – instead multiple references may be held to the same indices. This also holds true for the output of `map`, `broadcast`, `getindices`, `similar`, `zeros`, `ones`, `falses` and `trues`. If you want a new container with indices you can insert, by sure to `copy` the indices first, or use `empty` instead.
 
 #### Empty, insertable dictionaries indices
 
@@ -404,7 +404,7 @@ The `empty` function will create an insertable container which is "similar" to t
 
  * `empty(x, I)` constructs an empty indices (whether `x` is a dictionary or indices).
  * `empty(x, I, T)` constructs an empty dictionary (whether `x` is a dictionary or indices).
- * `empty(x)` constructs an empty container - indices if `x` are indices, and a dictionary if `x` is a dictionary.
+ * `empty(x)` constructs an empty container – indices if `x` are indices, and a dictionary if `x` is a dictionary.
 
 ## Types, interfaces and traits
 
@@ -450,7 +450,7 @@ Many dictionary types support setting or mutating the the *values* of the elemen
 
 The `issettable` function is a trait function that indicate whether an `AbstractDictionary` supports `setindex!`.
 
-Because the idempotency property of `AbstractIndices`, indices always have immutable values - but indices can be inserted or deleted (see below).
+Because the idempotency property of `AbstractIndices`, indices always have immutable values – but indices can be inserted or deleted (see below).
 
 ### Insertion and deletion
 
@@ -467,8 +467,8 @@ The `insert!` and `delete!` always create or remove indices. Calling `insert!` w
 `AbstractIndices` may also be insertable, by implementing:
 
  * `isinsertable(indices)` (returning `true`)
- * `insert!(indices, i)` - add new index `i` to `indices` (will error if index exists)
- * `delete!(indices, i)` - remove an existing index `i` from `indices` (will error if index does not exist).
+ * `insert!(indices, i)` – add new index `i` to `indices` (will error if index exists)
+ * `delete!(indices, i)` – remove an existing index `i` from `indices` (will error if index does not exist).
 
 The `set!` and `unset!` functions behave as expected, as do `union!`, `intersect!`, `setdiff!` and `symdiff!`. Since indices iterate values, the `filter!` function can programmatically trim back a set of indices.
 
