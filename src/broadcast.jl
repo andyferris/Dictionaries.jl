@@ -127,7 +127,7 @@ function Base.Broadcast.broadcasted(::DictionaryStyle, f, args...)
     return BroadcastedDictionary(f, args)
 end
 
-Base.Broadcast.materialize(d::BroadcastedDictionary) = copy(d)
+Base.Broadcast.materialize(d::BroadcastedDictionary) = copyto!(similar(d, eltype(d)), d)
 Base.Broadcast.materialize!(out::AbstractDictionary, d::BroadcastedDictionary) = copyto!(out, d)
 
 Base.Broadcast.materialize!(out::AbstractDictionary, bc::Base.Broadcast.Broadcasted{Base.Broadcast.DefaultArrayStyle{0}, Nothing, typeof(identity)}) = fill!(out, bc.args[1][])
