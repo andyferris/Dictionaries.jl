@@ -261,7 +261,7 @@ function dict_summary(io::IO, dict)
     if Base.IteratorSize(dict) === Base.SizeUnknown()
         print(io, typeof(dict))
     else
-        print(io, length(d), "-element ", typeof(dict))
+        print(io, length(dict), "-element ", typeof(dict))
     end
 end
 
