@@ -253,4 +253,14 @@ function shrink_to!(strs, width)
     end
 end
 
+Base.summary(io::IO, dict::AbstractDictionary) = dict_summary(io, dict)
+
+function dict_summary(io::IO, dict)
+    if Base.IteratorSize(dict) === Base.SizeUnknown()
+        print(io, typeof(dict))
+    else
+        print(io, length(d), "-element ", typeof(dict))
+    end
+end
+
 # TODO fix `repr`
