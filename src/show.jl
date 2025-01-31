@@ -106,12 +106,12 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractIndices)
 
     if Base.IteratorSize(d) === Base.SizeUnknown()
         if bottom_full
-            print(io, "Greater than $(length(ind_strs))-element $(typeof(d))")
+            print(io, "Greater than $(length(ind_strs))-element $(typeof(d)):")
         else
-            print(io, "$(length(ind_strs))-element $(typeof(d))")
+            print(io, "$(length(ind_strs))-element $(typeof(d)):")
         end
     else
-        print(io, "$(length(d))-element $(typeof(d))")
+        print(io, "$(length(d))-element $(typeof(d)):")
     end
 
     # Now find padding sizes
@@ -205,12 +205,12 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
 
     if Base.IteratorSize(d) === Base.SizeUnknown()
         if bottom_full
-            print(io, "Greater than $(length(ind_strs))-element $(typeof(d))")
+            print(io, "Greater than $(length(ind_strs))-element $(typeof(d)):")
         else
-            print(io, "$(length(ind_strs))-element $(typeof(d))")
+            print(io, "$(length(ind_strs))-element $(typeof(d)):")
         end
     else
-        print(io, "$(length(d))-element $(typeof(d))")
+        print(io, "$(length(d))-element $(typeof(d)):")
     end
 
     # Now find padding sizes
