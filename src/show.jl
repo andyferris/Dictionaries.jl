@@ -111,7 +111,8 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractIndices)
             print(io, "$(length(ind_strs))-element $(typeof(d)):")
         end
     else
-        print(io, "$(length(d))-element $(typeof(d)):")
+        summary(io, d)
+        print(io, ":")
     end
 
     # Now find padding sizes
@@ -210,7 +211,8 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
             print(io, "$(length(ind_strs))-element $(typeof(d)):")
         end
     else
-        print(io, "$(length(d))-element $(typeof(d)):")
+        summary(io, d)
+        print(io, ":")
     end
 
     # Now find padding sizes
