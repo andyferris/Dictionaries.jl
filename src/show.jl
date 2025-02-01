@@ -106,12 +106,13 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractIndices)
 
     if Base.IteratorSize(d) === Base.SizeUnknown()
         if bottom_full
-            print(io, "Greater than $(length(ind_strs))-element $(typeof(d))")
+            print(io, "Greater than $(length(ind_strs))-element $(typeof(d)):")
         else
-            print(io, "$(length(ind_strs))-element $(typeof(d))")
+            print(io, "$(length(ind_strs))-element $(typeof(d)):")
         end
     else
-        print(io, "$(length(d))-element $(typeof(d))")
+        summary(io, d)
+        print(io, ":")
     end
 
     # Now find padding sizes
@@ -205,12 +206,13 @@ function Base.show(io::IO, ::MIME"text/plain", d::AbstractDictionary)
 
     if Base.IteratorSize(d) === Base.SizeUnknown()
         if bottom_full
-            print(io, "Greater than $(length(ind_strs))-element $(typeof(d))")
+            print(io, "Greater than $(length(ind_strs))-element $(typeof(d)):")
         else
-            print(io, "$(length(ind_strs))-element $(typeof(d))")
+            print(io, "$(length(ind_strs))-element $(typeof(d)):")
         end
     else
-        print(io, "$(length(d))-element $(typeof(d))")
+        summary(io, d)
+        print(io, ":")
     end
 
     # Now find padding sizes
@@ -250,6 +252,16 @@ function shrink_to!(strs, width)
       strs .= Base._truncate_at_width_or_chars.(true, strs, width)
     else
       strs .= Base._truncate_at_width_or_chars.(strs, width)
+    end
+end
+
+Base.summary(io::IO, dict::AbstractDictionary) = dict_summary(io, dict)
+
+function dict_summary(io::IO, dict)
+    if Base.IteratorSize(dict) === Base.SizeUnknown()
+        print(io, typeof(dict))
+    else
+        print(io, length(dict), "-element ", typeof(dict))
     end
 end
 

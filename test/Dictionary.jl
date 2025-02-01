@@ -101,7 +101,7 @@
     d[10.0] = 13.0
     @test d[10] == 13
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 = 13}"
-    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64, Int64}\n 10 │ 13"
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element Dictionary{Int64, Int64}:\n 10 │ 13"
     @test !isequal(d, empty(d))
     @test isequal(d, copy(d))
     @test isempty(empty(d))
@@ -197,7 +197,7 @@
     dictcopy = copy(dict)
     @test dict isa Dictionary{Int64, String}
     @test !sharetokens(dict, dictcopy)
-    io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64, String}\n 1 │ #undef\n 2 │ #undef"
+    io = IOBuffer(); show(io, MIME"text/plain"(), dict); @test String(take!(io)) == "2-element Dictionary{Int64, String}:\n 1 │ #undef\n 2 │ #undef"
     @test all(!isassigned(dict, i) for i in collect(keys(dict)))
     @test all(!isassigned(dictcopy, i) for i in collect(keys(dictcopy)))
     @test sharetokens(dict, Dictionary{Int64, String}(dict))
