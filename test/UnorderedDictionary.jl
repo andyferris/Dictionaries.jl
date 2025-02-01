@@ -79,7 +79,7 @@
     d[10.0] = 13.0
     @test d[10] == 13
     io = IOBuffer(); print(io, d); @test String(take!(io)) == "{10 = 13}"
-    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element UnorderedDictionary{Int64, Int64}\n 10 │ 13"
+    io = IOBuffer(); show(io, MIME"text/plain"(), d); @test String(take!(io)) == "1-element UnorderedDictionary{Int64, Int64}:\n 10 │ 13"
     @test !isdictequal(d, empty(d))
     @test isdictequal(d, copy(d))
     @test isempty(empty(d))
@@ -144,8 +144,8 @@
     @test dict isa UnorderedDictionary{Int64, String}
     @test !sharetokens(dict, dictcopy)
     io = IOBuffer(); show(io, MIME"text/plain"(), dict); str = String(take!(io)); @test(
-        str == "2-element UnorderedDictionary{Int64, String}\n 1 │ #undef\n 2 │ #undef" ||
-        str == "2-element UnorderedDictionary{Int64, String}\n 2 │ #undef\n 1 │ #undef"
+        str == "2-element UnorderedDictionary{Int64, String}:\n 1 │ #undef\n 2 │ #undef" ||
+        str == "2-element UnorderedDictionary{Int64, String}:\n 2 │ #undef\n 1 │ #undef"
     )
     @test all(!isassigned(dict, i) for i in collect(keys(dict)))
     @test all(!isassigned(dictcopy, i) for i in collect(keys(dictcopy)))

@@ -33,7 +33,7 @@
     @test length(set!(h, 10)) == 1
     @test_throws IndexError insert!(h, 10)
     io = IOBuffer(); print(io, h); @test String(take!(io)) == "{10}"
-    io = IOBuffer(); show(io, MIME"text/plain"(), h); @test String(take!(io)) == "1-element Indices{Int64}\n 10"
+    io = IOBuffer(); show(io, MIME"text/plain"(), h); @test String(take!(io)) == "1-element Indices{Int64}:\n 10"
     @test !isequal(h, empty(h))
     @test isequal(h, copy(h))
     @test isempty(empty(h))
