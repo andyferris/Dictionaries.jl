@@ -4,7 +4,6 @@ struct ReverseIndices{I, Inds <: AbstractIndices{I}} <: AbstractIndices{I}
 end
 
 Base.parent(inds::ReverseIndices) = getfield(inds, :inds)
-@propagate_inbounds Base.in(inds::ReverseIndices{I}, i::I) where {I} = in(parent(inds), i)
 Base.length(inds::ReverseIndices) = length(parent(inds))
 Base.IteratorSize(inds::ReverseIndices) = Base.IteratorSize(parent(inds))
 
