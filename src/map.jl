@@ -2,26 +2,29 @@
 
 function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary, d2::AbstractDictionary, ds::AbstractDictionary...)
     if sharetokens(out, d, d2, ds...)
-        @inbounds for t in tokens(out)
-            settokenvalue!(out, t, f(gettokenvalue(d, t), gettokenvalue(d2, t), map(x -> @inbounds(gettokenvalue(x, t)), ds)...))
+        for t in tokens(out)
+            y = f(@inbounds(gettokenvalue(d, t)), @inbounds(gettokenvalue(d2, t)), map(x -> @inbounds(gettokenvalue(x, t)), ds)...)
+            @inbounds settokenvalue!(out, t, y)
         end
     elseif istokenizable(out)
        @boundscheck if !isequal(keys(out), keys(d)) || !isequal(keys(out), keys(d2)) || any(dict -> !isequal(keys(out), keys(dict)), ds)
             throw(IndexError("Indices do not match"))
        end
-       @inbounds for txs in zip(tokens(out), d, d2, ds...)
-            t = txs[1]
-            xs = Base.tail(txs)
-            settokenvalue!(out, t, f(xs...))
+       for txs in zip(tokens(out), d, d2, ds...)
+            t = @inbounds txs[1]
+            xs = @inbounds Base.tail(txs)
+            y = f(xs...)
+            @inbounds settokenvalue!(out, t, y)
        end
     else
         @boundscheck if !isequal(keys(out), keys(d)) || !isequal(keys(out), keys(d2)) || any(dict -> !isequal(keys(out), keys(dict)), ds)
             throw(IndexError("Indices do not match"))
         end 
-        @inbounds for ixs in zip(keys(out), d, d2, ds...)
-            i = ixs[1]
-            xs = Base.tail(ixs)
-            out[i] = f(xs...)
+        for ixs in zip(keys(out), d, d2, ds...)
+            i = @inbounds ixs[1]
+            xs = @inbounds Base.tail(ixs)
+            y = f(xs...)
+            @inbounds out[i] = y
         end
     end
     return out
@@ -30,22 +33,27 @@ end
 # (avoid an _apply for the two-input case)
 function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary, d2::AbstractDictionary)
     if sharetokens(out, d, d2)
-        @inbounds for t in tokens(out)
-            settokenvalue!(out, t, f(gettokenvalue(d, t), gettokenvalue(d2, t)))
+        for t in tokens(out)
+            x = @inbounds gettokenvalue(d, t)
+            x2 = @inbounds gettokenvalue(d2, t)
+            y = f(x, x2)
+            @inbounds settokenvalue!(out, t, y)
         end
     elseif istokenizable(out)
         @boundscheck if !isequal(keys(out), keys(d)) || !isequal(keys(out), keys(d2))
             throw(IndexError("Indices do not match"))
        end
-       @inbounds for (t, x, x2) in zip(tokens(out), d, d2)
-            settokenvalue!(out, t, f(x, x2))
+       for (t, x, x2) in zip(tokens(out), d, d2)
+            y = f(x, x2)
+            @inbounds settokenvalue!(out, t, y)
        end
     else
         @boundscheck if !isequal(keys(out), keys(d)) || !isequal(keys(out), keys(d2))
             throw(IndexError("Indices do not match"))
         end 
-        @inbounds for i in keys(out)
-            out[i] = f(d[i], d2[i])
+        for i in keys(out)
+            y = f(@inbounds(d[i]), @inbounds(d2[i]))
+            @inbounds out[i] = y
         end
     end
     return out
@@ -53,22 +61,26 @@ end
 
 function Base.map!(f, out::AbstractDictionary, d::AbstractDictionary)
     if sharetokens(out, d)
-        @inbounds for t in tokens(out)
-            settokenvalue!(out, t, f(gettokenvalue(d, t)))
+        for t in tokens(out)
+            x = @inbounds gettokenvalue(d, t)
+            y = f(x)
+            @inbounds settokenvalue!(out, t, y)
         end
     elseif istokenizable(out)
        @boundscheck if !isequal(keys(out), keys(d))
             throw(IndexError("Indices do not match"))
        end
-       @inbounds for (t, x) in zip(tokens(out), d)
-            settokenvalue!(out, t, f(x))
+       for (t, x) in zip(tokens(out), d)
+            y = f(x)
+            @inbounds settokenvalue!(out, t, y)
        end
     else
         @boundscheck if !isequal(keys(out), keys(d))
              throw(IndexError("Indices do not match"))
         end
-        @inbounds for (i, x) in zip(keys(out), d)
-            out[i] = f(x)
+        for (i, x) in zip(keys(out), d)
+            y = f(x)
+            @inbounds out[i] = y
         end
     end
     return out
@@ -76,12 +88,14 @@ end
 
 function Base.map!(f, out::AbstractDictionary)
     if istokenizable(out)
-        @inbounds for t in tokens(out)
-            settokenvalue!(out, t, f())
+        for t in tokens(out)
+            y = f()
+            @inbounds settokenvalue!(out, t, y)
         end
     else
-        @inbounds for i in keys(out)
-            out[i] = f()
+        for i in keys(out)
+            y = f()
+            @inbounds out[i] = y
         end
     end
     return out
