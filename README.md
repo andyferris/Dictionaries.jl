@@ -336,7 +336,7 @@ julia> getindices(dict, findall(isodd.(dict)))
 
 ### Other dictionary types
 
-The `UnorderedDictionary` container is another hash-based dictionary, but unlike `Dictionary` the order of elements is not defined. Internally, it has a slightly optimized version of the implementation of the `Dict` built into Julia, but supports the `AbstractDictionary` interface as well as tokens. It can be a bit faster than `Dictionary` for workloads focussing on insertion and deletion – such as when building a cache where iteration order is unimportant and speed is more important.
+The `UnorderedDictionary` container is another hash-based dictionary, but unlike `Dictionary` the order of elements is not defined. Internally, it has a slightly optimized version of the implementation of the `Dict` built into Julia, but supports the `AbstractDictionary` interface as well as tokens. It can be a bit faster than `Dictionary` for workloads focussing on insertion and deletion – such as when building a cache where iteration order is unimportant and speed of random lookup and insertion is more important.
 
 The `ArrayDictionary` container is a simple, iteration-based dictionary that may be faster for smaller collections. It's `keys` are the corresponding `ArrayIndices` type. By default these contain `Vector`s which support mutation, insertion and tokenization, but they can contain other arrays such as [`SVector`](https://github.com/JuliaArrays/StaticArrays.jl)s (which make for good statically-sized dictionaries, with similarities with `Base.ImmutableDict`).
 
