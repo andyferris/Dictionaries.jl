@@ -86,7 +86,7 @@ end
 @propagate_inbounds function gettoken(inds::FilteredIndices, i)
     (hastoken, token) = gettoken(parent(inds), i)
     @boundscheck if hastoken
-        return (_pred(inds)(@inbounds gettokenvalue(parent, token)), token)
+        return (_pred(inds)(@inbounds gettokenvalue(parent(inds), token)), token)
     end
     return (hastoken, token)
 end
