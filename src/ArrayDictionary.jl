@@ -74,6 +74,8 @@ function Base.keys(d::ArrayDictionary{I}) where {I}
     return getfield(d, :indices)
 end
 
+Base.vec(dict::ArrayDictionary) = parent(dict)
+
 # token interface
 istokenizable(::ArrayDictionary) = true
 istokenassigned(d::ArrayDictionary, t::Int) = isassigned(parent(d), t)
