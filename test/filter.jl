@@ -11,6 +11,9 @@
     @test_throws IndexError filterview(isodd, inds)[2]
     @test in(2, filterview(iseven, inds))
     @test !in(2, filterview(isodd, inds))
+    @test first(gettoken(filterview(iseven, inds), 2))
+    @test first(gettoken(filterview(isodd, inds), 3))
+    @test !first(gettoken(filterview(isodd, inds), 2))
 
     @test collect(reverse(filterview(iseven, inds))) == [4, 2]
 

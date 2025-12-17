@@ -59,7 +59,7 @@ end
     end
 end
 
-function Base.in(i::I, indices::AbstractIndices{I}) where I
+function Base.in(i, indices::AbstractIndices)
     if !istokenizable(indices)
         # A fallback definition based on iteration would be rediculously slow. There
         # shouldn't be many `AbstractIndex` types that rely on iteration for this.
@@ -67,10 +67,6 @@ function Base.in(i::I, indices::AbstractIndices{I}) where I
     end
 
     return gettoken(indices, i)[1]
-end
-
-function Base.in(i, indices::AbstractIndices{I}) where I
-    return convert(I, i) in indices
 end
 
 # Match the default setting from Base - the majority of containers will know their size
