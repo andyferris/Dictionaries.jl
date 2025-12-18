@@ -29,7 +29,7 @@ using Test
 
         @test first(d) == 1
         @test last(d) == 2
-        @test firstindex(d) == :d
+        @test firstindex(d) == :a
         @test lastindex(d) == :b
         #@test d[begin] == 1 # Parsing issues on earlier versions of Julia...
         @test d[end] == 2
