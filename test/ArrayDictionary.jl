@@ -33,6 +33,7 @@
     @test get!(d, 10, 15) == 11
     @test length(d) == 1
     @test keys(d) === keys(keys(d))
+    @test vec(d)::Vector == [11]
     @test !isempty(d)
     @test isequal(copy(d), d)
     @test_throws IndexError insert!(d, 10, 12)
@@ -69,6 +70,7 @@
     end
     @test all(in(i, d) == !iseven(i) for i in 2:2:100)
     @test all(in(i, keys(d)) == iseven(i) for i in 2:2:100)
+    @test vec(d)::Vector == 3:2:101
     @test isempty(empty!(d))
 
     @testset "rand" begin

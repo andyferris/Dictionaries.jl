@@ -305,6 +305,10 @@ end
 Base.keys(dict::Dictionary) = getfield(dict, :indices)
 _values(dict::Dictionary) = getfield(dict, :values)
 
+Base.vec(dict::Dictionary) =
+    keys(dict).holes == 0 ? dict.values :
+    error("Cannot convert `Dictionary` with holes to vector without copying. Use `collect(dict)` instead.")
+
 # tokens
 
 tokenized(dict::Dictionary) = _values(dict)

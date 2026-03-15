@@ -47,6 +47,7 @@
     @test get!(d, 10, 15) == 11
     @test length(d) == 1
     @test keys(d) === keys(keys(d))
+    @test vec(d)::Vector == [11]
     @test unique(d)::Indices{Int64} == Indices([11])
     @test !isempty(d)
     @test d == d
@@ -119,6 +120,7 @@
     end
     @test all(in(i, d) == !iseven(i) for i in 2:2:1000)
     @test all(in(i, keys(d)) == iseven(i) for i in 2:2:1000)
+    @test vec(d)::Vector == 3:2:1001
     @test isempty(empty!(d))
 
     @test get!(() -> 15, d, 10) == 15
