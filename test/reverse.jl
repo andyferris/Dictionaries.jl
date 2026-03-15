@@ -1,3 +1,6 @@
+using Dictionaries
+using Test
+
 @testset "reverse" begin
     @testset "indices" begin
         inds = Indices([1,2,3])

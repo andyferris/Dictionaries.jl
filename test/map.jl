@@ -1,3 +1,6 @@
+using Test
+using Dictionaries
+
 @testset "map" begin
     function _mapview(f, d::AbstractDictionary)
         I = keytype(d)

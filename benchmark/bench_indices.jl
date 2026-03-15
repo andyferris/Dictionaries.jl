@@ -6,8 +6,8 @@ using OrderedCollections
 
 const suite = BenchmarkGroup()
 
-sizes = [10, 100, 1000, 10_000]
-#sizes = [10_000]
+# sizes = [10, 100, 1000, 10_000]
+sizes = [100]
 cutoff = 101
 
 function build_vector_by_insertion(n)
