@@ -226,8 +226,8 @@ function _dictionary(key, value, ::Type{Dictionary}, iter)
     tmp = iterate(iter)
     if tmp === nothing
         IT = Base.@default_eltype(iter)
-        I = IT == Union{} ? Union{} : Core.Compiler.return_type(first, Tuple{IT})
-        T = IT == Union{} ? Union{} : Core.Compiler.return_type(last, Tuple{IT})
+        I = Base.promote_op(first, IT)
+        T = Base.promote_op(last, IT)
         return Dictionary{I, T}()
     end
     (x, s) = tmp
