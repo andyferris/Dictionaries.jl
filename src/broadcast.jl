@@ -28,7 +28,8 @@ end
 
 @propagate_inbounds function Base.getindex(d::BroadcastedDictionary{I}, i::I) where {I}
     if istokenizable(d)
-        t = gettoken(d, i)
+        (hastoken, t) = gettoken(d, i)
+        @boundscheck hastoken || throw(IndexError("Dictionary does not contain index: $i"))
         return _call_f(d, _gettokenvalue(t, _data(d)...)...)
     else
         return _call_f(d, _getindex(i, _data(d)...)...)
