@@ -31,4 +31,13 @@
     @test isequal(d2, dictionary([1=>0, 2=>0, 3=>0, 4=>0, 5=>0]))
 
     @test_throws IndexError Dictionary([1,2],[1,2]) .+ Dictionary([2,3],[2,3])
+
+    # indexing a BroadcastedDictionary: the broadcast value, or an IndexError for a missing index
+    bd = Base.Broadcast.broadcasted(+, dictionary([:a=>1, :b=>2]), 10)
+    @test bd[:a] == 11
+    @test bd[:b] == 12
+    @test_throws IndexError bd[:c]
+    bi = Base.Broadcast.broadcasted(+, i, i)
+    @test bi[3] == 6
+    @test_throws IndexError bi[6]
 end
